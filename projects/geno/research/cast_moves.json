@@ -1,0 +1,860 @@
+{
+ "jab1": {
+  "startup": {
+   "geno": 3,
+   "pct": 37,
+   "median": 3.0
+  },
+  "active": {
+   "geno": 2,
+   "pct": 6,
+   "median": 2.0
+  },
+  "total": {
+   "geno": 17,
+   "pct": 48,
+   "median": 18.0
+  },
+  "damage": {
+   "geno": 3,
+   "pct": 21,
+   "median": 3.0
+  },
+  "reach": {
+   "geno": 16,
+   "pct": 25,
+   "median": 17.23
+  },
+  "radius": {
+   "geno": 3.6,
+   "pct": 33,
+   "median": 4.305
+  },
+  "disjoint": {
+   "geno": 8.78,
+   "pct": 79,
+   "median": 2.77
+  }
+ },
+ "ftilt": {
+  "startup": {
+   "geno": 7,
+   "pct": 60,
+   "median": 6.0
+  },
+  "active": {
+   "geno": 3,
+   "pct": 2,
+   "median": 4.0
+  },
+  "total": {
+   "geno": 28,
+   "pct": 13,
+   "median": 32.0
+  },
+  "damage": {
+   "geno": 10,
+   "pct": 33,
+   "median": 10.0
+  },
+  "reach": {
+   "geno": 22.5,
+   "pct": 67,
+   "median": 21.035
+  },
+  "radius": {
+   "geno": 4.3,
+   "pct": 48,
+   "median": 4.3
+  },
+  "disjoint": {
+   "geno": 16.58,
+   "pct": 102,
+   "median": 4.04
+  }
+ },
+ "utilt": {
+  "startup": {
+   "geno": 6,
+   "pct": 33,
+   "median": 7.0
+  },
+  "active": {
+   "geno": 5,
+   "pct": 17,
+   "median": 7.0
+  },
+  "total": {
+   "geno": 28,
+   "pct": 21,
+   "median": 31.0
+  },
+  "damage": {
+   "geno": 9,
+   "pct": 33,
+   "median": 9.5
+  },
+  "reach": {
+   "geno": 24.5,
+   "pct": 56,
+   "median": 23.705
+  },
+  "radius": {
+   "geno": 5,
+   "pct": 56,
+   "median": 4.9
+  },
+  "disjoint": {
+   "geno": 9.09,
+   "pct": 83,
+   "median": 3.975
+  }
+ },
+ "dtilt": {
+  "startup": {
+   "geno": 6,
+   "pct": 33,
+   "median": 7.0
+  },
+  "active": {
+   "geno": 3,
+   "pct": 6,
+   "median": 3.0
+  },
+  "total": {
+   "geno": 22,
+   "pct": 25,
+   "median": 28.5
+  },
+  "damage": {
+   "geno": 7,
+   "pct": 10,
+   "median": 10.0
+  },
+  "reach": {
+   "geno": 19.4,
+   "pct": 48,
+   "median": 20.055
+  },
+  "radius": {
+   "geno": 4,
+   "pct": 33,
+   "median": 4.305
+  },
+  "disjoint": {
+   "geno": 12.77,
+   "pct": 102,
+   "median": 4.875
+  }
+ },
+ "dash_attack": {
+  "startup": {
+   "geno": 6,
+   "pct": 25,
+   "median": 7.0
+  },
+  "active": {
+   "geno": 10,
+   "pct": 33,
+   "median": 12.0
+  },
+  "total": {
+   "geno": 38,
+   "pct": 21,
+   "median": 38.5
+  },
+  "damage": {
+   "geno": 9,
+   "pct": 25,
+   "median": 9.5
+  },
+  "reach": {
+   "geno": 29.31,
+   "pct": 37,
+   "median": 31.21
+  },
+  "radius": {
+   "geno": 4.5,
+   "pct": 52,
+   "median": 4.495
+  },
+  "disjoint": {
+   "geno": -0.02,
+   "pct": 33,
+   "median": 1.02
+  }
+ },
+ "fsmash": {
+  "startup": {
+   "geno": 15,
+   "pct": 58,
+   "median": 13
+  },
+  "active": {
+   "geno": 12,
+   "pct": 90,
+   "median": 5
+  },
+  "total": {
+   "geno": 44,
+   "pct": 22,
+   "median": 50
+  },
+  "damage": {
+   "geno": 16,
+   "pct": 42,
+   "median": 17
+  },
+  "reach": {
+   "geno": 31.64,
+   "pct": 86,
+   "median": 24.13
+  },
+  "radius": {
+   "geno": 4.4,
+   "pct": 50,
+   "median": 4.49
+  },
+  "disjoint": {
+   "geno": 23.78,
+   "pct": 102,
+   "median": 5.88
+  }
+ },
+ "usmash": {
+  "startup": {
+   "geno": 9,
+   "pct": 21,
+   "median": 11.5
+  },
+  "active": {
+   "geno": 4,
+   "pct": 21,
+   "median": 9.0
+  },
+  "total": {
+   "geno": 39,
+   "pct": 2,
+   "median": 46.0
+  },
+  "damage": {
+   "geno": 15,
+   "pct": 44,
+   "median": 15.0
+  },
+  "reach": {
+   "geno": 26.8,
+   "pct": 56,
+   "median": 26.5
+  },
+  "radius": {
+   "geno": 5.4,
+   "pct": 63,
+   "median": 5.359999999999999
+  },
+  "disjoint": {
+   "geno": 11.53,
+   "pct": 102,
+   "median": 6.484999999999999
+  }
+ },
+ "dsmash": {
+  "startup": {
+   "geno": 7,
+   "pct": 52,
+   "median": 6.5
+  },
+  "active": {
+   "geno": 3,
+   "pct": 10,
+   "median": 13.5
+  },
+  "total": {
+   "geno": 43,
+   "pct": 37,
+   "median": 46.0
+  },
+  "damage": {
+   "geno": 12,
+   "pct": 17,
+   "median": 14.5
+  },
+  "reach": {
+   "geno": 17.3,
+   "pct": 56,
+   "median": 17.08
+  },
+  "radius": {
+   "geno": 4.7,
+   "pct": 56,
+   "median": 4.665
+  },
+  "disjoint": {
+   "geno": 10.62,
+   "pct": 83,
+   "median": 7.74
+  }
+ },
+ "nair": {
+  "startup": {
+   "geno": 3,
+   "pct": 2,
+   "median": 5.0
+  },
+  "active": {
+   "geno": 18,
+   "pct": 25,
+   "median": 24.5
+  },
+  "total": {
+   "geno": 34,
+   "pct": 2,
+   "median": 43.5
+  },
+  "damage": {
+   "geno": 12,
+   "pct": 33,
+   "median": 12.0
+  },
+  "reach": {
+   "geno": 9,
+   "pct": 37,
+   "median": 10.39
+  },
+  "radius": {
+   "geno": 5,
+   "pct": 75,
+   "median": 4.5649999999999995
+  },
+  "disjoint": {
+   "geno": 6.65,
+   "pct": 94,
+   "median": 2.02
+  },
+  "landing": {
+   "geno": 14,
+   "pct": 6,
+   "median": 15.5
+  },
+  "l_cancel": {
+   "geno": 7,
+   "pct": 6,
+   "median": 7.5
+  }
+ },
+ "fair": {
+  "startup": {
+   "geno": 9,
+   "pct": 48,
+   "median": 10.0
+  },
+  "active": {
+   "geno": 3,
+   "pct": 2,
+   "median": 5.5
+  },
+  "total": {
+   "geno": 34,
+   "pct": 10,
+   "median": 41.0
+  },
+  "damage": {
+   "geno": 13,
+   "pct": 48,
+   "median": 13.0
+  },
+  "reach": {
+   "geno": 20.1,
+   "pct": 83,
+   "median": 15.615
+  },
+  "radius": {
+   "geno": 4.6,
+   "pct": 33,
+   "median": 5.04
+  },
+  "disjoint": {
+   "geno": 13.5,
+   "pct": 102,
+   "median": 4.875
+  },
+  "landing": {
+   "geno": 16,
+   "pct": 21,
+   "median": 20.0
+  },
+  "l_cancel": {
+   "geno": 8,
+   "pct": 21,
+   "median": 10.0
+  }
+ },
+ "bair": {
+  "startup": {
+   "geno": 10,
+   "pct": 79,
+   "median": 6.5
+  },
+  "active": {
+   "geno": 3,
+   "pct": 2,
+   "median": 11.5
+  },
+  "total": {
+   "geno": 36,
+   "pct": 44,
+   "median": 36.0
+  },
+  "damage": {
+   "geno": 14,
+   "pct": 63,
+   "median": 13.0
+  },
+  "reach": {
+   "geno": 20.3,
+   "pct": 79,
+   "median": 16.505000000000003
+  },
+  "radius": {
+   "geno": 4.8,
+   "pct": 40,
+   "median": 5.105
+  },
+  "disjoint": {
+   "geno": 13.79,
+   "pct": 102,
+   "median": 5.07
+  },
+  "landing": {
+   "geno": 18,
+   "pct": 40,
+   "median": 18.0
+  },
+  "l_cancel": {
+   "geno": 9,
+   "pct": 40,
+   "median": 9.0
+  }
+ },
+ "uair": {
+  "startup": {
+   "geno": 5,
+   "pct": 17,
+   "median": 6.0
+  },
+  "active": {
+   "geno": 5,
+   "pct": 40,
+   "median": 6.0
+  },
+  "total": {
+   "geno": 28,
+   "pct": 2,
+   "median": 36.5
+  },
+  "damage": {
+   "geno": 10,
+   "pct": 25,
+   "median": 13.0
+  },
+  "reach": {
+   "geno": 23.8,
+   "pct": 52,
+   "median": 23.88
+  },
+  "radius": {
+   "geno": 4.8,
+   "pct": 44,
+   "median": 5.15
+  },
+  "disjoint": {
+   "geno": 8.6,
+   "pct": 79,
+   "median": 5.11
+  },
+  "landing": {
+   "geno": 16,
+   "pct": 33,
+   "median": 18.0
+  },
+  "l_cancel": {
+   "geno": 8,
+   "pct": 33,
+   "median": 9.0
+  }
+ },
+ "dair": {
+  "startup": {
+   "geno": 9,
+   "pct": 25,
+   "median": 13.5
+  },
+  "active": {
+   "geno": 7,
+   "pct": 37,
+   "median": 18.0
+  },
+  "total": {
+   "geno": 38,
+   "pct": 10,
+   "median": 55.0
+  },
+  "damage": {
+   "geno": 12,
+   "pct": 48,
+   "median": 12.0
+  },
+  "reach": {
+   "geno": 13,
+   "pct": 98,
+   "median": 7.695
+  },
+  "radius": {
+   "geno": 4.8,
+   "pct": 25,
+   "median": 5.795
+  },
+  "disjoint": {
+   "geno": 14.52,
+   "pct": 102,
+   "median": 3.815
+  },
+  "landing": {
+   "geno": 24,
+   "pct": 37,
+   "median": 25.5
+  },
+  "l_cancel": {
+   "geno": 12,
+   "pct": 37,
+   "median": 12.5
+  }
+ },
+ "grab": {
+  "startup": {
+   "geno": 7,
+   "pct": 71,
+   "median": 6.0
+  },
+  "active": {
+   "geno": 2,
+   "pct": 2,
+   "median": 2.0
+  },
+  "total": {
+   "geno": 30,
+   "pct": 2,
+   "median": 30.0
+  },
+  "damage": {
+   "geno": 0,
+   "pct": 2,
+   "median": 0.0
+  },
+  "reach": {
+   "geno": 13.53,
+   "pct": 56,
+   "median": 12.865
+  },
+  "radius": {
+   "geno": 4,
+   "pct": 48,
+   "median": 4.109999999999999
+  },
+  "disjoint": {
+   "geno": 2.18,
+   "pct": 21,
+   "median": 3.685
+  }
+ },
+ "dash_grab": {
+  "startup": {
+   "geno": 9,
+   "pct": 17,
+   "median": 10.0
+  },
+  "active": {
+   "geno": 2,
+   "pct": 2,
+   "median": 2.0
+  },
+  "total": {
+   "geno": 40,
+   "pct": 2,
+   "median": 40.0
+  },
+  "damage": {
+   "geno": 0,
+   "pct": 2,
+   "median": 0.0
+  },
+  "reach": {
+   "geno": 16.37,
+   "pct": 87,
+   "median": 13.085
+  },
+  "radius": {
+   "geno": 4,
+   "pct": 56,
+   "median": 3.8
+  },
+  "disjoint": {
+   "geno": 2.07,
+   "pct": 52,
+   "median": 2.035
+  }
+ },
+ "pummel": {
+  "startup": {
+   "geno": 9,
+   "pct": 37,
+   "median": 9.0
+  },
+  "active": {
+   "geno": 1,
+   "pct": 2,
+   "median": 1.0
+  },
+  "total": {
+   "geno": 24,
+   "pct": 2,
+   "median": 24.0
+  },
+  "damage": {
+   "geno": 3,
+   "pct": 2,
+   "median": 3.0
+  },
+  "intangible": {
+   "geno": 0,
+   "pct": 2,
+   "median": 0.0
+  },
+  "reach": {
+   "geno": 11.6,
+   "pct": 21,
+   "median": 13.585
+  }
+ },
+ "ledge_quick": {
+  "startup": {
+   "geno": 24,
+   "pct": 33,
+   "median": 24.0
+  },
+  "active": {
+   "geno": 5,
+   "pct": 37,
+   "median": 5.0
+  },
+  "total": {
+   "geno": 55,
+   "pct": 13,
+   "median": 55.0
+  },
+  "damage": {
+   "geno": 8,
+   "pct": 21,
+   "median": 8.0
+  },
+  "intangible": {
+   "geno": 20,
+   "pct": 29,
+   "median": 20.0
+  },
+  "stands": {
+   "geno": 18,
+   "pct": 40,
+   "median": 18.5
+  },
+  "reach": {
+   "geno": 23.25,
+   "pct": 48,
+   "median": 23.895
+  },
+  "reach_up": {
+   "geno": 15.5,
+   "pct": 37,
+   "median": 18.75
+  },
+  "ends": {
+   "geno": 7.2,
+   "pct": 52,
+   "median": 7.29
+  }
+ },
+ "ledge_slow": {
+  "startup": {
+   "geno": 41,
+   "pct": 52,
+   "median": 41.5
+  },
+  "active": {
+   "geno": 4,
+   "pct": 25,
+   "median": 5.0
+  },
+  "total": {
+   "geno": 70,
+   "pct": 21,
+   "median": 70.0
+  },
+  "damage": {
+   "geno": 8,
+   "pct": 17,
+   "median": 8.0
+  },
+  "intangible": {
+   "geno": 37,
+   "pct": 52,
+   "median": 37.5
+  },
+  "stands": {
+   "geno": 34,
+   "pct": 40,
+   "median": 34.0
+  },
+  "reach": {
+   "geno": 22.8,
+   "pct": 48,
+   "median": 23.165
+  },
+  "reach_up": {
+   "geno": 11.4,
+   "pct": 40,
+   "median": 12.175
+  },
+  "ends": {
+   "geno": 4.2,
+   "pct": 48,
+   "median": 4.205
+  }
+ },
+ "getup_u": {
+  "startup": {
+   "geno": 19,
+   "pct": 48,
+   "median": 19.0
+  },
+  "active": {
+   "geno": 7,
+   "pct": 17,
+   "median": 10.5
+  },
+  "total": {
+   "geno": 50,
+   "pct": 2,
+   "median": 50.0
+  },
+  "damage": {
+   "geno": 6,
+   "pct": 2,
+   "median": 6.0
+  },
+  "intangible": {
+   "geno": 25,
+   "pct": 25,
+   "median": 26.0
+  },
+  "front": {
+   "geno": 19,
+   "pct": 37,
+   "median": 19.0
+  },
+  "back": {
+   "geno": 24,
+   "pct": 79,
+   "median": 19.0
+  },
+  "reach_front": {
+   "geno": 19.2,
+   "pct": 56,
+   "median": 19.145000000000003
+  },
+  "reach_back": {
+   "geno": 19.2,
+   "pct": 52,
+   "median": 19.205
+  },
+  "reach_up": {
+   "geno": 14.4,
+   "pct": 48,
+   "median": 14.934999999999999
+  }
+ },
+ "getup_d": {
+  "startup": {
+   "geno": 19,
+   "pct": 37,
+   "median": 19.0
+  },
+  "active": {
+   "geno": 8,
+   "pct": 21,
+   "median": 8.0
+  },
+  "total": {
+   "geno": 50,
+   "pct": 2,
+   "median": 50.0
+  },
+  "damage": {
+   "geno": 6,
+   "pct": 2,
+   "median": 6.0
+  },
+  "intangible": {
+   "geno": 26,
+   "pct": 17,
+   "median": 26.0
+  },
+  "front": {
+   "geno": 25,
+   "pct": 63,
+   "median": 23.0
+  },
+  "back": {
+   "geno": 19,
+   "pct": 13,
+   "median": 20.0
+  },
+  "reach_front": {
+   "geno": 19.2,
+   "pct": 56,
+   "median": 18.995
+  },
+  "reach_back": {
+   "geno": 19.2,
+   "pct": 48,
+   "median": 20.195
+  },
+  "reach_up": {
+   "geno": 14.4,
+   "pct": 48,
+   "median": 14.885
+  }
+ },
+ "movement": {
+  "jumpsquat": 5,
+  "sh_height": 11.3,
+  "sh_air": 27,
+  "shff_air": 17,
+  "fh_height": 30.5,
+  "fh_air": 44,
+  "fall": 2.3,
+  "ff": 3.0,
+  "air_speed": 0.85,
+  "air_accel": 0.035,
+  "traction": 0.08,
+  "dash": 1.35,
+  "run": 1.6,
+  "weight": 80
+ },
+ "shffl": {
+  "nair": 29,
+  "fair": 30,
+  "bair": 31,
+  "uair": 30,
+  "dair": 34
+ }
+}

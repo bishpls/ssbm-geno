@@ -1,0 +1,978 @@
+{
+ "body": {
+  "ledge_x": 70.0,
+  "floor_y": 0.0,
+  "profile": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    6
+   ],
+   [
+    14,
+    22
+   ],
+   [
+    30,
+    34
+   ],
+   [
+    52,
+    40
+   ]
+  ]
+ },
+ "blast": {
+  "left": -225.0,
+  "right": 225.0,
+  "top": 200.0,
+  "bottom": -120.0
+ },
+ "camera": {
+  "left": -160.0,
+  "right": 160.0,
+  "top": 140.0,
+  "bottom": -55.0,
+  "centre": [
+   0.0,
+   30.0
+  ]
+ },
+ "candidates": {
+  "clearing": {
+   "title": "A. Clearing: one wide mushroom cap",
+   "blurb": "One wide platform over the centre; open flanks to both ledges",
+   "platforms": [
+    {
+     "x0": -27.0,
+     "x1": 27.0,
+     "y": 28.0,
+     "look": "giant mushroom cap"
+    }
+   ],
+   "spawns": [
+    [
+     -45.0,
+     0.0
+    ],
+    [
+     45.0,
+     0.0
+    ],
+    [
+     -15.0,
+     28.0
+    ],
+    [
+     15.0,
+     28.0
+    ]
+   ],
+   "respawns": [
+    [
+     -40.0,
+     80.0
+    ],
+    [
+     40.0,
+     80.0
+    ],
+    [
+     -13.0,
+     80.0
+    ],
+    [
+     13.0,
+     80.0
+    ]
+   ],
+   "nearest": "battlefield"
+  },
+  "boughs": {
+   "title": "B. Twin Boughs: two inboard branches",
+   "blurb": "Two platforms close over the centre with a narrow gap; open flanks",
+   "platforms": [
+    {
+     "x0": -40.0,
+     "x1": -10.0,
+     "y": 28.0,
+     "look": "branch"
+    },
+    {
+     "x0": 10.0,
+     "x1": 40.0,
+     "y": 28.0,
+     "look": "branch"
+    }
+   ],
+   "spawns": [
+    [
+     -50.0,
+     0.0
+    ],
+    [
+     50.0,
+     0.0
+    ],
+    [
+     -25.0,
+     28.0
+    ],
+    [
+     25.0,
+     28.0
+    ]
+   ],
+   "respawns": [
+    [
+     -40.0,
+     80.0
+    ],
+    [
+     40.0,
+     80.0
+    ],
+    [
+     -13.0,
+     80.0
+    ],
+    [
+     13.0,
+     80.0
+    ]
+   ],
+   "nearest": "stadium"
+  },
+  "hollow": {
+   "title": "C. Hollow: the inverted triangle",
+   "blurb": "A low log in the centre, two high caps toward the ledges",
+   "platforms": [
+    {
+     "x0": -60.0,
+     "x1": -34.0,
+     "y": 30.0,
+     "look": "shelf mushroom"
+    },
+    {
+     "x0": -16.0,
+     "x1": 16.0,
+     "y": 18.0,
+     "look": "log"
+    },
+    {
+     "x0": 34.0,
+     "x1": 60.0,
+     "y": 30.0,
+     "look": "shelf mushroom"
+    }
+   ],
+   "spawns": [
+    [
+     -45.0,
+     0.0
+    ],
+    [
+     45.0,
+     0.0
+    ],
+    [
+     0.0,
+     18.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "respawns": [
+    [
+     -40.0,
+     80.0
+    ],
+    [
+     40.0,
+     80.0
+    ],
+    [
+     -13.0,
+     80.0
+    ],
+    [
+     13.0,
+     80.0
+    ]
+   ],
+   "nearest": "battlefield"
+  }
+ },
+ "measured": [
+  {
+   "stage": "Final Destination",
+   "main_width": 171.13,
+   "ledge_to_side_blast": 160.43,
+   "top_above_floor": 188,
+   "bottom_below_floor": 140,
+   "platforms": 0,
+   "lowest": null,
+   "highest": null,
+   "tiers": 0,
+   "coverage": 0.0,
+   "widest_open_floor": 171.13,
+   "outer_platform_inside_ledge": null,
+   "undercut_10": 0.0,
+   "moving": 0,
+   "highest_above_ledge_zone": 0
+  },
+  {
+   "stage": "Battlefield",
+   "main_width": 136.8,
+   "ledge_to_side_blast": 155.6,
+   "top_above_floor": 200,
+   "bottom_below_floor": 108.8,
+   "platforms": 3,
+   "lowest": 27.2,
+   "highest": 54.4,
+   "tiers": 2,
+   "coverage": 0.825,
+   "widest_open_floor": 10.8,
+   "outer_platform_inside_ledge": 10.8,
+   "undercut_10": 13.213,
+   "moving": 0,
+   "highest_above_ledge_zone": 27.2
+  },
+  {
+   "stage": "Yoshi's Story",
+   "main_width": 112,
+   "ledge_to_side_blast": 117.6,
+   "top_above_floor": 168,
+   "bottom_below_floor": 91,
+   "platforms": 3,
+   "lowest": 23.45,
+   "highest": 42,
+   "tiers": 2,
+   "coverage": 0.844,
+   "widest_open_floor": 12.25,
+   "outer_platform_inside_ledge": -3.5,
+   "undercut_10": 3.325,
+   "moving": 0,
+   "highest_above_ledge_zone": 23.45
+  },
+  {
+   "stage": "Dream Land",
+   "main_width": 154.54,
+   "ledge_to_side_blast": 177.73,
+   "top_above_floor": 249.99,
+   "bottom_below_floor": 123.01,
+   "platforms": 3,
+   "lowest": 30.13,
+   "highest": 51.42,
+   "tiers": 2,
+   "coverage": 0.641,
+   "widest_open_floor": 15.88,
+   "outer_platform_inside_ledge": 14.2,
+   "undercut_10": 0.844,
+   "moving": 0,
+   "highest_above_ledge_zone": 30.23
+  },
+  {
+   "stage": "Fountain of Dreams",
+   "main_width": 126.69,
+   "ledge_to_side_blast": 135.4,
+   "top_above_floor": 202.5,
+   "bottom_below_floor": 146.25,
+   "platforms": 3,
+   "lowest": 10.4,
+   "highest": 42.75,
+   "tiers": 3,
+   "coverage": 0.675,
+   "widest_open_floor": 13.85,
+   "outer_platform_inside_ledge": 13.85,
+   "undercut_10": 1.92,
+   "moving": 2,
+   "highest_above_ledge_zone": 23.58
+  },
+  {
+   "stage": "Pok\u00e9mon Stadium",
+   "main_width": 175.5,
+   "ledge_to_side_blast": 142.25,
+   "top_above_floor": 180,
+   "bottom_below_floor": 111,
+   "platforms": 2,
+   "lowest": 25,
+   "highest": 25,
+   "tiers": 1,
+   "coverage": 0.342,
+   "widest_open_floor": 50,
+   "outer_platform_inside_ledge": 32.75,
+   "undercut_10": 7.636,
+   "moving": 0,
+   "highest_above_ledge_zone": 0
+  },
+  {
+   "stage": "A. Clearing: one wide mushroom cap",
+   "main_width": 140.0,
+   "ledge_to_side_blast": 155.0,
+   "top_above_floor": 200.0,
+   "bottom_below_floor": 120.0,
+   "platforms": 1,
+   "lowest": 28.0,
+   "highest": 28.0,
+   "tiers": 1,
+   "coverage": 0.386,
+   "widest_open_floor": 43.0,
+   "outer_platform_inside_ledge": 43.0,
+   "undercut_10": 3.5,
+   "moving": 0,
+   "highest_above_ledge_zone": 0
+  },
+  {
+   "stage": "B. Twin Boughs: two inboard branches",
+   "main_width": 140.0,
+   "ledge_to_side_blast": 155.0,
+   "top_above_floor": 200.0,
+   "bottom_below_floor": 120.0,
+   "platforms": 2,
+   "lowest": 28.0,
+   "highest": 28.0,
+   "tiers": 1,
+   "coverage": 0.429,
+   "widest_open_floor": 30.0,
+   "outer_platform_inside_ledge": 30.0,
+   "undercut_10": 3.5,
+   "moving": 0,
+   "highest_above_ledge_zone": 0
+  },
+  {
+   "stage": "C. Hollow: the inverted triangle",
+   "main_width": 140.0,
+   "ledge_to_side_blast": 155.0,
+   "top_above_floor": 200.0,
+   "bottom_below_floor": 120.0,
+   "platforms": 3,
+   "lowest": 18.0,
+   "highest": 30.0,
+   "tiers": 2,
+   "coverage": 0.6,
+   "widest_open_floor": 18.0,
+   "outer_platform_inside_ledge": 10.0,
+   "undercut_10": 3.5,
+   "moving": 0,
+   "highest_above_ledge_zone": 30.0
+  }
+ ],
+ "starter_envelope": {
+  "main_width": [
+   112,
+   171.13
+  ],
+  "ledge_to_side_blast": [
+   117.6,
+   177.73
+  ],
+  "top_above_floor": [
+   168,
+   249.99
+  ],
+  "bottom_below_floor": [
+   91,
+   146.25
+  ],
+  "platforms": [
+   0,
+   3
+  ],
+  "lowest": [
+   10.4,
+   30.13
+  ],
+  "highest": [
+   42,
+   54.4
+  ],
+  "tiers": [
+   0,
+   3
+  ],
+  "coverage": [
+   0.0,
+   0.844
+  ],
+  "widest_open_floor": [
+   10.8,
+   171.13
+  ],
+  "outer_platform_inside_ledge": [
+   -3.5,
+   14.2
+  ],
+  "undercut_10": [
+   0.0,
+   13.213
+  ],
+  "moving": [
+   0,
+   2
+  ],
+  "highest_above_ledge_zone": [
+   0,
+   30.23
+  ]
+ },
+ "outlines": {
+  "clearing": [
+   [
+    [
+     -70.0,
+     0.0
+    ],
+    [
+     -62.0,
+     0.0
+    ],
+    "floor",
+    false,
+    true
+   ],
+   [
+    [
+     -62.0,
+     0.0
+    ],
+    [
+     62.0,
+     0.0
+    ],
+    "floor",
+    false,
+    false
+   ],
+   [
+    [
+     62.0,
+     0.0
+    ],
+    [
+     70.0,
+     0.0
+    ],
+    "floor",
+    false,
+    true
+   ],
+   [
+    [
+     -70.0,
+     0.0
+    ],
+    [
+     -70.0,
+     -6.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -70.0,
+     -6.0
+    ],
+    [
+     -56.0,
+     -22.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -56.0,
+     -22.0
+    ],
+    [
+     -40.0,
+     -34.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -40.0,
+     -34.0
+    ],
+    [
+     -18.0,
+     -40.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     70.0,
+     0.0
+    ],
+    [
+     70.0,
+     -6.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     70.0,
+     -6.0
+    ],
+    [
+     56.0,
+     -22.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     56.0,
+     -22.0
+    ],
+    [
+     40.0,
+     -34.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     40.0,
+     -34.0
+    ],
+    [
+     18.0,
+     -40.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     18.0,
+     -40.0
+    ],
+    [
+     -18.0,
+     -40.0
+    ],
+    "ceiling",
+    false,
+    false
+   ],
+   [
+    [
+     -27.0,
+     28.0
+    ],
+    [
+     27.0,
+     28.0
+    ],
+    "floor",
+    true,
+    false
+   ]
+  ],
+  "boughs": [
+   [
+    [
+     -70.0,
+     0.0
+    ],
+    [
+     -62.0,
+     0.0
+    ],
+    "floor",
+    false,
+    true
+   ],
+   [
+    [
+     -62.0,
+     0.0
+    ],
+    [
+     62.0,
+     0.0
+    ],
+    "floor",
+    false,
+    false
+   ],
+   [
+    [
+     62.0,
+     0.0
+    ],
+    [
+     70.0,
+     0.0
+    ],
+    "floor",
+    false,
+    true
+   ],
+   [
+    [
+     -70.0,
+     0.0
+    ],
+    [
+     -70.0,
+     -6.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -70.0,
+     -6.0
+    ],
+    [
+     -56.0,
+     -22.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -56.0,
+     -22.0
+    ],
+    [
+     -40.0,
+     -34.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -40.0,
+     -34.0
+    ],
+    [
+     -18.0,
+     -40.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     70.0,
+     0.0
+    ],
+    [
+     70.0,
+     -6.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     70.0,
+     -6.0
+    ],
+    [
+     56.0,
+     -22.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     56.0,
+     -22.0
+    ],
+    [
+     40.0,
+     -34.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     40.0,
+     -34.0
+    ],
+    [
+     18.0,
+     -40.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     18.0,
+     -40.0
+    ],
+    [
+     -18.0,
+     -40.0
+    ],
+    "ceiling",
+    false,
+    false
+   ],
+   [
+    [
+     -40.0,
+     28.0
+    ],
+    [
+     -10.0,
+     28.0
+    ],
+    "floor",
+    true,
+    false
+   ],
+   [
+    [
+     10.0,
+     28.0
+    ],
+    [
+     40.0,
+     28.0
+    ],
+    "floor",
+    true,
+    false
+   ]
+  ],
+  "hollow": [
+   [
+    [
+     -70.0,
+     0.0
+    ],
+    [
+     -62.0,
+     0.0
+    ],
+    "floor",
+    false,
+    true
+   ],
+   [
+    [
+     -62.0,
+     0.0
+    ],
+    [
+     62.0,
+     0.0
+    ],
+    "floor",
+    false,
+    false
+   ],
+   [
+    [
+     62.0,
+     0.0
+    ],
+    [
+     70.0,
+     0.0
+    ],
+    "floor",
+    false,
+    true
+   ],
+   [
+    [
+     -70.0,
+     0.0
+    ],
+    [
+     -70.0,
+     -6.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -70.0,
+     -6.0
+    ],
+    [
+     -56.0,
+     -22.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -56.0,
+     -22.0
+    ],
+    [
+     -40.0,
+     -34.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     -40.0,
+     -34.0
+    ],
+    [
+     -18.0,
+     -40.0
+    ],
+    "left_wall",
+    false,
+    false
+   ],
+   [
+    [
+     70.0,
+     0.0
+    ],
+    [
+     70.0,
+     -6.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     70.0,
+     -6.0
+    ],
+    [
+     56.0,
+     -22.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     56.0,
+     -22.0
+    ],
+    [
+     40.0,
+     -34.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     40.0,
+     -34.0
+    ],
+    [
+     18.0,
+     -40.0
+    ],
+    "right_wall",
+    false,
+    false
+   ],
+   [
+    [
+     18.0,
+     -40.0
+    ],
+    [
+     -18.0,
+     -40.0
+    ],
+    "ceiling",
+    false,
+    false
+   ],
+   [
+    [
+     -60.0,
+     30.0
+    ],
+    [
+     -34.0,
+     30.0
+    ],
+    "floor",
+    true,
+    false
+   ],
+   [
+    [
+     -16.0,
+     18.0
+    ],
+    [
+     16.0,
+     18.0
+    ],
+    "floor",
+    true,
+    false
+   ],
+   [
+    [
+     34.0,
+     30.0
+    ],
+    [
+     60.0,
+     30.0
+    ],
+    "floor",
+    true,
+    false
+   ]
+  ]
+ }
+}

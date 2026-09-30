@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.local
+projects/geno/board/
+projects/geno/out/
+tools/machinima/melee/datkit/bin/
+tools/machinima/melee/datkit/obj/
+.DS_Store

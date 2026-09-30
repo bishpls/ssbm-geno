@@ -1,0 +1,10 @@
+stage,main_width,ledge_to_side_blast,top_above_floor,bottom_below_floor,platforms,lowest,highest,tiers,coverage,widest_open_floor,outer_platform_inside_ledge,undercut_10,moving,highest_above_ledge_zone
+Final Destination,171.13,160.43,188,140,0,,,0,0.0,171.13,,0.0,0,0
+Battlefield,136.8,155.6,200,108.8,3,27.2,54.4,2,0.825,10.8,10.8,13.213,0,27.2
+Yoshi's Story,112,117.6,168,91,3,23.45,42,2,0.844,12.25,-3.5,3.325,0,23.45
+Dream Land,154.54,177.73,249.99,123.01,3,30.13,51.42,2,0.641,15.88,14.2,0.844,0,30.23
+Fountain of Dreams,126.69,135.4,202.5,146.25,3,10.4,42.75,3,0.675,13.85,13.85,1.92,2,23.58
+Pokémon Stadium,175.5,142.25,180,111,2,25,25,1,0.342,50,32.75,7.636,0,0
+A. Clearing: one wide mushroom cap,140.0,155.0,200.0,120.0,1,28.0,28.0,1,0.386,43.0,43.0,3.5,0,0
+B. Twin Boughs: two inboard branches,140.0,155.0,200.0,120.0,2,28.0,28.0,1,0.429,30.0,30.0,3.5,0,0
+C. Hollow: the inverted triangle,140.0,155.0,200.0,120.0,3,18.0,30.0,2,0.6,18.0,10.0,3.5,0,30.0

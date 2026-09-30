@@ -1,0 +1,1664 @@
+{
+ "final_destination": {
+  "name": "final_destination",
+  "title": "Final Destination",
+  "file": "GrNLa.dat",
+  "director_stage": "final_destination",
+  "scale": 1,
+  "main": {
+   "ledge_left": [
+    -85.5657,
+    0
+   ],
+   "ledge_right": [
+    85.5657,
+    0
+   ],
+   "width": 171.1314,
+   "floor_y": 0,
+   "depth": 55.388,
+   "materials": [
+    "Basic"
+   ],
+   "undercut": {
+    "2": [
+     0.0,
+     0.0
+    ],
+    "5": [
+     0.0,
+     0.0
+    ],
+    "10": [
+     0.0,
+     0.0
+    ],
+    "20": [
+     18.865,
+     18.865
+    ],
+    "30": [
+     19.733,
+     19.733
+    ],
+    "40": [
+     22.115,
+     22.115
+    ]
+   },
+   "slanted_edges": false
+  },
+  "platforms": [],
+  "blast": {
+   "left": -246,
+   "top": 188,
+   "right": 246,
+   "bottom": -140
+  },
+  "camera": {
+   "left": -170.0,
+   "right": 170.0,
+   "top": 114.0,
+   "bottom": -80.0,
+   "centre": [
+    0.0,
+    12.0
+   ]
+  },
+  "spawns": [
+   [
+    -60,
+    10
+   ],
+   [
+    60,
+    10
+   ],
+   [
+    -20,
+    10
+   ],
+   [
+    20,
+    10
+   ]
+  ],
+  "respawns": [
+   [
+    16,
+    45
+   ],
+   [
+    -50,
+    45
+   ],
+   [
+    50,
+    45
+   ],
+   [
+    -15,
+    45
+   ]
+  ],
+  "item_spawns": 8,
+  "ceiling_above_floor": 188,
+  "bottom_below_floor": 140,
+  "side_blast_from_ledge": [
+   160.434,
+   160.434
+  ],
+  "music": {
+   "vs": [
+    {
+     "stkind": 32,
+     "bgm": 78,
+     "bgm_alt": 39,
+     "bgm_sd": 78,
+     "bgm_sd_alt": 39,
+     "behaviour": 6,
+     "alt_chance": 12
+    }
+   ]
+  },
+  "gobjs": 10,
+  "dobjs": 92,
+  "textures": 68,
+  "animated_gobjs": 3,
+  "lines": 16,
+  "vertices": 16,
+  "groups": 1,
+  "bytes": 611125,
+  "verified": {
+   "blast": [
+    -246.0,
+    246.0,
+    188.0,
+    -140.0
+   ],
+   "camera": [
+    -170.0,
+    170.0,
+    114.0,
+    -80.0
+   ],
+   "tests": [
+    {
+     "label": "main",
+     "ok": true,
+     "measured": 0.0,
+     "expected": 0,
+     "line": 1
+    },
+    {
+     "label": "ledge_left",
+     "ok": true,
+     "measured": [
+      -85.566,
+      0.0
+     ],
+     "expected": [
+      -85.5657,
+      0
+     ],
+     "line": 1
+    },
+    {
+     "label": "ledge_right",
+     "ok": true,
+     "measured": [
+      85.566,
+      0.0
+     ],
+     "expected": [
+      85.5657,
+      0
+     ],
+     "line": 1
+    }
+   ]
+  },
+  "blast_checked": true,
+  "live_at_start": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15
+  ]
+ },
+ "battlefield": {
+  "name": "battlefield",
+  "title": "Battlefield",
+  "file": "GrNBa.dat",
+  "director_stage": "battlefield",
+  "scale": 0.8,
+  "main": {
+   "ledge_left": [
+    -68.4,
+    0
+   ],
+   "ledge_right": [
+    68.4,
+    0
+   ],
+   "width": 136.8,
+   "floor_y": 0,
+   "depth": 40,
+   "materials": [
+    "Basic"
+   ],
+   "undercut": {
+    "2": [
+     1.14,
+     1.14
+    ],
+    "5": [
+     2.85,
+     2.85
+    ],
+    "10": [
+     13.213,
+     13.213
+    ],
+    "20": [
+     31.3,
+     31.3
+    ],
+    "30": [
+     38.24,
+     38.24
+    ],
+    "40": [
+     58.0,
+     58.0
+    ]
+   },
+   "slanted_edges": false
+  },
+  "platforms": [
+   {
+    "x0": -57.6,
+    "x1": -20,
+    "width": 37.6,
+    "y": 27.2,
+    "y_top": 27.2,
+    "lines": [
+     2
+    ],
+    "group": 0,
+    "moves": false,
+    "material": "Basic",
+    "height": 27.2,
+    "label": "left",
+    "live": {
+     "y_min": 27.2,
+     "y_max": 27.2,
+     "x_min": -57.6,
+     "x_max": -20.0,
+     "samples": 127
+    }
+   },
+   {
+    "x0": -18.8,
+    "x1": 18.8,
+    "width": 37.6,
+    "y": 54.4,
+    "y_top": 54.4,
+    "lines": [
+     3
+    ],
+    "group": 0,
+    "moves": false,
+    "material": "Basic",
+    "height": 54.4,
+    "label": "top",
+    "live": {
+     "y_min": 54.4,
+     "y_max": 54.4,
+     "x_min": -18.8,
+     "x_max": 18.8,
+     "samples": 127
+    }
+   },
+   {
+    "x0": 20,
+    "x1": 57.6,
+    "width": 37.6,
+    "y": 27.2,
+    "y_top": 27.2,
+    "lines": [
+     4
+    ],
+    "group": 0,
+    "moves": false,
+    "material": "Basic",
+    "height": 27.2,
+    "label": "right",
+    "live": {
+     "y_min": 27.2,
+     "y_max": 27.2,
+     "x_min": 20.0,
+     "x_max": 57.6,
+     "samples": 127
+    }
+   }
+  ],
+  "blast": {
+   "left": -224,
+   "top": 200,
+   "right": 224,
+   "bottom": -108.8
+  },
+  "camera": {
+   "left": -160.0,
+   "right": 160.0,
+   "top": 136.0,
+   "bottom": -47.2,
+   "centre": [
+    0.0,
+    35.2
+   ]
+  },
+  "spawns": [
+   [
+    0,
+    8
+   ],
+   [
+    0,
+    62.4
+   ],
+   [
+    -38.8,
+    35.2
+   ],
+   [
+    38.8,
+    35.2
+   ]
+  ],
+  "respawns": [
+   [
+    12.8,
+    80
+   ],
+   [
+    -40,
+    80
+   ],
+   [
+    40,
+    80
+   ],
+   [
+    -12,
+    80
+   ]
+  ],
+  "item_spawns": 8,
+  "ceiling_above_floor": 200,
+  "bottom_below_floor": 108.8,
+  "side_blast_from_ledge": [
+   155.6,
+   155.6
+  ],
+  "music": {
+   "vs": [
+    {
+     "stkind": 31,
+     "bgm": 81,
+     "bgm_alt": 38,
+     "bgm_sd": 81,
+     "bgm_sd_alt": 38,
+     "behaviour": 6,
+     "alt_chance": 12
+    }
+   ]
+  },
+  "gobjs": 7,
+  "dobjs": 61,
+  "textures": 49,
+  "animated_gobjs": 5,
+  "lines": 23,
+  "vertices": 26,
+  "groups": 1,
+  "bytes": 452171,
+  "verified": {
+   "blast": [
+    -224.0,
+    224.0,
+    200.0,
+    -108.8
+   ],
+   "camera": [
+    -160.0,
+    160.0,
+    136.0,
+    -47.2
+   ],
+   "tests": [
+    {
+     "label": "left",
+     "ok": true,
+     "measured": 27.2,
+     "expected": 27.2,
+     "line": 2
+    },
+    {
+     "label": "top",
+     "ok": true,
+     "measured": 54.4,
+     "expected": 54.4,
+     "line": 3
+    },
+    {
+     "label": "right",
+     "ok": true,
+     "measured": 27.2,
+     "expected": 27.2,
+     "line": 4
+    },
+    {
+     "label": "main",
+     "ok": true,
+     "measured": 0.0,
+     "expected": 0,
+     "line": 0
+    },
+    {
+     "label": "ledge_left",
+     "ok": true,
+     "measured": [
+      -68.4,
+      0.0
+     ],
+     "expected": [
+      -68.4,
+      0
+     ],
+     "line": 3
+    },
+    {
+     "label": "ledge_right",
+     "ok": true,
+     "measured": [
+      68.4,
+      0.0
+     ],
+     "expected": [
+      68.4,
+      0
+     ],
+     "line": 0
+    }
+   ]
+  },
+  "blast_checked": true,
+  "live_at_start": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22
+  ]
+ },
+ "yoshis_story": {
+  "name": "yoshis_story",
+  "title": "Yoshi's Story",
+  "file": "GrSt.dat",
+  "director_stage": "yoshis_story",
+  "scale": 0.7,
+  "main": {
+   "ledge_left": [
+    -56,
+    -3.5
+   ],
+   "ledge_right": [
+    56,
+    -3.5
+   ],
+   "width": 112,
+   "floor_y": 0,
+   "depth": 136.5,
+   "materials": [
+    "Cardboard"
+   ],
+   "undercut": {
+    "2": [
+     0.0,
+     0.0
+    ],
+    "5": [
+     1.4,
+     1.4
+    ],
+    "10": [
+     3.325,
+     3.325
+    ],
+    "20": [
+     3.325,
+     3.325
+    ],
+    "30": [
+     3.325,
+     3.325
+    ],
+    "40": [
+     3.325,
+     3.325
+    ]
+   },
+   "slanted_edges": true
+  },
+  "platforms": [
+   {
+    "x0": -101.85,
+    "x1": -89.95,
+    "width": 11.9,
+    "y": -33.25,
+    "y_top": -33.25,
+    "lines": [
+     0
+    ],
+    "group": 0,
+    "moves": true,
+    "material": "Basic",
+    "height": -33.25,
+    "label": "randall",
+    "live": {
+     "y_min": -33.25,
+     "y_max": -13.65,
+     "x_min": -103.6,
+     "x_max": 103.25,
+     "samples": 127
+    },
+    "height_range": [
+     -33.25,
+     -13.65
+    ],
+    "x_range": [
+     -103.6,
+     103.25
+    ]
+   },
+   {
+    "x0": -59.5,
+    "x1": -28,
+    "width": 31.5,
+    "y": 23.45,
+    "y_top": 23.45,
+    "lines": [
+     1
+    ],
+    "group": 1,
+    "moves": false,
+    "material": "Cardboard",
+    "height": 23.45,
+    "label": "left",
+    "live": {
+     "y_min": 23.45,
+     "y_max": 23.45,
+     "x_min": -59.5,
+     "x_max": -28.0,
+     "samples": 127
+    }
+   },
+   {
+    "x0": -15.75,
+    "x1": 15.75,
+    "width": 31.5,
+    "y": 42,
+    "y_top": 42,
+    "lines": [
+     4
+    ],
+    "group": 1,
+    "moves": false,
+    "material": "Cardboard",
+    "height": 42,
+    "label": "top",
+    "live": {
+     "y_min": 42.0,
+     "y_max": 42.0,
+     "x_min": -15.75,
+     "x_max": 15.75,
+     "samples": 127
+    }
+   },
+   {
+    "x0": 28,
+    "x1": 59.5,
+    "width": 31.5,
+    "y": 23.45,
+    "y_top": 23.45,
+    "lines": [
+     5
+    ],
+    "group": 1,
+    "moves": false,
+    "material": "Cardboard",
+    "height": 23.45,
+    "label": "right",
+    "live": {
+     "y_min": 23.45,
+     "y_max": 23.45,
+     "x_min": 28.0,
+     "x_max": 59.5,
+     "samples": 127
+    }
+   }
+  ],
+  "blast": {
+   "left": -175.7,
+   "top": 168,
+   "right": 173.6,
+   "bottom": -91
+  },
+  "camera": {
+   "left": -126.0,
+   "right": 125.3,
+   "top": 118.3,
+   "bottom": -49.7,
+   "centre": [
+    0.0,
+    30.8
+   ]
+  },
+  "spawns": [
+   [
+    -42,
+    26.6
+   ],
+   [
+    42,
+    28
+   ],
+   [
+    0,
+    46.9
+   ],
+   [
+    0,
+    4.9
+   ]
+  ],
+  "respawns": [
+   [
+    0,
+    52.5
+   ],
+   [
+    0,
+    52.5
+   ],
+   [
+    0,
+    52.5
+   ],
+   [
+    0,
+    52.5
+   ]
+  ],
+  "item_spawns": 9,
+  "ceiling_above_floor": 168,
+  "bottom_below_floor": 91,
+  "side_blast_from_ledge": [
+   119.7,
+   117.6
+  ],
+  "music": {
+   "vs": [
+    {
+     "stkind": 8,
+     "bgm": 96,
+     "bgm_alt": -1,
+     "bgm_sd": 96,
+     "bgm_sd_alt": -1,
+     "behaviour": 0,
+     "alt_chance": 1
+    }
+   ]
+  },
+  "gobjs": 4,
+  "dobjs": 195,
+  "textures": 171,
+  "animated_gobjs": 2,
+  "lines": 29,
+  "vertices": 34,
+  "groups": 2,
+  "bytes": 824648,
+  "verified": {
+   "blast": [
+    -175.7,
+    173.6,
+    168.0,
+    -91.0
+   ],
+   "camera": [
+    -126.0,
+    125.3,
+    118.3,
+    -49.7
+   ],
+   "tests": [
+    {
+     "label": "left",
+     "ok": true,
+     "measured": 23.45,
+     "expected": 23.45,
+     "line": 1
+    },
+    {
+     "label": "top",
+     "ok": true,
+     "measured": 42.0,
+     "expected": 42,
+     "line": 4
+    },
+    {
+     "label": "right",
+     "ok": true,
+     "measured": 23.45,
+     "expected": 23.45,
+     "line": 5
+    },
+    {
+     "label": "main",
+     "ok": true,
+     "measured": 0.0,
+     "expected": 0,
+     "line": 3
+    },
+    {
+     "label": "ledge_left",
+     "ok": true,
+     "measured": [
+      -56.0,
+      -3.5
+     ],
+     "expected": [
+      -56,
+      -3.5
+     ],
+     "line": 5
+    },
+    {
+     "label": "ledge_right",
+     "ok": true,
+     "measured": [
+      56.0,
+      -3.5
+     ],
+     "expected": [
+      56,
+      -3.5
+     ],
+     "line": 3
+    }
+   ]
+  },
+  "blast_checked": true,
+  "live_at_start": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   28
+  ]
+ },
+ "dream_land": {
+  "name": "dream_land",
+  "title": "Dream Land",
+  "file": "GrOp.dat",
+  "director_stage": "dream_land",
+  "scale": 1,
+  "main": {
+   "ledge_left": [
+    -77.2713,
+    0.0088
+   ],
+   "ledge_right": [
+    77.2713,
+    0.0088
+   ],
+   "width": 154.5426,
+   "floor_y": 0.0088,
+   "depth": 35.765,
+   "materials": [
+    "Basic"
+   ],
+   "undercut": {
+    "2": [
+     0.169,
+     0.169
+    ],
+    "5": [
+     0.422,
+     0.422
+    ],
+    "10": [
+     0.844,
+     0.844
+    ],
+    "20": [
+     4.762,
+     4.762
+    ],
+    "30": [
+     9.042,
+     9.042
+    ],
+    "40": [
+     null,
+     null
+    ]
+   },
+   "slanted_edges": false
+  },
+  "platforms": [
+   {
+    "x0": -61.3929,
+    "x1": -31.7254,
+    "width": 29.6675,
+    "y": 30.1421,
+    "y_top": 30.1421,
+    "lines": [
+     0
+    ],
+    "group": 0,
+    "moves": false,
+    "material": "Basic",
+    "height": 30.1333,
+    "label": "left",
+    "live": {
+     "y_min": 30.133,
+     "y_max": 30.133,
+     "x_min": -61.393,
+     "x_max": -31.725,
+     "samples": 127
+    }
+   },
+   {
+    "x0": -19.0181,
+    "x1": 19.0171,
+    "width": 38.0352,
+    "y": 51.4253,
+    "y_top": 51.4253,
+    "lines": [
+     2
+    ],
+    "group": 2,
+    "moves": false,
+    "material": "Basic",
+    "height": 51.4165,
+    "label": "top",
+    "live": {
+     "y_min": 51.416,
+     "y_max": 51.416,
+     "x_min": -19.018,
+     "x_max": 19.017,
+     "samples": 127
+    }
+   },
+   {
+    "x0": 31.7036,
+    "x1": 63.0745,
+    "width": 31.3709,
+    "y": 30.2425,
+    "y_top": 30.2425,
+    "lines": [
+     1
+    ],
+    "group": 1,
+    "moves": false,
+    "material": "Basic",
+    "height": 30.2337,
+    "label": "right",
+    "live": {
+     "y_min": 30.234,
+     "y_max": 30.234,
+     "x_min": 31.704,
+     "x_max": 63.075,
+     "samples": 127
+    }
+   }
+  ],
+  "blast": {
+   "left": -255,
+   "top": 250,
+   "right": 255,
+   "bottom": -123
+  },
+  "camera": {
+   "left": -165.0,
+   "right": 165.0,
+   "top": 190.0,
+   "bottom": -81.0,
+   "centre": [
+    0.0,
+    9.0
+   ]
+  },
+  "spawns": [
+   [
+    0,
+    7.0953
+   ],
+   [
+    -46.6,
+    37.2215
+   ],
+   [
+    0,
+    58.5215
+   ],
+   [
+    47.3891,
+    37.3215
+   ]
+  ],
+  "respawns": [
+   [
+    0,
+    84.2215
+   ]
+  ],
+  "item_spawns": 19,
+  "ceiling_above_floor": 249.991,
+  "bottom_below_floor": 123.009,
+  "side_blast_from_ledge": [
+   177.729,
+   177.729
+  ],
+  "music": {
+   "vs": [
+    {
+     "stkind": 28,
+     "bgm": 58,
+     "bgm_alt": -1,
+     "bgm_sd": 58,
+     "bgm_sd_alt": -1,
+     "behaviour": 0,
+     "alt_chance": 1
+    }
+   ]
+  },
+  "gobjs": 8,
+  "dobjs": 79,
+  "textures": 84,
+  "animated_gobjs": 4,
+  "lines": 11,
+  "vertices": 14,
+  "groups": 4,
+  "bytes": 656823,
+  "verified": {
+   "blast": [
+    -255.0,
+    255.0,
+    250.0,
+    -123.0
+   ],
+   "camera": [
+    -165.0,
+    165.0,
+    190.0,
+    -81.0
+   ],
+   "tests": [
+    {
+     "label": "left",
+     "ok": true,
+     "measured": 30.14,
+     "expected": 30.1421,
+     "line": 0
+    },
+    {
+     "label": "top",
+     "ok": true,
+     "measured": 51.43,
+     "expected": 51.4253,
+     "line": 2
+    },
+    {
+     "label": "right",
+     "ok": true,
+     "measured": 30.24,
+     "expected": 30.2425,
+     "line": 1
+    },
+    {
+     "label": "main",
+     "ok": true,
+     "measured": 0.01,
+     "expected": 0.0088,
+     "line": 4
+    },
+    {
+     "label": "ledge_left",
+     "ok": true,
+     "measured": [
+      -77.271,
+      0.009
+     ],
+     "expected": [
+      -77.2713,
+      0.0088
+     ],
+     "line": 4
+    },
+    {
+     "label": "ledge_right",
+     "ok": true,
+     "measured": [
+      77.271,
+      0.009
+     ],
+     "expected": [
+      77.2713,
+      0.0088
+     ],
+     "line": 4
+    }
+   ]
+  },
+  "blast_checked": true,
+  "live_at_start": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10
+  ]
+ },
+ "fountain": {
+  "name": "fountain",
+  "title": "Fountain of Dreams",
+  "file": "GrIz.dat",
+  "director_stage": "fountain",
+  "scale": 0.75,
+  "main": {
+   "ledge_left": [
+    -63.3475,
+    0.6238
+   ],
+   "ledge_right": [
+    63.3475,
+    0.6238
+   ],
+   "width": 126.695,
+   "floor_y": 0.0028,
+   "depth": 247.435,
+   "materials": [
+    "Grass",
+    "Water"
+   ],
+   "undercut": {
+    "2": [
+     0.035,
+     0.035
+    ],
+    "5": [
+     0.088,
+     0.088
+    ],
+    "10": [
+     1.92,
+     1.92
+    ],
+    "20": [
+     6.381,
+     6.381
+    ],
+    "30": [
+     10.037,
+     10.037
+    ],
+    "40": [
+     18.491,
+     18.491
+    ]
+   },
+   "slanted_edges": false
+  },
+  "platforms": [
+   {
+    "x0": -49.5,
+    "x1": -21,
+    "width": 28.5,
+    "y": 0,
+    "y_top": 0,
+    "lines": [
+     0
+    ],
+    "group": 0,
+    "moves": true,
+    "material": "Basic",
+    "height": -0.0028,
+    "label": "left",
+    "live": {
+     "y_min": -1.315,
+     "y_max": 23.584,
+     "x_min": -49.5,
+     "x_max": -21.0,
+     "samples": 367
+    },
+    "height_range": [
+     -1.315,
+     23.584
+    ],
+    "x_range": [
+     -49.5,
+     -21.0
+    ]
+   },
+   {
+    "x0": -14.25,
+    "x1": 14.25,
+    "width": 28.5,
+    "y": 42.75,
+    "y_top": 42.75,
+    "lines": [
+     2
+    ],
+    "group": 2,
+    "moves": false,
+    "material": "Basic",
+    "height": 42.7472,
+    "label": "top",
+    "live": {
+     "y_min": 42.747,
+     "y_max": 42.747,
+     "x_min": -14.25,
+     "x_max": 14.25,
+     "samples": 367
+    }
+   },
+   {
+    "x0": 21,
+    "x1": 49.5,
+    "width": 28.5,
+    "y": 0,
+    "y_top": 0,
+    "lines": [
+     1
+    ],
+    "group": 1,
+    "moves": true,
+    "material": "Basic",
+    "height": -0.0028,
+    "label": "right",
+    "live": {
+     "y_min": -1.315,
+     "y_max": 22.122,
+     "x_min": 21.0,
+     "x_max": 49.5,
+     "samples": 367
+    },
+    "height_range": [
+     -1.315,
+     22.122
+    ],
+    "x_range": [
+     21.0,
+     49.5
+    ]
+   }
+  ],
+  "blast": {
+   "left": -198.75,
+   "top": 202.5,
+   "right": 198.75,
+   "bottom": -146.25
+  },
+  "camera": {
+   "left": -123.75,
+   "right": 123.75,
+   "top": 112.5,
+   "bottom": -84.75,
+   "centre": [
+    0.0,
+    30.0
+   ]
+  },
+  "spawns": [
+   [
+    -41.25,
+    21
+   ],
+   [
+    41.25,
+    27
+   ],
+   [
+    0,
+    5.25
+   ],
+   [
+    0,
+    48
+   ]
+  ],
+  "respawns": [
+   [
+    0,
+    63.75
+   ]
+  ],
+  "item_spawns": 8,
+  "ceiling_above_floor": 202.497,
+  "bottom_below_floor": 146.253,
+  "side_blast_from_ledge": [
+   135.403,
+   135.403
+  ],
+  "music": {
+   "vs": [
+    {
+     "stkind": 2,
+     "bgm": 49,
+     "bgm_alt": -1,
+     "bgm_sd": 49,
+     "bgm_sd_alt": -1,
+     "behaviour": 0,
+     "alt_chance": 1
+    }
+   ]
+  },
+  "gobjs": 5,
+  "dobjs": 197,
+  "textures": 193,
+  "animated_gobjs": 2,
+  "lines": 34,
+  "vertices": 38,
+  "groups": 4,
+  "bytes": 1118546,
+  "verified": {
+   "blast": [
+    -198.75,
+    198.75,
+    202.5,
+    -146.25
+   ],
+   "camera": [
+    -123.75,
+    123.75,
+    112.5,
+    -84.75
+   ],
+   "tests": [
+    {
+     "label": "left",
+     "ok": true,
+     "measured": 16.13,
+     "expected": 0,
+     "line": 0
+    },
+    {
+     "label": "top",
+     "ok": true,
+     "measured": 42.75,
+     "expected": 42.75,
+     "line": 2
+    },
+    {
+     "label": "right",
+     "ok": true,
+     "measured": 22.13,
+     "expected": 0,
+     "line": 1
+    },
+    {
+     "label": "main",
+     "ok": true,
+     "measured": 0.62,
+     "expected": 0.6238,
+     "line": 3
+    },
+    {
+     "label": "ledge_left",
+     "ok": true,
+     "measured": [
+      -63.348,
+      0.624
+     ],
+     "expected": [
+      -63.3475,
+      0.6238
+     ],
+     "line": 1
+    },
+    {
+     "label": "ledge_right",
+     "ok": true,
+     "measured": [
+      63.348,
+      0.624
+     ],
+     "expected": [
+      63.3475,
+      0.6238
+     ],
+     "line": 3
+    }
+   ]
+  },
+  "blast_checked": true,
+  "live_at_start": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33
+  ]
+ },
+ "stadium": {
+  "name": "stadium",
+  "title": "Pok\u00e9mon Stadium",
+  "file": "GrPs.dat",
+  "director_stage": "stadium",
+  "scale": 1,
+  "main": {
+   "ledge_left": [
+    -87.75,
+    0
+   ],
+   "ledge_right": [
+    87.75,
+    0
+   ],
+   "width": 175.5,
+   "floor_y": 0,
+   "depth": 135,
+   "materials": [
+    "Basic"
+   ],
+   "undercut": {
+    "2": [
+     0.0,
+     0.0
+    ],
+    "5": [
+     1.273,
+     1.273
+    ],
+    "10": [
+     7.636,
+     7.636
+    ],
+    "20": [
+     27.75,
+     27.75
+    ],
+    "30": [
+     27.75,
+     27.75
+    ],
+    "40": [
+     31.841,
+     31.841
+    ]
+   },
+   "slanted_edges": false
+  },
+  "platforms": [
+   {
+    "x0": -55,
+    "x1": -25,
+    "width": 30,
+    "y": 25,
+    "y_top": 25,
+    "lines": [
+     35
+    ],
+    "group": 4,
+    "moves": false,
+    "material": "Basic",
+    "height": 25,
+    "label": "left",
+    "live": {
+     "y_min": 25.0,
+     "y_max": 25.0,
+     "x_min": -55.0,
+     "x_max": -25.0,
+     "samples": 126
+    }
+   },
+   {
+    "x0": 25,
+    "x1": 55,
+    "width": 30,
+    "y": 25,
+    "y_top": 25,
+    "lines": [
+     36
+    ],
+    "group": 4,
+    "moves": false,
+    "material": "Basic",
+    "height": 25,
+    "label": "right",
+    "live": {
+     "y_min": 25.0,
+     "y_max": 25.0,
+     "x_min": 25.0,
+     "x_max": 55.0,
+     "samples": 126
+    }
+   }
+  ],
+  "blast": {
+   "left": -230,
+   "top": 180,
+   "right": 230,
+   "bottom": -111
+  },
+  "camera": {
+   "left": -170.0,
+   "right": 170.0,
+   "top": 120.0,
+   "bottom": -60.0,
+   "centre": [
+    0.0,
+    0.0
+   ]
+  },
+  "spawns": [
+   [
+    -40,
+    32
+   ],
+   [
+    40,
+    32
+   ],
+   [
+    70,
+    7
+   ],
+   [
+    -70,
+    7
+   ]
+  ],
+  "respawns": [
+   [
+    0,
+    60
+   ]
+  ],
+  "item_spawns": 10,
+  "ceiling_above_floor": 180,
+  "bottom_below_floor": 111,
+  "side_blast_from_ledge": [
+   142.25,
+   142.25
+  ],
+  "music": {
+   "vs": [
+    {
+     "stkind": 3,
+     "bgm": 64,
+     "bgm_alt": 63,
+     "bgm_sd": 64,
+     "bgm_sd_alt": 63,
+     "behaviour": 6,
+     "alt_chance": 12
+    }
+   ]
+  },
+  "gobjs": 3,
+  "dobjs": 122,
+  "textures": 115,
+  "animated_gobjs": 0,
+  "lines": 136,
+  "vertices": 155,
+  "groups": 8,
+  "bytes": 1468544,
+  "verified": {
+   "blast": [
+    -230.0,
+    230.0,
+    180.0,
+    -111.0
+   ],
+   "camera": [
+    -170.0,
+    170.0,
+    120.0,
+    -60.0
+   ],
+   "tests": [
+    {
+     "label": "left",
+     "ok": true,
+     "measured": 25.0,
+     "expected": 25,
+     "line": 35
+    },
+    {
+     "label": "right",
+     "ok": true,
+     "measured": 25.0,
+     "expected": 25,
+     "line": 36
+    },
+    {
+     "label": "main",
+     "ok": true,
+     "measured": 0.0,
+     "expected": 0,
+     "line": 34
+    },
+    {
+     "label": "ledge_left",
+     "ok": true,
+     "measured": [
+      -87.75,
+      0.0
+     ],
+     "expected": [
+      -87.75,
+      0
+     ],
+     "line": 36
+    },
+    {
+     "label": "ledge_right",
+     "ok": true,
+     "measured": [
+      87.75,
+      0.0
+     ],
+     "expected": [
+      87.75,
+      0
+     ],
+     "line": 34
+    }
+   ]
+  },
+  "camera_file": {
+   "left": -181,
+   "top": 142,
+   "right": 180.25,
+   "bottom": -66,
+   "centre": null
+  },
+  "blast_checked": true,
+  "live_at_start": [
+   34,
+   35,
+   36,
+   51,
+   52,
+   53,
+   54,
+   71,
+   72,
+   73,
+   74,
+   75,
+   86,
+   87,
+   88,
+   89,
+   90,
+   106,
+   107,
+   108,
+   109,
+   110
+  ]
+ }
+}
