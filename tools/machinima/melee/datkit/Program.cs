@@ -26,7 +26,11 @@ static class Program
         if (a[0] == "art-dump") return EffectKit.ArticleDump(a);     // art-dump PlXx.dat INDEX : an article's model and state animations          // ef-build SPEC.json OUT.dat : a new effect file (EffectKit.cs)            // ef-dump EfXxData.dat [--gen N,...] [--tex OUTDIR] [--models] (EffectKit.cs)
         if (a[0] == "movedata") return MoveData.Run(a);
         if (a[0] == "stage-dump") return StageKit.Dump(a);       // stage-dump GrXx.dat [OUT.json] [--joints] [--bind C:G:J,...] : a stage in world space (StageKit.cs)
-        if (a[0] == "stage-patch") return StageKit.Patch(a);     // stage-patch IN OUT [--joint G:J:DX:DY] [--line L:DX:DY] : move a joint and a line (world units)
+        if (a[0] == "stage-patch") return StageKit.Patch(a);
+        if (a[0] == "stage-build") return StageBuild.Run(a);
+        if (a[0] == "sis-dump") return MenusStage.SisDump(a);
+        if (a[0] == "menus-stage") return MenusStage.Build(a);   // menus-stage ART SPEC MnSlMap.usd OUT SdMenu.usd OUT : the Forest Maze in the stage select (MenusStage.cs)
+        if (a[0] == "dobj-info") return MenusStage.DobjInfo(a);     // stage-build SPEC.json TEMPLATE_GrXx.dat OUT.dat : a stage file from a spec (StageBuild.cs)     // stage-patch IN OUT [--joint G:J:DX:DY] [--line L:DX:DY] : move a joint and a line (world units)
         if (a[0] == "bodydata") return MoveData.Body(a);        // bodydata PL AJ NR CO KIND RIG|- IDX,... : hurtbox extents per frame (MoveData.cs)
         if (a[0] == "fk" || a[0] == "fkdir") return FK.Run(a);      // fk NR ANIM [OUT] / fkdir NR PL AJ OUTDIR [REGEX] : sampled FK per frame (FK.cs)
         if (a[0] == "mscan") return MenusGeno.Scan(a);                 // mscan FILE [FRAMES] : every model's texture animations

@@ -23,7 +23,7 @@ MOVES = {}
 GE_SFX = dict(PULSE=550000, HANDGUN=550001, HANDCANNON=550002, DOUBLEPUNCH=550003, STARGUN=550004, STARGUN_HIT=550005,
               NAIR_SWIRL=550006, CAPE=550007, PROJ_HIT=550008, FINGERSHOT=550009, BEAM_CHARGE=550010, BEAM_STAR1=550011,
               BEAM_STAR2=550012, BEAM_STAR3=550013, BEAM_RELEASE=550014, BEAM_FIRE=550015, BEAM_FULL=550016,
-              WHIRL_THROW=550017, WHIRL_HIT=550018, WHIRL_RECALL=550019, WHIRL_CRIT=550020, BLAST_MARK=550021,
+              WHIRL_THROW=550017, WHIRL_HIT=550018, WHIRL_CRIT=550020, BLAST_MARK=550021,
               BLAST_COLUMNS=550022, FLASH_TRANSFORM=550023, FLASH_FIRE=550024, FLASH_EXPLOSION=550025,
               STARROAD_FOLD=550026, STARROAD_LAUNCH=550027,
               # the gun normals' sounds fitted to their moves (sound/gunfit.py; Michael: the long ones outlasted the moves):
@@ -69,6 +69,11 @@ def burst_fx(s, form, r, y, z, tip=False, part='TopN'):
     import efge_normals as EN
     if NORMALS_FX:
         fx(s, f'N_{form}_{"TIP_" if tip else ""}{EN.cls_name(r)}', part, (0.0, y, z))
+
+
+def cls_name(r):
+    import efge_normals as EN
+    return EN.cls_name(r)
 
 
 def muzzle_fx(s, form, side='R', at=None):
@@ -213,26 +218,29 @@ def utilt(k):
     import poses_ground as PG
     s = Script()
     arc = [(6, 15.5, 7.0), (7, 18.5, 3.5), (8, 19.5, 0.0), (9, 18.5, -3.5), (10, 15.5, -7.0)]
-    # the stars (Michael: extend the visual with stars). Each active frame a star glint (radius ~4.5, one frame) flashes on
-    # the burst it's on, so the arc of glints traces the disjoint exactly and goes with it; a star in a ring blooms at the
-    # top of the arc (8); a light trail of sparkles is shed from the twirling hands, one hand a frame
+    # the stars (Michael: extend the visual with stars; 2026-09-30: his own star particles, not the engine's flash). Each
+    # active frame a gold star pops on the burst it's on over a warm glow, so the arc of stars traces the disjoint and
+    # goes with it; at the top of the arc (8) a bigger star throws a ring of small ones; twinkles are shed from the
+    # twirling hands, one hand a frame (efge_normals N_UTILT_*)
     for f in (4, 5):
         s.at(f)
-        PG.gfx(s, PG.FX_SPARKLE, 'RHandN' if f % 2 else 'LHandN', (0.6, 0, 0))
+        if NORMALS_FX:
+            fx(s, 'N_UTILT_TRAIL', 'RHandN' if f % 2 else 'LHandN', (0.6, 0, 0))
     for (f, y, z), (_, hy, hz) in zip(arc, PG.UTILT_HEAD_PATH):
         s.at(f)
         burst(s, 0, 9, 5.0, y, z, angle=95, kbg=110, bkb=25, sfx=(1, KICK))
         # the head box, the blockout's path on HeadN kept frame by frame (the twirl turns the head a full circle)
         burst(s, 1, 9, 3.0, hy, hz, angle=95, kbg=110, bkb=25, sfx=(1, KICK))
-        PG.gfx(s, PG.FX_STAR_GLINT, 'TopN', (0, y, z))
-        if f <= 9:
-            PG.gfx(s, PG.FX_SPARKLE, 'RHandN' if f % 2 else 'LHandN', (0.6, 0, 0))
+        if NORMALS_FX and f != 8:
+            fx(s, 'N_UTILT_GLINT', 'TopN', (0, y, z))
+        if NORMALS_FX and f <= 9:
+            fx(s, 'N_UTILT_TRAIL', 'RHandN' if f % 2 else 'LHandN', (0.6, 0, 0))
         if f == 6:
             gs(s, 'CAPE')
             s.cap('back', 2)
             grown_intangible(s, 'utilt', ['RHandN', 'LHandN'], True)
-        if f == 8:
-            PG.gfx(s, PG.FX_STAR_RING, 'TopN', (0, y, z))
+        if f == 8 and NORMALS_FX:
+            fx(s, 'N_UTILT_TOP', 'TopN', (0, y, z))
     s.at(11); s.clear()
     grown_intangible(s, 'utilt', ['RHandN', 'LHandN'], False)
     s.at(16); s.cap('rest', 8)
@@ -264,17 +272,44 @@ def dtilt(k):
 
 @move('AttackDash', 40)
 def dash_attack(k):
-    """A doll-stiff shoulder dive that slides along the floor (TransN root motion: the action is flagged for it). The
-    hitbox rides the waist where the dive carries it (poses_ground.dash_attack, DASH_HIT)."""
+    """Cannon Charge (Michael, 2026-09-30: the shoulder dive was "visually unclear ... puny / unfinished"): out of the run
+    the right arm folds into the Hand Cannon (2), he lunges with it thrust out level (4-5) and fires at point-blank on 6:
+    the blast at the muzzle and down the barrel (9%, 6-9), then its lingering fire at the muzzle as he skids back on the
+    recoil (6%, 10-15). The same frame data and knockback as the dive it replaces (startup 6, active 6-15, IASA 38;
+    TransN root motion: the action is flagged for it). poses_ground.dash_attack."""
     import poses_ground as PG
-    off = PG.dash_hit_offset()
+    mz = MUZZLE['cannon'][1]                                   # the cannon's mouth down ArmJ
     s = Script()
+    s.at(2); s.form('R', 'cannon')
+    gs(s, 'HANDCANNON_COCK')                                   # the cock as the arm folds (the ka-chunk)
     s.at(6)
-    s.hitbox(0, 'WaistN', 9, 4.5, off, angle=60, kbg=60, bkb=60, sfx=(1, PUNCH))
-    s.sound(SWING_M)
-    s.wait(4)
-    s.hitbox(0, 'WaistN', 6, 4.0, off, angle=60, kbg=50, bkb=40, sfx=(0, PUNCH))
-    s.wait(6); s.clear()
+    s.hitbox(0, 'RArmJ', 9, 4.5, (mz, 0, 0), angle=60, kbg=60, bkb=60, sfx=(1, PUNCH))           # the blast
+    s.hitbox(1, 'RArmJ', 9, 3.4, (0.8, 0, 0), angle=60, kbg=60, bkb=60, sfx=(1, PUNCH))          # the barrel
+    if NORMALS_FX:                                # a heavier blast and shock ring at the mouth, a fire burst on the blast sphere
+        fx(s, 'N_CANNON_HEAVY', 'RArmJ', (mz, 0.0, 0.0))
+        fx(s, f'N_CANNON_{cls_name(4.5)}', 'RArmJ', (mz, 0.0, 0.0))
+    gs(s, 'HANDCANNON_BOOM')
+
+    def after(f):                                 # the skid (8-18): dust at his feet; smoke curling from the barrel to ~20
+        if not NORMALS_FX:
+            return
+        if f in (8, 11, 14, 17):
+            PG.gfx(s, 1025, 'TransN')             # the engine's skid dust (the run brake's)
+        if f in (9, 12, 15, 18):
+            fx(s, 'N_BARREL_SMOKE', 'RArmJ', (mz + 0.3, 0.0, 0.0))
+    for f in (8, 9):
+        s.at(f); after(f)
+    s.at(10)
+    s.remove(1)
+    s.hitbox(0, 'RArmJ', 6, 4.0, (mz, 0, 0), angle=60, kbg=50, bkb=40, sfx=(0, PUNCH))           # its lingering fire
+    if NORMALS_FX:
+        fx(s, f'N_CANNON_{cls_name(4.0)}', 'RArmJ', (mz, 0.0, 0.0))
+    for f in (11, 12, 14, 15):
+        s.at(f); after(f)
+    s.at(16); s.clear()
+    for f in (17, 18):
+        s.at(f); after(f)
+    s.at(24); s.form('R', 'hand')
     s.at(38); s.iasa()
     return s, PG.dash_keys()
 
@@ -283,7 +318,7 @@ def dash_attack(k):
 EXHAUST_STEP = 2.2      # units between exhaust puffs at most: N_EXHAUST's puffs (~1.9 across, growing) then overlap
 
 
-def exhaust_trail(s, a, b, part='TopN'):
+def exhaust_trail(s, a, b, part='TopN', name='N_EXHAUST'):
     """A rocket's exhaust along its flight this frame: N_EXHAUST puffs from b (where the rocket's tail is now) back
     toward a (where it was last frame; None on the launch frame: one puff at b), EXHAUST_STEP apart at most, as offsets on
     `part` (TopN: x depth, y up, z forward). One puff a frame left gaps as wide as a frame's flight (~7 units for Double
@@ -292,12 +327,12 @@ def exhaust_trail(s, a, b, part='TopN'):
     if not NORMALS_FX:
         return
     if a is None:
-        fx(s, 'N_EXHAUST', part, b); return
+        fx(s, name, part, b); return
     d = math.dist(a, b)
     n = max(1, math.ceil(d / EXHAUST_STEP))
     for k in range(n):                          # b, and n - 1 more back toward a (a itself is last frame's puff)
         t = k / n
-        fx(s, 'N_EXHAUST', part, tuple(bb + (aa - bb) * t for aa, bb in zip(a, b)))
+        fx(s, name, part, tuple(bb + (aa - bb) * t for aa, bb in zip(a, b)))
 
 
 def fist_tails(angle_y):
@@ -366,21 +401,27 @@ def usmash(k):
     s.at(4); s.form('R', 'stargun'); s.form('L', 'stargun'); s.cap('low', 2)
     s.at(5); s.smash_charge()
     s.at(9)
-    # kill lab: 36/34 killed Fox at 120% (no DI) and 140% (optimal DI), against a 105-115% target
-    burst(s, 0, 15, 5.4, 18.0, 0.5, angle=90, kbg=100, bkb=44, sfx=(2, KICK))
-    burst(s, 1, 14, 4.8, 22.0, 0.5, angle=90, kbg=100, bkb=42, sfx=(2, KICK))
+    # kill lab: 36/34 killed Fox at 120% (no DI) and 140% (optimal DI), against a 105-115% target. The column reaches
+    # 30.4 up (Michael, 2026-09-30: it "can't hit through a Battlefield platform to hit someone standing on it"; the
+    # side platforms are 27.2 up and a standing Fox's feet reach ~0.6 below his position, so 26.8 grazed them): the top
+    # sphere rises from 22 to 25.4, the lower from 18 to 17.5, still overlapping. Horizontal reach unchanged.
+    burst(s, 0, 15, 5.4, 17.5, 0.5, angle=90, kbg=100, bkb=44, sfx=(2, KICK))
+    burst(s, 1, 14, 5.0, 25.4, 0.5, angle=90, kbg=100, bkb=42, sfx=(2, KICK))
     # the wrists' flare lifts whoever stands beside him into the column: his out-of-shield kill has to hit an adjacent
-    # opponent (lab: a column alone missed Fox 6.6 away)
+    # opponent (lab: a column alone missed Fox 6.6 away). The front one keeps its strength; the back one is the sourspot
+    # (Michael, 2026-09-30: "make the back a sourspot, don't weaken the front and top")
     burst(s, 2, 12, 5.2, 8.0, 5.0, angle=90, kbg=100, bkb=40, sfx=(1, KICK))
-    burst(s, 3, 12, 5.2, 8.0, -5.0, angle=90, kbg=100, bkb=40, sfx=(1, KICK))
+    burst(s, 3, 8, 5.2, 8.0, -5.0, angle=90, kbg=80, bkb=30, sfx=(1, KICK))
     for sd in 'RL':                               # both star guns flash, and stars spray over every sphere
         muzzle_fx(s, 'stargun', sd)
-    for y, z, r in ((18.0, 0.5, 5.4), (22.0, 0.5, 4.8), (8.0, 5.0, 5.2), (8.0, -5.0, 5.2)):
+    for y, z, r in ((17.5, 0.5, 5.4), (25.4, 0.5, 5.0), (8.0, 5.0, 5.2)):           # the column and the front flare
         burst_fx(s, 'STAR', r, y, z)
+    if NORMALS_FX:                                # the back sourspot: a smaller, lighter spray (pale, no glow)
+        fx(s, 'N_STAR_SOUR', 'TopN', (0.0, 8.0, -5.0))
     gs(s, 'STARGUN_SHORT')
     s.cap('back', 2)                              # the crown tips back as he fires skyward
-    s.wait(2)                                     # the stream keeps coming: a second spray up the column (11)
-    for y, z, r in ((20.0, 0.5, 4.4), (25.0, 0.5, 3.6)):
+    s.wait(2)                                     # the stream keeps coming: a second spray up the column (11), to its top
+    for y, z, r in ((21.5, 0.5, 4.4), (28.5, 0.5, 3.6)):
         burst_fx(s, 'STAR', r, y, z)
     s.wait(2); s.clear()
     s.at(18); s.form('R', 'hand'); s.form('L', 'hand'); s.cap('rest', 10)
@@ -409,7 +450,14 @@ def dsmash(k):
     burst_fx(s, 'CANNON', 4.7, 3.2, -12.6)
     gs(s, 'HANDCANNON_BOOM'); gs(s, 'HANDCANNON_BOOM')          # a cannon each side: one doubled boom, on the shot
     s.wait(3); s.clear()
-    s.at(24); s.form('R', 'hand'); s.form('L', 'hand'); s.cap('rest', 10)
+    for f in (10, 13, 14, 16, 19):                    # the held cannons smoke to ~22; the landing thud's dust on 14
+        s.at(f)
+        if NORMALS_FX and f == 14:
+            PG.gfx(s, 1025, 'TransN')
+        elif NORMALS_FX:
+            for sd in 'LR':
+                fx(s, 'N_BARREL_SMOKE', f'{sd}ArmJ', (MUZZLE['cannon'][1] + 0.3, 0.0, 0.0))
+    s.at(28); s.form('R', 'hand'); s.form('L', 'hand'); s.cap('rest', 10)   # the smoking cannons held a while (24 until 2026-09-30)
     s.at(43); s.iasa()
     return s, PG.dsmash()
 
@@ -422,6 +470,35 @@ def air_base():
     return states_air.fall_pose()
 
 
+_NAIR_CORE = {}
+
+
+def nair_stars():
+    """The neutral air's spinning star core: on frames 3-12 a pair of stars on opposite sides of a circle round the core
+    hitbox's centre (WaistN + (0, 1.3, 0) in the animation, on TopN), turned 45 degrees a frame from front-high over the top
+    and round behind (the spin's direction), at the core's radius; gold on the clean hit (3-6, a glow at the core on 3),
+    white twinkles on the late one (7-12). Returns stars(s, frame)."""
+    if not _NAIR_CORE:
+        import poses_air
+        for f, p in poses_air.nair():
+            if 3 <= f <= 12:
+                W = rig.world_mats(pose={k: dict(t=v[0], r=v[1], s=p.scale.get(k)) for k, v in p.solve().items()})
+                _NAIR_CORE[f] = tuple(rig.xform((0.0, 1.3, 0.0), W['WaistN']))
+
+    def stars(s, f):
+        if not NORMALS_FX or f not in _NAIR_CORE:
+            return
+        x, y, z = _NAIR_CORE[f]
+        r = 4.6 if f <= 6 else 4.2
+        a = math.radians(35 + 45 * (f - 3))              # from +z (front) toward +y (up): front-high, over the top, behind
+        if f == 3:
+            fx(s, 'N_NAIR_CORE', 'TopN', (0.0, y, z))
+        for k in (0, 1):
+            b = a + math.pi * k
+            fx(s, 'N_NAIR_STAR' if f <= 6 else 'N_NAIR_TWINKLE', 'TopN', (0.0, y + r * math.sin(b), z + r * math.cos(b)))
+    return stars
+
+
 @move('AttackAirN', 40)
 def nair(k):
     """The spinning doll: a disjointed star core and a 360° spin that ends low behind him. Frame 3, his out-of-shield
@@ -429,16 +506,24 @@ def nair(k):
     s = Script()
     import poses_air
     s.at(2); s.lag_on(); s.hand('R', 'open', 2); s.hand('L', 'open', 2)          # the hands fling open with the arms
+    stars = nair_stars()                          # the spinning star core (Michael, 2026-09-30: restored), frames 3-12
     s.at(3)
     s.hitbox(0, 'WaistN', 12, 5.0, (0, 1.3, 0), angle=45, kbg=80, bkb=25, sfx=(1, KICK))
     burst(s, 1, 12, 3.5, 7.0, 5.5, angle=45, kbg=80, bkb=25, sfx=(1, KICK))
     burst(s, 2, 12, 3.0, 9.0, -4.0, angle=45, kbg=80, bkb=25, sfx=(1, KICK))
     gs(s, 'NAIR_SWIRL')
+    stars(s, 3)
+    for f in (4, 5, 6):
+        s.at(f); stars(s, f)
     s.at(7)
     s.hitbox(0, 'WaistN', 7, 4.6, (0, 1.3, 0), angle=30, kbg=60, bkb=15, sfx=(0, KICK))
     burst(s, 1, 7, 3.0, 4.0, 4.5, angle=30, kbg=60, bkb=15, sfx=(0, KICK))
     burst(s, 2, 7, 3.5, 3.0, -4.0, angle=30, kbg=60, bkb=15, sfx=(0, KICK))
-    s.at(11); grown_intangible(s, 'nair', ['RKneeJ'], True)
+    stars(s, 7)
+    for f in (8, 9, 10):
+        s.at(f); stars(s, f)
+    s.at(11); grown_intangible(s, 'nair', ['RKneeJ'], True); stars(s, 11)
+    s.at(12); stars(s, 12)
     s.at(13); s.remove(1)
     s.at(17); grown_intangible(s, 'nair', ['RKneeJ'], False)
     s.at(21); s.clear()
@@ -521,40 +606,43 @@ DAIR_CANNON = bool(os.environ.get('GENO_DAIR_CANNON'))     # the A/B: the Hand C
 BLEND = {} if DAIR_CANNON else {'LandingAirLw': 6}
 
 
-@move('AttackAirLw', 40)
+@move('AttackAirLw', 52)
 def dair(k):
     """A rocket fist straight down (Michael, 2026-09-29: "the rocket fist design, similar to ftilt and fsmash ... long and
-    disjointed ... with the meteor on the close / startup hit"). The fist fires off the forearm on 8 and flies out to 13.0
-    below him (12) and home (20), as Double Punch's fists do; intangible while it's out, the hitboxes on it. The timing is
-    the column's: the meteor on 9-10 (270, airborne targets only, while the fist is near him; a grounded opponent gets the
-    8% pop), the weak tail on 11-15 (5%, no spike), landing lag 2-31, IASA 38. The exhaust trails it out, the fist grows
-    on its hit frames, and it plays Double Punch's sound. poses_air.dair."""
+    disjointed ... with the meteor on the close / startup hit"), slowed and readied (Michael, 2026-09-30: "yeah, slow it
+    down. Probably give the startup animation a clear 'readying rocket punch' read"). The fist cocks back and the rocket
+    readies (3-10), it fires off the forearm on 12 and flies out to 13.0 below him (16) and home (24), as Double Punch's
+    fists do; intangible while it's out, the hitboxes on it. The meteor on 13-14 (270, airborne targets only, while the
+    fist is near him; a grounded opponent gets the 8% pop), the weak tail on 15-19 (5%, no spike), landing lag 2-43 (it
+    autocancels from 44), IASA 50. The exhaust trails it out, the fist grows on its hit frames, and it plays Double
+    Punch's sound. poses_air.dair."""
     if DAIR_CANNON:
         return dair_cannon(k)
     import poses_air
     F = poses_air.dair_fists()
     tail = {f: (x, y + 2.2, z) for f, (x, y, z) in F.items()}      # the rocket's tail, behind the fist on its way down
+    F = poses_air.DAIR_FIRE                                                             # 12 (was 8)
     s = Script()
     s.at(2); s.lag_on()
-    s.at(4); s.form('R', 'rocket')                                                      # snapped on, cocked by his head
-    s.at(8); s.hurt('RHandN', 2)                                                        # fired: intangible while it's out
-    exhaust_trail(s, None, tail[8])
-    s.at(9)
+    s.at(5); s.form('R', 'rocket')                                                      # snapped on, cocked by his head
+    s.at(F); s.hurt('RHandN', 2)                                                        # fired: intangible while it's out
+    exhaust_trail(s, None, tail[F])
+    s.at(F + 1)
     s.hitbox(0, 'RHandN', 12, 4.8, (0.5, 0, 0), angle=270, kbg=80, bkb=20, sfx=(2, PUNCH), grounded=0)   # the meteor
     s.hitbox(1, 'RHandN', 8, 4.2, (0.5, 0, 0), angle=60, kbg=70, bkb=15, sfx=(1, PUNCH))              # a grounded pop
-    exhaust_trail(s, tail[8], tail[9])
+    exhaust_trail(s, tail[F], tail[F + 1])
     gs(s, 'DOUBLEPUNCH')
-    s.at(10); exhaust_trail(s, tail[9], tail[10])
-    s.at(11)
+    s.at(F + 2); exhaust_trail(s, tail[F + 1], tail[F + 2])
+    s.at(F + 3)
     s.remove(1)
     s.hitbox(0, 'RHandN', 5, 3.4, (0.5, 0, 0), angle=65, kbg=40, bkb=10, sfx=(0, PUNCH))              # the weak tail
-    exhaust_trail(s, tail[10], tail[11])
-    s.at(12); exhaust_trail(s, tail[11], tail[12])
-    s.at(16); s.clear()
-    s.at(20); s.hurt('RHandN', 0)                                                       # docked
-    s.at(23); s.form('R', 'hand'); s.hand('R', 'open', 4)
-    s.at(32); s.lag_off()
-    s.at(38); s.iasa()
+    exhaust_trail(s, tail[F + 2], tail[F + 3])
+    s.at(F + 4); exhaust_trail(s, tail[F + 3], tail[F + 4])
+    s.at(F + 8); s.clear()
+    s.at(F + 12); s.hurt('RHandN', 0)                                                   # docked
+    s.at(F + 15); s.form('R', 'hand'); s.hand('R', 'open', 4)
+    s.at(44); s.lag_off()
+    s.at(50); s.iasa()
     return s, poses_air.dair()
 
 
@@ -609,6 +697,28 @@ def holding(p, t=HOLD_T, ry=3.1416):
     return p.move('ThrowN', t).rot('ThrowN', (0, ry, 0))
 
 
+_GRAB_TAILS = {}
+FLY_OFF = 1.2                    # a fist this far off its socket is flying: the grabs' exhaust trail runs while it is
+
+
+def grab_tails(frame, total, dash):
+    """The grabs' rocket fists from their animation (poses_ground.grab), per frame: {frame: {side: (tail on TopN (x depth,
+    y up, z forward), how far the fist is off its socket)}}; the tail is the exhaust ring 0.3 behind HandN, scaled with
+    the fist, as moves.fist_tails and poses_throws.rocket_tails take it. Longer grabs change the path, and the trail
+    follows."""
+    key = (frame, total, dash)
+    if key not in _GRAB_TAILS:
+        import poses_ground as PG
+        out = {}
+        for f, p in PG.grab(frame, total, dash):
+            W = rig.world_mats(pose={k: dict(t=v[0], r=v[1], s=p.scale.get(k)) for k, v in p.solve().items()})
+            out[f] = {sd: (tuple(rig.xform((-0.3, 0.0, 0.0), W[f'{sd}HandN'])),
+                           math.dist(rig.xform((0.0, 0.0, 0.0), W[f'{sd}HandN']), rig.xform((FA, 0.0, 0.0), W[f'{sd}ArmJ'])))
+                      for sd in 'RL'}
+        _GRAB_TAILS[key] = out
+    return _GRAB_TAILS[key]
+
+
 def grab(ext, frame, total, lunge=1.5):
     """The fists shoot out on the arm bones as rocket fists (his Double Punch, closing on the opponent): the grab boxes
     ride the hands, so the hands' hurtboxes travel with them (a body move, not a gun blast: little disjoint). The dash
@@ -618,16 +728,43 @@ def grab(ext, frame, total, lunge=1.5):
         import poses_ground as PG
         s = Script()
         s.at(3); s.form('R', 'rocket'); s.form('L', 'rocket')
-        s.at(frame - 1 if dash else 5)                  # the fists fire off the arms: a spark at each socket
-        for sd in 'RL':
-            PG.gfx(s, PG.FX_SPARK, f'{sd}ArmJ', (FA, 0, 0))
+        launch = frame - 1 if dash else 5               # the fists fire off the arms: the rocket's launch star at each
+        tails = grab_tails(frame, total, dash)          # socket, then its exhaust behind each fist while it flies
+        # the trail only while a fist is well off its socket (FLY_OFF): the dash grab's fists barely leave (1.0 at most),
+        # and puffs spawned there were left behind him by the slide, reading as an effect behind his body
+        fly = [f for f in sorted(tails) if f > launch and any(tails[f][sd][1] > FLY_OFF for sd in 'RL')]
+
+        puff = 'N_EXHAUST_QUICK' if dash else 'N_EXHAUST'   # the dash grab slides on through its puffs: they go in 6
+
+        def rockets(f):
+            if f == launch:
+                for sd in 'RL':
+                    if NORMALS_FX:                  # at the flying hand's wrist, as the forward throw's ignition
+                        fx(s, 'N_ROCKET_FLARE', f'{sd}HandN', (-0.5, 0.0, 0.0))
+                    if any(tails[g][sd][1] > FLY_OFF for g in fly):
+                        exhaust_trail(s, None, tails[f][sd][0], name=puff)
+            else:
+                for sd in 'RL':
+                    if tails[f][sd][1] > FLY_OFF or tails[f - 1][sd][1] > FLY_OFF:
+                        exhaust_trail(s, tails[f - 1][sd][0], tails[f][sd][0], name=puff)
+        s.at(launch); rockets(launch)
+        for f in [f for f in fly if f < frame]:
+            s.at(f); rockets(f)
         s.at(frame)
+        if frame in fly:
+            rockets(frame)
         grown_intangible(s, 'grab', ['RHandN', 'LHandN'], True)
         s.hitbox(0, 'RHandN', 0, 4.0, (0.6, 0, 0), angle=361, kbg=100, element=8, clank=1, rebound=0, sfx=(1, KICK))
         s.hitbox(1, 'LHandN', 0, 4.0, (0.6, 0, 0), angle=361, kbg=100, element=8, clank=1, rebound=0, sfx=(1, KICK))
-        s.wait(2); s.clear()
+        for f in (frame + 1,):
+            s.at(f)
+            if f in fly: rockets(f)
+        s.at(frame + 2); s.clear()
+        if frame + 2 in fly: rockets(frame + 2)
         s.release(0)   # ends the pull (CatchPull plays on in this animation until throw_flags_b3), as Mario's does
-        s.wait(1); grown_intangible(s, 'grab', ['RHandN', 'LHandN'], False)
+        s.at(frame + 3); grown_intangible(s, 'grab', ['RHandN', 'LHandN'], False)
+        for f in [f for f in fly if f >= frame + 3]:
+            s.at(f); rockets(f)
         # ThrowN is the hold joint (the lookup table's byte 0x11). From before the grab frame it sits at CatchWait's hold
         # point in the world (the victim rides it through the pull and into CatchWait), so the catch is one latch; it has
         # to be there by the grab frame, or the engine's pull check (fn_800DA054) breaks a point-blank grab.
@@ -1002,25 +1139,35 @@ def s_whirl():
 
 
 def s_fold():
-    s = Script(); s.at(6); gs(s, 'STARROAD_FOLD'); s.form('R', 'cannon'); s.form('L', 'cannon'); s.cap('low', 3); return s
+    # the Star Guns power it (Michael, 2026-09-30: "it should show the star guns powering it"; was the Hand Cannons)
+    s = Script(); s.at(6); gs(s, 'STARROAD_FOLD'); s.form('R', 'stargun'); s.form('L', 'stargun'); s.cap('low', 3); return s
+
+
+SR_TRAIL_EVERY = 3        # geno-fx (Michael, 2026-09-30): a star from his waist every 3 frames of the flight
 
 
 def s_launch():
-    s = Script(); s.form('R', 'cannon'); s.form('L', 'cannon')
+    s = Script(); s.form('R', 'stargun'); s.form('L', 'stargun')
     s.at(1); s.hitbox(0, 'WaistN', 7, 3.6, (0, 1.2, 0), angle=50, kbg=60, bkb=45, sfx=(1, PUNCH)); gs(s, 'STARROAD_LAUNCH')
+    # geno-fx: the launch's burst of no-damage stars from both hands (the guns that power the jump), and a light trail
+    # (EfGeData.dat SR_BURST, SR_TRAIL: small cream-white stars, not the gold of the hitting moves' stars)
+    fx(s, 'SR_BURST', 'RHandN'); fx(s, 'SR_BURST', 'LHandN'); fx(s, 'SR_TRAIL', 'WaistN')
     s.wait(4); s.clear()
+    for f in range(1 + 2 * SR_TRAIL_EVERY, 20, SR_TRAIL_EVERY):
+        s.at(f); fx(s, 'SR_TRAIL', 'WaistN')
     return s
 
 
 def s_blast_charge():
-    # down B's charge (Blast or Flash): the hands open as they go up to the sky; no mark (the release places it)
-    s = Script(); s.at(2); s.hand('R', 'open', 3); s.hand('L', 'open', 3); return s
+    # down B's charge (Blast or Flash): the hands open as they go up to the sky. v1.5 (Michael, 2026-09-30): the mark shows
+    # from the move's first frame (the C code places it from the stick at the press), so its sound plays there
+    s = Script(); gs(s, 'BLAST_MARK'); s.at(2); s.hand('R', 'open', 3); s.hand('L', 'open', 3); return s
 
 
 def s_blast_release():
-    # the release: the mark on the first frame (the C code spawns it on the flag, the distance from the stick then), the
-    # point snapping down; interruptible 28 frames after the mark (a tap's 38)
-    s = Script(); s.flag(); gs(s, 'BLAST_MARK'); s.hand('R', 'point'); s.hand('L', 'open')
+    # the release: the marks already shown are armed on the first frame (the C code, on the flag: they strike 32 frames
+    # on), the point snapping down; interruptible 28 frames after the release (a tap's 38)
+    s = Script(); s.flag(); s.hand('R', 'point'); s.hand('L', 'open')
     s.at(29); s.interruptible(); return s
 
 
@@ -1080,8 +1227,8 @@ SPECIALS = [
     ('SpecialHiStart', 18, s_fold, _pa('starroad_start', False)),
     ('SpecialAirHiStart', 18, s_fold, _pa('starroad_start', True)),
     ('SpecialHi', 30, s_launch, _pa('starroad_travel')),
-    ('SpecialLw', 52, s_blast_charge, _pa('blast_charge', False)),   # down B's charge: the release decides (Blast), or
-    ('SpecialAirLw', 52, s_blast_charge, _pa('blast_charge', True)), # the third star (Flash, grounded)
+    ('SpecialLw', 64, s_blast_charge, _pa('blast_charge', False)),   # down B's charge: the release decides (Blast), or
+    ('SpecialAirLw', 64, s_blast_charge, _pa('blast_charge', True)), # the third star (Flash, grounded)
     ('SpecialLwFlash', 94, s_flash, _pa('flash')),
     ('SpecialNFinger', 34, s_finger(10, 34, 5, 22), _pa('finger', False)),
     ('SpecialAirNFinger', 24, s_finger(7, 24, 3, 15), _pa('finger', True)),

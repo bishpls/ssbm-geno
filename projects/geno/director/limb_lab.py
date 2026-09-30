@@ -30,14 +30,19 @@ SEGS = [
     ('geno_jab2', GENO, 55, [A(0, 2, btn='A'), A(8, 2, btn='A')], MX, (1, 9), 2),
     ('geno_jab3', GENO, 75, [A(0, 2, btn='A'), A(8, 2, btn='A'), A(16, 2, btn='A')], MX, (2, 12), 3),
     ('geno_utilt', GENO, 55, [A(0, 4, (0, 50)), A(2, 2, (0, 50), btn='A')], MX, (3, 14), 1),
-    ('geno_dashattack', GENO, 75, [A(0, 12, (80, 0)), A(12, 2, (80, 0), btn='A')], MX + 20, (3, 15), 3),   # Dash, Run, AttackDash
+    ('geno_dashattack', GENO, 80, [A(0, 12, (80, 0)), A(12, 2, (80, 0), btn='A')], MX + 20, (1, 40), 3),   # Dash, Run, AttackDash
     ('geno_nair', GENO, 80, [A(0, 6, btn='X'), A(8, 2, btn='A')], MX, (2, 22), 3),
     ('geno_pummel', GENO, 80, [A(0, 2, btn='Z'), A(30, 2, btn='A')], GX + 10, (5, 14), 4),
     ('geno_fsmash', GENO, 75, [A(0, 3, c=(80, 0))], MX, (12, 29), 1),
     ('geno_fsmash_hi', GENO, 75, [A(0, 3, (70, 40), btn='A')], MX, (12, 29), 1),
     ('geno_fsmash_lw', GENO, 75, [A(0, 3, (70, -40), btn='A')], MX, (12, 29), 1),
-    ('geno_grab', GENO, 50, [A(0, 2, btn='Z')], MX, (3, 14), 1),
-    ('geno_dashgrab', GENO, 70, [A(0, 10, (80, 0)), A(10, 2, (80, 0), btn='Z')], MX + 20, (5, 16), 2),
+    ('geno_grab', GENO, 50, [A(0, 2, btn='Z')], MX, (1, 22), 1),
+    ('geno_dashgrab', GENO, 70, [A(0, 10, (80, 0)), A(10, 2, (80, 0), btn='Z')], MX + 20, (1, 26), 2),
+    ('geno_dsmash', GENO, 70, [A(0, 3, c=(0, -80))], MX, (1, 43), 1),
+    # the grabs on a catch (Mario within reach; a down throw ends the hold: a reset mid-grab breaks every later grab)
+    ('geno_grab_catch', GENO, 110, [A(0, 2, btn='Z'), A(40, 3, (0, -80))], GX + 14, (1, 12), 1),
+    ('geno_dashgrab_catch', GENO, 120, [A(0, 10, (80, 0)), A(10, 2, (80, 0), btn='Z'), A(50, 3, (0, -80))], GX + 30, (1, 14), 2),
+    ('geno_dair', GENO, 100, [A(0, 6, btn='X'), A(8, 3, c=(0, -80))], MX, (1, 52), 3),
     ('geno_throwf', GENO, 120, [A(0, 2, btn='Z'), A(24, 4, (80, 0))], GX + 10, (15, 36), 4),
 ]
 

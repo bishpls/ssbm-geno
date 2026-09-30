@@ -9,14 +9,14 @@ From `director/labs/growth_cost.py`. A grown limb's hurtboxes grow with it (the 
 | jab1 | fwd | 1.74 | 9.85 | 8.78 | -1.07 | Mario jab1 -0.27, Luigi jab1 -0.21, Doc jab1 -0.28 | **yes** |  |
 | jab2 | fwd | 1.28 | 8.15 | 7.17 | -0.98 | Mario jab2 -0.27, Luigi jab2 +0.00, Doc jab2 -0.29 | **yes** |  |
 | jab3 | fwd | 2.03 | 9.63 | 8.28 | -1.35 | Mario jab3 +1.07, Luigi jab3 -0.56, Doc jab3 +1.08 | **yes** |  |
-| dash_attack | fwd | 0.0 | -0.02 | -0.02 | 0.0 | Luigi dash_attack -0.52 |  |  |
+| dash_attack | fwd | 0.0 | 3.88 | 3.88 | 0.0 | Luigi dash_attack -0.52 |  |  |
 | utilt | up | 0.0 | 9.09 | 9.09 | 0.0 | Mario utilt -0.79, Luigi utilt -0.95, Doc utilt -0.82 |  | fwd -0.47 / +0.33, back -0.47 / +0.00 |
 | fsmash | fwd | 0.0 | 23.78 | 23.78 | 0.0 | Mario fsmash +0.00, Luigi fsmash -2.83, Doc fsmash +0.00 |  |  |
 | fsmash_hi | fwd | 0.0 | 23.58 | 23.58 | 0.0 | Mario fsmash_hi -0.08, Luigi fsmash_hi -2.90, Doc fsmash_hi -0.07 |  |  |
 | fsmash_lw | fwd | 0.0 | 21.42 | 21.42 | 0.0 | Mario fsmash_lw -0.30, Luigi fsmash_lw -2.83, Doc fsmash_lw -0.29 |  |  |
 | nair | back | 0.0 | 3.8 | 3.8 | 0.0 | Mario bair +0.35, Luigi bair +0.72, Doc bair +0.80, Luigi nair -0.17 |  | down -0.00 / -0.11 |
 | grab | fwd | 0.96 | 2.85 | 2.18 | -0.67 | Mario grab -0.67, Luigi grab -0.76, Doc grab -0.19 |  |  |
-| dash_grab | fwd | 0.8 | 2.87 | 2.07 | -0.8 | Mario dash_grab -0.80, Luigi dash_grab -0.91, Doc dash_grab -0.79 |  |  |
+| dash_grab | fwd | 0.81 | 2.86 | 2.06 | -0.8 | Mario dash_grab -0.80, Luigi dash_grab -0.91, Doc dash_grab -0.79 |  |  |
 | pummel | fwd | 0.0 | 5.86 | 5.86 | 0.0 | Mario pummel +0.00, Luigi pummel +0.00 |  |  |
 
 ## The cast (every move that grows a limb 1.1x or more)

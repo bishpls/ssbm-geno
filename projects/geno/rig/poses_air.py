@@ -637,13 +637,16 @@ DAIR_AIM = (0.0, -13.0, 1.3)         # moves.dair's blast column (TopN): the can
 # old column's reach and back, as Double Punch's do. The hitboxes ride it (moves.dair: RHandN, 0.5 down the bone).
 DAIR_LINE_Z = 1.8                     # the fist's vertical line, in front of him (the old column's barrel line)
 DAIR_OFF = 0.5                        # the hitbox's offset down HandN (grows with the fist)
-# the fist's centre (the hitbox's point) per frame, height on TopN: launched on 8, the meteor near him on 9 (the old
-# muzzle's +2.0), down to -9.6 on 12 (its 3.4 tail reaches 13.0 below, the old column's reach), home by 20
-DAIR_FIST_Y = {8: 4.2, 9: 1.5, 10: -3.0, 11: -7.0, 12: -9.6, 13: -9.6, 14: -8.2, 15: -5.8, 16: -3.2, 17: -0.6,
-               18: 1.8, 19: 3.6}
+# the fist's centre (the hitbox's point) per frame, height on TopN: launched on 12, the meteor near him on 13 (the old
+# muzzle's +2.0), down to -9.6 on 16 (its 3.4 tail reaches 13.0 below, the old column's reach), home by 24. (Michael,
+# 2026-09-30: "slow it down ... give the startup animation a clear 'readying rocket punch' read": the launch moved from
+# 8 to 12, the flight unchanged, the recovery 12 frames longer)
+DAIR_FIRE = 12
+DAIR_FIST_Y = {12: 4.2, 13: 1.5, 14: -3.0, 15: -7.0, 16: -9.6, 17: -9.6, 18: -8.2, 19: -5.8, 20: -3.2, 21: -0.6,
+               22: 1.8, 23: 3.6}
 # the fist's growth on its hit frames (Double Punch's peak, 2.8: research/fist_read.md), held while it flies out (a
 # shrinking fist reads as receding), eased home as it returns
-DAIR_GROW = {7: 1.0, 9: 2.8, 10: 2.8, 12: 2.6, 14: 2.4, 16: 2.0, 18: 1.5, 19: 1.25, 20: 1.0}
+DAIR_GROW = {11: 1.0, 13: 2.8, 14: 2.8, 16: 2.6, 18: 2.4, 20: 2.0, 22: 1.5, 23: 1.25, 24: 1.0}
 
 
 def _dair_grow(f):
@@ -695,25 +698,31 @@ def dair_windup(k=1.0):
 
 
 def dair():
-    """The rocket fist down: cocked beside his head (3-6, the rocket rings snapping on at 4), the arm drives straight down
-    as the doll pitches over it (7), the fist fires off the forearm on 8 and is at the old muzzle on 9 (the meteor, near
-    him), out to 13.0 below by 12, held a frame, and flies home, docking on 20 with a jolt through the arm. The arm kicks
-    up at the launch and the body bucks; the fist is intangible while it's out (moves.dair)."""
-    c = Clip(40, lag=dict(chain('L', 'arm', 1.5), **chain('L', 'leg', 1.5), **chain('R', 'leg', 2.0), HeadN=-1.0))
+    """The rocket fist down, readied: the fist cocks back beside his head (3-6, the rocket rings snapping on at 5) and
+    draws further up and back as the rocket readies, held and trembling (7-10: the "readying rocket punch" beat, Michael
+    2026-09-30); the arm drives straight down as the doll pitches over it (11), the fist fires off the forearm on 12 and
+    is at the old muzzle on 13 (the meteor, near him), out to 13.0 below by 16, held a frame, and flies home, docking on
+    24 with a jolt through the arm that he rides out, the arm shaking loose and swinging home (24-40). The arm kicks up
+    at the launch and the body bucks; the fist is intangible while it's out (moves.dair)."""
+    F = DAIR_FIRE
+    c = Clip(52, lag=dict(chain('L', 'arm', 1.5), **chain('L', 'leg', 1.5), **chain('R', 'leg', 2.0), HeadN=-1.0))
     c.key(0, ab())
-    c.key(3, dair_windup(0.75), 'out')
-    c.key(5, dair_windup(1.0), 'out')
-    c.key(6, dair_windup(1.05), 'lin')
-    c.key(7, dair_punch(0.0, 0.0), 'in')                     # driven straight down
-    c.key(8, dair_punch(0.15, fist_y=DAIR_FIST_Y[8], f=8), 'lin')      # fired
-    kick = {9: 0.55, 10: 0.45, 11: 0.35, 12: 0.28, 13: 0.24, 14: 0.2, 15: 0.16, 16: 0.12, 17: 0.08, 18: 0.05, 19: 0.02}
-    for f in range(9, 20):
-        c.key(f, dair_punch(kick[f], fist_y=DAIR_FIST_Y[f], f=f), 'lin')
-    c.key(20, dair_punch(0.0, dip=1.0, fist_y=None), 'lin')   # docked: the jolt through the arm
-    c.key(22, dair_punch(0.0, dip=0.4), 'inout')
-    c.key(28, dair_windup(0.0), 'inout')
-    c.key(33, ab(), 'out')
-    c.key(40, ab(), 'lin')
+    c.key(3, dair_windup(0.7), 'out')
+    c.key(5, dair_windup(1.0), 'out')                        # cocked; the rocket rings snap on
+    c.key(7, dair_windup(1.18), 'inout')                     # drawn up further: the rocket readies
+    c.key(9, dair_windup(1.22), 'lin')                       # held, trembling
+    c.key(10, dair_windup(1.16), 'lin')
+    c.key(F - 1, dair_punch(0.0, 0.0), 'in')                 # driven straight down
+    c.key(F, dair_punch(0.15, fist_y=DAIR_FIST_Y[F], f=F), 'lin')      # fired
+    kick = {1: 0.55, 2: 0.45, 3: 0.35, 4: 0.28, 5: 0.24, 6: 0.2, 7: 0.16, 8: 0.12, 9: 0.08, 10: 0.05, 11: 0.02}
+    for k, v in kick.items():
+        c.key(F + k, dair_punch(v, fist_y=DAIR_FIST_Y[F + k], f=F + k), 'lin')
+    c.key(F + 12, dair_punch(0.0, dip=1.0, fist_y=None), 'lin')   # docked: the jolt through the arm
+    c.key(F + 14, dair_punch(0.0, dip=0.7), 'inout')              # ridden out
+    c.key(F + 18, dair_punch(0.0, dip=0.25), 'inout')
+    c.key(F + 26, dair_windup(0.0), 'inout')                      # the arm swinging home
+    c.key(F + 33, ab(), 'out')
+    c.key(52, ab(), 'lin')
     c.grow('RHandN', DAIR_GROW)
     return c.frames()
 
@@ -1071,12 +1080,16 @@ def _dip(air):
     return p
 
 
+STAR3 = 61          # down B's third star, move frame (v1.5, Michael 2026-09-30: 49 locked the cannon in too early)
+CHARGE_N = STAR3 + 3
+
+
 def blast_charge(air):
     """Down B's charge (SpecialLw / SpecialAirLw, both Blast and Flash): a dip, the arms thrown up to the sky by 8, the
     casting pose held and creeping while the stars light, a kick as the second lights (move frame 25). The release
-    (blast_release) or the Flash (frame 49) cuts in from it; the charge never runs past 49."""
+    (blast_release) or the Flash (STAR3) cuts in from it; the charge never runs past STAR3."""
     rest = ab() if air else base()
-    c = Clip(52, lag=dict(chain('L', 'arm', 1.5), HeadN=-1.5, NeckN=-1.0))
+    c = Clip(CHARGE_N, lag=dict(chain('L', 'arm', 1.5), HeadN=-1.5, NeckN=-1.0))
     c.key(0, rest)
     c.key(3, _dip(air), 'out')
     c.key(7, _cast(air, -0.04), 'out')
@@ -1085,8 +1098,8 @@ def blast_charge(air):
     c.key(25, _cast(air, 0.03, kick=1.0), 'out')    # the second star
     c.key(28, _cast(air, 0.04, kick=0.3), 'inout')
     c.key(32, _cast(air, 0.05), 'inout')
-    c.key(49, _cast(air, 0.08), 'inout')            # the third star: the Flash (or, airborne, the release) takes over
-    c.key(52, _cast(air, 0.08), 'lin')
+    c.key(STAR3, _cast(air, 0.08), 'inout')         # the third star: the Flash (or, airborne, the release) takes over
+    c.key(CHARGE_N, _cast(air, 0.08), 'lin')
     return c.frames()
 
 
@@ -1312,9 +1325,9 @@ def cannon_aim(f=49):
 
 
 def blast_hold():
-    """The charge's pose at frame 49, where it turns into Geno Flash (the engine cuts, it doesn't blend)."""
+    """The charge's pose at the third star (STAR3), where it turns into Geno Flash (the engine cuts, it doesn't blend)."""
     fr = dict(blast_charge(False))
-    return fr[49]
+    return fr[STAR3]
 
 
 # ------------------------------------------------------------------------------------------------ up B: Star Road

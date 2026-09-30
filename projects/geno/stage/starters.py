@@ -26,6 +26,8 @@ STAGES = {
     'dream_land': ('GrOp', 'Dream Land', 'dream_land', {}),
     'fountain': ('GrIz', 'Fountain of Dreams', 'fountain', {'bind': '0:3:1,1:3:2,2:3:3', 'code_moved': [0, 1]}),
     'stadium': ('GrPs', 'Pokémon Stadium', 'stadium', {'groups': [4, 6]}),
+    # ours (not a starter measured for reference): the built file, dumped by forest_maze.py
+    'forest_maze': ('GrFm', 'Forest Maze', 'forest_maze', {}),
 }
 ORDER = ['final_destination', 'battlefield', 'yoshis_story', 'dream_land', 'fountain', 'stadium']
 SHORT = {'final_destination': 'FD', 'battlefield': 'BF', 'yoshis_story': 'YS', 'dream_land': 'DL', 'fountain': 'FoD', 'stadium': 'PS'}

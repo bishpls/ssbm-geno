@@ -25,9 +25,9 @@ CKIND = {'falcon': 0x00, 'dk': 0x01, 'fox': 0x02, 'gnw': 0x03, 'kirby': 0x04, 'b
          'samus': 0x10, 'yoshi': 0x11, 'zelda': 0x12, 'sheik': 0x13, 'falco': 0x14, 'ylink': 0x15, 'doc': 0x16, 'roy': 0x17,
          'pichu': 0x18, 'ganon': 0x19, 'geno': 0x22}
 STAGE = {'final_destination': 0x20, 'battlefield': 0x1F, 'fountain': 0x02, 'stadium': 0x03, 'yoshis_story': 0x08,
-         'dream_land': 0x1C}   # StKind (the decomp's gr/forward.h); a new stage adds its own
+         'dream_land': 0x1C, 'forest_maze': 0x15}   # StKind (the decomp's gr/forward.h); the Forest Maze takes the unused Akaneia slot
 EASE = {'cut': 0, 'linear': 1, 'inout': 2, 'in': 3, 'out': 4}
-CUE = {'freeze': 1, 'stage': 2, 'bgcolor': 3, 'setpos': 4, 'face': 5, 'motion': 6, 'percent': 7, 'mark': 8, 'end': 9, 'reset': 10, 'approach': 11, 'auto': 12, 'trace': 13, 'status': 14, 'shield': 15, 'feet': 16, 'shieldhp': 17, 'item': 18, 'sfx': 19, 'anim': 20, 'grdump': 21}
+CUE = {'freeze': 1, 'stage': 2, 'bgcolor': 3, 'setpos': 4, 'face': 5, 'motion': 6, 'percent': 7, 'mark': 8, 'end': 9, 'reset': 10, 'approach': 11, 'auto': 12, 'trace': 13, 'status': 14, 'shield': 15, 'feet': 16, 'shieldhp': 17, 'item': 18, 'sfx': 19, 'anim': 20, 'grdump': 21, 'items': 22, 'shoot': 23}
 TRACK = {None: 0, 'world': 0, 'mid': 1, 'p0': 2, 'p1': 3}
 # common items (the decomp's ItemKind) for Film.item
 ITEM = {'capsule': 0x00, 'crate': 0x01, 'barrel': 0x02, 'egg': 0x03, 'partyball': 0x04, 'bobomb': 0x06, 'saturn': 0x07,
@@ -367,6 +367,13 @@ class Film:
         """Log the stage as the engine holds it now: STAGE (blast zones, camera range), LINE per live collision line (floors
         only unless every), GROUND per fighter (the floor line under it)."""
         return self.cue(t, 'grdump', 0, 1 if every else 0)
+    def items(self, t):
+        """Log every live item's kind and position this frame (ITEMS s kind x y): projectile paths."""
+        return self.cue(t, 'items', 0)
+    def shoot(self, t, port, kind, state, speed, ahead=10.0, up=8.0):
+        """Fire a laser-type projectile (an ::ItemKind number and its article state) as port's, straight ahead of him at
+        `speed` units a frame from `ahead` along his facing and `up` above his feet (director.c DIR_SHOOT)."""
+        return self.cue(t, 'shoot', port, kind * 16 + state + 4096 * round(speed * 10), ahead, up)
     def item(self, t, kind, x, y=0.0):
         """Spawn a common item (ITEM[name] or an ::ItemKind number) at (x, y), as the game drops one."""
         return self.cue(t, 'item', 0, ITEM.get(kind, kind), x, y)

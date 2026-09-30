@@ -55,7 +55,7 @@ to combo, and his recovery is a guessing game. Hit him once and edgeguard him."
 4. **The doll is the identity.** Fists fly off on arm bones, the forearms are gun barrels, the body folds into a cannon and
    the star can leave the doll. Silhouettes and animation sell it; a generic arm-cannon reskin is the failure mode (SRC).
 5. **Timing is a decision, on specials only.** SMRPG's timed presses live on the specials: fire the Beam on star two now or
-   wait for three, crit the Whirl or save side-B for the recall, keep the Blast fast or widen it. Everything is balanced as
+   wait for three, go for the Whirl's timed hit or not, keep the Blast fast or widen it. Everything is balanced as
    if every press is perfect (FG P8). The 9999 Whirl is at most an impractical easter egg or trailer-only.
 
 ## 3. Physics
@@ -117,20 +117,25 @@ Frame numbers count from the input (frame 1 = the first frame of the move). **IA
 
 | Slot | Move | Shape | Counterplay |
 |---|---|---|---|
-| Neutral B (tap) | **Finger Shot** | Four bullets from the right hand. Grounded: fires frame 10, IASA 34. Aerial: fires frame 7, 24-frame animation, 10 frames of landing lag only if he lands before frame 16. **Aerial shots angle ~10° down** (lab, v1.2: level shots from a short hop pass over a standing opponent, since his hand sits ~9 above his feet), so a short-hop shot meets standing opponents at mid-range: his version of Falco's short-hop laser, capped by the two-on-screen rule. 3%, ~4 units a frame, fades at ~75 units (under half of Final Destination). **Two on screen, max.** Falco's template: real hitstun, slow fire rate. Within ~25 units a hit leads to jab, forward tilt or grab; beyond that it only interrupts | Reflectors and powershield; Sheik's needles and Falco's lasers trade with it; short range means he can't wall the whole stage with it |
-| Neutral B (hold) | **Geno Beam** | Three stars light at frames 20, 40 and 60 (v1.3; v1.2 had 15/30/45). Release within ±3 frames of a star's flash for the timed bonus. Just past star three's timed window it fires by itself (frame 64). Release: 8 frames of startup, ~25 of endlag. **No store** (v1.4, Michael: a slight balancing lever, and it separates him from Samus's and Mewtwo's charge shots): a shield press cancels the charge and its stars are lost. Kirby's copy matches. Full Beam: ~17%, a fast, near-full-screen bolt that kills Fox from centre stage at ~115-125%. Air: charges under normal gravity; 20 frames of landing lag only if he lands during the release. Energy | Jump it (a line); powershield and the reflectors (Fox, Falco, Mario's and Dr. Mario's capes, Mewtwo's Confusion, Zelda's Nayru's Love, Ness's bat); Ness's PSI Magnet and Game & Watch's bucket absorb it. The visible charge is the tell (FG P7) |
-| Side B | **Geno Whirl** | A spinning disc of light, **the pressure piece he runs in behind** (v1.2). Spawns frame 12, IASA 24; aerial landing lag 12 only if he lands before frame 20. Travels ~1.35 units a frame easing to ~0.93 (~54 units over ~47 frames; v1.3 scaled with his run), slower than his run (1.6), so he can follow it in; the stick bends it ±20° up or down. **On a shield it grinds:** it presses against the shield and hits three more times, 3% each, 15, 28 and 41 frames after the contact (the first waits out the contact's hitlag and shieldstun; each leaves a gap of 5 or more, inside rule 4 of §8), then settles into the hover. It presses up to the shield's front and never through it: each grind hit knocks it back a little, and after the grind it backs off to ~5 units in front of the shield and hovers there (Michael, 2026-09-29). A light shield's pushback (16-19 units against 3-6 for a hard shield) outruns it, so a light shielder can slide out of the later grind hits, as Melee's light shield escapes pressure. After the outbound hit it **drops its hitbox and spins down for ~20 frames** (still recallable), then it's gone and side B is free (Michael, v1.2: a lingering hitbox that can't hit its only opponent again was noise). The 45-frame hover wall below is for a throw that hits nothing, and after a grind. From 40 units he arrives mid-grind, with the crossup nair, a tomahawk into grab, a spaced fair or a Blast mark on the roll. **The down-arc hits the floor and rolls along it: the ground lane** (Nu's Sickle Storm). Outbound hit 7% at ~40°: a stumble he runs into at low percent, tumbling from ~50% on mid-weights into a tech situation. **Crit:** side-B again within ~4 frames of contact multiplies knockback growth by ~1.35 (kills Fox from mid-range at ~120-135%); an early press voids the crit for that throw, so mashing doesn't work. Then it **hovers 45 frames**: 4-5%, once per target, knocks away and up. **Recall:** side-B during the hover pulls it back through him, ~4 units a frame, 6% at 80°, once per target. Breaks on any hit of 6% or more (our number; Samus's Missile breaks at 4%); cancels incoming projectiles under 6% and survives. Side-B is locked while it's out, plus 30 frames after it despawns unless he catches it. Energy | Shield it; jump the ground roll; break it with a 6% hit; Fox and Falco reflect it; while it's out, his side-B is spent |
-| Down B | **Geno Blast** | **Either-or: the release decides** (v1.4, Michael). He raises both arms to the sky (the casting pose Blast and Flash share) and holds it while the stars light; the stick at the release sets the mark's distance (~25, 50 or 75 units ahead). A **tap** marks on frame 10 (IASA 38); a **release** from frame 10 on marks on the release frame (the release registers the frame after B is let go), IASA 28 frames after the mark: one column, or **three (±14 units) once the second star has lit** (frame 25, with the Beam's second-star sound), capped by rule 5 in §8; a late release commits longer. **Held to the third star (frame 49) it becomes Geno Flash instead, with no Blast** (grounded; airborne there is no Flash, and the widened Blast releases itself at the third star). **An aerial down B that lands mid-charge keeps its charge** (no landing lag, the count carries on), so the third star grounded is the Flash. Beams land ~32 frames after the mark: a column ~10 units wide and ~60 tall, **striking the floor under its own mark wherever Geno is** (each column finds the floor below it; over the void it sweeps 50 down from his height), passing through platforms, and it survives Geno being hit. 9% per column; **airborne targets are meteored** (cancellable), **grounded targets popped up** at 80-85° (the answer to platform camping). **One set of marks at a time. Unusable below ledge height (at the start and at the release: a release down there places no mark); cancelled by a ledge grab or helpless fall.** Energy. Melee precedent: Pikachu's Thunder | The mark is a ~32-frame tell (a bolt standing on the floor at the mark); the raised arms hide which it will be until he commits; move off it; it can't cover the stage and the ledge at once; meteor-cancel |
-| Down B (third star) | **Geno Flash** | Hold down B to the third star (frame 49, grounded; v1.4: instead of the Blast, no mark) and he folds into the blue-and-gold cannon on its carriage (its own model since 2026-09-29, §12) and fires 54 frames later (frame 102 of the hold). **A sweetspot, then a sourspot, in time** (v1.5, Michael 2026-09-29): the sun appears as a **burst** the size of PK Flash's full explosion (radius 14.3), the kill hit for its first 8 frames: 18%, 45°, KBG 95, BKB 55, killing Fox from centre stage at 75% with or without DI (Michael: a little weaker than PK Flash's 65%, its charge and control being better). Then it grows over 40 frames to a **28** radius (was 38) and lingers 30 as the **late sun**: 12%, 45°, 85/45, killing only at ~150% (190% with DI). One hit per target: whoever the burst hit, the late sun can't. **No armour in v0.** Endlag ~40 | A read and punish tool: shield break, missed tech, Rest, a slow recovery. Run from the fold; hit him out of it |
-| Up B | **Star Road** (cannon launch) | Folds into the cannon on frame 6, aims for 12 frames (it fires itself at the end), 16 directions, then travels 20 frames (v1.3; was 24, about Falco's distance with the double jump; now ~17% shorter). The ledge catches from travel frame 4, facing it (he faces the aim's horizontal direction), and as for everyone only while descending: a rising star pops over the ledge and catches it in the helpless fall. **A steep hit on a wall slides along it** (v1.3), so diving along an undercut wall reaches the ledge and rising along one pops over it; a level hit or the stage's underside stops the star dead, so a low recovery still has to be aimed. **A small hitbox at launch only** (4 frames at the muzzle, 6-7%, sends away), nothing in flight or at the end. Helpless fall with 0.6 drift; 30 frames of special landing lag on stage | The fold and aim is readable; edgehog; wait at the landing; a rising recovery ends above the ledge, open; a level shot into the wall is a lost stock. Legacy XP's version has no helpless fall but costs the double jump and airdodge; ours is helpless |
+| Neutral B (tap) | **Finger Shot** | Four bullets from the right hand. **B let go before frame 20 from the press is the Finger Shot** (v1.5, Michael: it was 6, too hard to hit); no charge sound plays inside that window. Grounded: fires frame 10 from the release, IASA 34. Aerial: fires frame 7, 24-frame animation, 10 frames of landing lag only if he lands before frame 16. **Aerial shots angle ~10° down** (lab, v1.2: level shots from a short hop pass over a standing opponent, since his hand sits ~9 above his feet), so a short-hop shot meets standing opponents at mid-range: his version of Falco's short-hop laser, capped by the two-on-screen rule. 3%, ~4 units a frame, fades at ~75 units (under half of Final Destination). **Two on screen, max.** Falco's template: real hitstun, slow fire rate. Within ~25 units a hit leads to jab, forward tilt or grab; beyond that it only interrupts | Reflectors and powershield (bullets reflect, as Fox's and Falco's lasers do); **not absorbable**: Ness's PSI Magnet and Game & Watch's bucket don't take it (Michael, 2026-09-30: bullets are physical); Sheik's needles and Falco's lasers trade with it; short range means he can't wall the whole stage with it |
+| Neutral B (hold) | **Geno Beam** | Three stars light at frames 40, 60 and 80 (v1.5, Michael: every star 20 later, behind the Finger Shot's window; v1.3 had 20/40/60). The charge sound starts at frame 20. Release within ±3 frames of a star's flash for the timed bonus. Just past star three's timed window it fires by itself (frame 84). Release: 8 frames of startup, ~25 of endlag. **No store** (v1.4, Michael: a slight balancing lever, and it separates him from Samus's and Mewtwo's charge shots): a shield press cancels the charge and its stars are lost. Kirby's copy matches. Full Beam: ~17%, a fast, near-full-screen bolt that kills Fox from centre stage at ~115-125%. Air: charges under normal gravity; 20 frames of landing lag only if he lands during the release. Energy | Jump it (a line); powershield and the reflectors (Fox, Falco, Mario's and Dr. Mario's capes, Mewtwo's Confusion, Zelda's Nayru's Love, Ness's bat); Ness's PSI Magnet and Game & Watch's bucket absorb it. The visible charge is the tell (FG P7) |
+| Side B | **Geno Whirl** | A spinning disc of light, **the pressure piece he runs in behind** (v1.2). Spawns frame 12, IASA 24; aerial landing lag 12 only if he lands before frame 20. Travels ~1.5 units a frame easing to ~1.3 (~109 units over 78 frames; v1.5, Michael: about Link's smash-input boomerang, measured 120; v1.3 was ~54 over 47), still under his run (1.6), slower than his run (1.6), so he can follow it in; the stick bends it ±20° up or down. **On a shield it grinds:** it presses against the shield and hits three more times, 3% each, 15, 28 and 41 frames after the contact (the first waits out the contact's hitlag and shieldstun; each leaves a gap of 5 or more, inside rule 4 of §8), then settles into the hover. It presses up to the shield's front and never through it: each grind hit knocks it back a little, and after the grind it backs off to ~5 units in front of the shield and hovers there (Michael, 2026-09-29). A light shield's pushback (16-19 units against 3-6 for a hard shield) outruns it, so a light shielder can slide out of the later grind hits, as Melee's light shield escapes pressure. After the outbound hit it **drops its hitbox and spins down for ~20 frames**, then it's gone and side B is free (Michael, v1.2: a lingering hitbox that can't hit its only opponent again was noise). The 45-frame hover wall below is for a throw that hits nothing, and after a grind. From 40 units he arrives mid-grind, with the crossup nair, a tomahawk into grab, a spaced fair or a Blast mark on the roll. **The down-arc hits the floor and rolls along it: the ground lane** (Nu's Sickle Storm). Outbound hit 7% at ~40°: a stumble he runs into at low percent, tumbling from ~50% on mid-weights into a tech situation. **The timed hit:** side-B again within ~4 frames of contact makes the outbound hit 10% (from 7%) and a small vertical launcher (85°, kbg 30, bkb 60: a combo starter; v1.5, Michael: the old x1.35 growth gave no payoff to go for); an early press voids it for that throw, so mashing doesn't work. **With a Whirl in play side-B plays no animation**: the press is the timed-hit check alone (v1.5). Then it **hovers 45 frames**: 4-5%, once per target, knocks away and up. Breaks on any hit of 6% or more (our number; Samus's Missile breaks at 4%); cancels incoming projectiles under 6% and survives. Side-B is locked while it's out, plus 30 frames after every despawn, whatever ended it (a press in the lockout does nothing). Energy | Shield it; jump the ground roll; break it with a 6% hit; Fox and Falco reflect it (a reflected disc is still his for the one-on-screen rule: side B stays locked until it ends, the 30-frame relock follows, and a press on it does nothing); Ness's PSI Magnet absorbs it; while it's out, his side-B is spent |
+| Down B | **Geno Blast** | **Either-or: the release decides** (v1.4, Michael). He raises both arms to the sky (the casting pose Blast and Flash share) and holds it while the stars light. **The mark shows from the move's first frame** (v1.5, Michael: counterplay, shown as soon as the move is locked in). **The stick places it until the second star** (v1.5, Michael: "read the stick at any point in the charge before level 2 to place the mark ... much more forgiving"): near, mid or far, **36, 50 or 64 units ahead**, the second star's three columns (Michael: "the 3 possible stage-1 mark positions match the CURRENT stage-2 laser positions"; v1.5 first had 25/50/75). The press reads the stick past 0.25 either way (down B needs it under -0.55 and within 0.6 sideways); on every frame of the charge after it the stick is free, and the mark goes near or far past 0.5 and back to mid only inside 0.25, so a stick resting at a boundary never flickers it. The one mark slides there in view (5 units a frame: 3 frames between places), measured from where he pressed. It locks when the second star lights, or when B is let go first: a tap keeps the last reading made with B held. **The second star marks all three places, 36, 50 and 64 ahead, whatever the stick** (frame 25, with the Beam's second-star sound; Michael: "it simply cover[s] all 3 of the possible locations from stage 1"). A release strikes the marks shown: a **tap** releases on frame 10 (IASA 38); a **release** from frame 10 on releases on its frame (the release registers the frame after B is let go), IASA 28 frames after it: one column, or three once the second star has lit, capped by rule 5 in §8; a late release commits longer. **Held to the third star (frame 61; v1.5, Michael: 49 locked the cannon in too early, so the widened Blast's window runs 25-60) it becomes Geno Flash instead, with no Blast, and the marks go that frame** (grounded; airborne there is no Flash, and the widened Blast releases itself at the third star). **An aerial down B that lands mid-charge keeps its charge** (no landing lag, the count carries on), so the third star grounded is the Flash. Beams land ~32 frames after the release: a column ~10 units wide and ~60 tall, **striking the floor under its own mark wherever Geno is** (each column finds the floor below it; over the void it strikes the stage's plane, the height of the nearest floor back toward the stage, v1.5; with no floor near at all, 50 below him), passing through platforms, and it survives Geno being hit. 9% per column; **airborne targets are meteored** (cancellable; v1.5, Michael: kbg 80 -> 50, bkb 20 -> 10, about 60% of the spike), **grounded targets popped up** at 80-85° (the answer to platform camping). **One set of marks at a time. Unusable below ledge height (at the start and at the release: a release down there places no mark); cancelled by a ledge grab or helpless fall.** Energy. Melee precedent: Pikachu's Thunder | The mark is a ~32-frame tell (a bolt standing on the floor at the mark), in view the whole time it moves; the raised arms hide which it will be until he commits; move off it; it can't cover the stage and the ledge at once; meteor-cancel; **a reflector takes a column over and it falls in place, now able to hit Geno** (Michael, 2026-09-30: "Thunder (pikachu down-b) is reflectable, and giving anti-blast-edgeguard play to reflectors is a good balancing change. I vote let the blast be reflectable and fall in place"); Ness's PSI Magnet absorbs it |
+| Down B (third star) | **Geno Flash** | Hold down B to the third star (frame 61 from v1.5, was 49; grounded; v1.4: instead of the Blast, no mark) and he folds into the blue-and-gold cannon on its carriage (its own model since 2026-09-29, §12) and fires 54 frames later (frame 102 of the hold). **A sweetspot, then a sourspot, in time** (v1.5, Michael 2026-09-29): the sun appears as a **burst** the size of PK Flash's full explosion (radius 14.3), the kill hit for its first 8 frames: 18%, 45°, KBG 95, BKB 55, killing Fox from centre stage at 75% with or without DI (Michael: a little weaker than PK Flash's 65%, its charge and control being better). Then it grows over 40 frames to a **28** radius (was 38) and lingers 30 as the **late sun**: 12%, 45°, 85/45, killing only at ~150% (190% with DI). One hit per target: whoever the burst hit, the late sun can't. **No armour in v0.** Endlag ~40 | A read and punish tool: shield break, missed tech, Rest, a slow recovery. Run from the fold; hit him out of it. **Not reflectable** (Michael, 2026-09-30: a shine, cape or powershield took the sun over and grew it onto Geno); Ness's PSI Magnet and Game & Watch's bucket absorb it |
+| Up B | **Star Road** (cannon launch) | Folds into the cannon on frame 6, aims for 12 frames (it fires itself at the end), 16 directions, then travels 16 frames, ~45 units (v1.5, Michael: dropping to sweetspot the ledge took him too near the blast zone; v1.3 was 20 frames, 56; v1.2 24). **The Star Guns power it** (both hands, v1.5; they were Hand Cannons). The ledge catches from travel frame 4, facing it (he faces the aim's horizontal direction), and as for everyone only while descending: a rising star pops over the ledge and catches it in the helpless fall. **A steep hit on a wall slides along it** (v1.3), so diving along an undercut wall reaches the ledge and rising along one pops over it; a level hit or the stage's underside stops the star dead, so a low recovery still has to be aimed. **A small hitbox at launch only** (4 frames at the muzzle, 6-7%, sends away), nothing in flight or at the end. Helpless fall with 0.6 drift; 30 frames of special landing lag on stage | The fold and aim is readable; edgehog; wait at the landing; a rising recovery ends above the ledge, open; a level shot into the wall is a lost stock. Legacy XP's version has no helpless fall but costs the double jump and airdodge; ours is helpless |
 
 **Projectile rules, all of them:**
 - **Reflector break is real in Melee:** "If a projectile is too strong for a reflector, the reflector breaks as if it was a
   shield and stuns the user" (SmashWiki, via REV). Every Geno projectile stays under the threshold (read it from the decomp),
   because a broken reflector is a stock lost to a knowledge check. Fox and Falco reflect at 1.5× damage, so a reflected
   full Beam must not kill Geno below ~90%.
-- **Energy or physical:** Finger Shot is bullets (physical); the Beam, Whirl, Blast and Flash are energy, so Ness and
-  Game & Watch can absorb them. That's a healthy matchup tool for two low tiers.
+- **Energy or physical** (Michael, 2026-09-30: "All projectiles except finger bullets should be absorbable by Ness ...
+  Bullets are physical, the rest are energy-based"): the Finger Shot and the down throw's shots are bullets, reflectable
+  and not absorbable; the Beam (every level, the timed release), the up throw's Star Gun stars, the Whirl, the Blast and
+  the Flash are energy, so Ness and Game & Watch absorb them. The item hitbox's absorb bit decides it (word 5's `x1_b4`,
+  `HitCapsule.x42_b0`: `ftcoll.c`'s absorb check, which PSI Magnet and the bucket both reach through
+  `ftColl_CreateAbsorbHit`); the reflect bit is `x1_b3`, `x41_b7`. The Flash sun is the one energy projectile that
+  doesn't reflect. That's a healthy matchup tool for two low tiers.
 - **Link's and Young Link's shields** block frontal projectiles, so the Blast from above and the bent Whirl are the answers
   there. The lane design working as intended.
 - **Crouch height:** every projectile is lab-checked against every crouch hurtbox (Jigglypuff, Kirby, Pikachu, Fox, the Ice
@@ -546,7 +551,7 @@ Melee has no burst or combo breaker, so each of these has to end on its own (FG,
    coverage and recovering with coverage.
 2. **No Blast below ledge height.** Edgeguards are cast from the stage or above. The Whirl stays usable offstage, since a
    deep edgeguard is a real risk.
-3. **Once per target.** The hover, the outbound hit and the recall each hit a given opponent once per throw. Geno Flash's
+3. **Once per target.** The outbound hit and the hover each hit a given opponent once per throw. Geno Flash's
    sun hits a given opponent once: the burst or the late sun, never both (one hitbox that weakens in place). The burst
    out-hits the late sun at every percent (18% to 12%; knockback 99.5 + 1.52q against 72 + 0.95q at Fox q%).
 4. **The shield gap.** No sequence of his hits on a shielding opponent, at any spacing, leaves less than **5 frames**
@@ -574,7 +579,6 @@ Melee has no burst or combo breaker, so each of these has to end on its own (FG,
 | The follow-in | From every 5-unit spacing, 20-60 units: the frame he arrives against the Whirl's grind, and the on-shield advantage of each follow-up (nair in front and behind, tomahawk grab, fair, Blast) on Fox, Marth, Sheik and Peach shields |
 | Shield break by chip | No ranged-only sequence breaks a full shield |
 | Whirl and Blast strings | Every two-piece string escapable by DI or SDI; none true past 80% on any weight |
-| Recall sandwich | Not true on anyone past 30%; SDI-escapable |
 | Tech chase | One placement covers two outcomes or fewer; knockdowns end by 60-80% on mid-weights |
 | Edgeguards | For Falcon, Ganondorf, Falco, Dr. Mario and the Ice Climbers, at least two recovery paths beat any single setup |
 | Throws | No regrab on Fox, Falco or Falcon at 0-60% with best DI and DI mixes |
@@ -601,7 +605,7 @@ and who wins. Overshoot first, then pull back to the top of A tier.
 | Ice Climbers | The grab | Zoning splits Nana (the hover, the Blast); a normal grab |
 
 **Implementation templates in the decomp** (known to work with Melee's reflect, absorb and clank code): Link's boomerang
-(the Whirl's return and recall), Samus's Charge Shot (store and cancel lag), Pikachu's Thunder (a hitbox from above), Young
+(the Whirl's travel), Samus's Charge Shot (store and cancel lag), Pikachu's Thunder (a hitbox from above), Young
 Link's arrows (a straight lane).
 
 ## 11. Decided (Michael, 2026-09-27)
@@ -813,6 +817,160 @@ Everything a vanilla character has that Geno doesn't yet (placeholders count as 
 - **Japanese menu files** (the `.dat` versions of MnSlChr, GmRst, MnMaAll, IfAll) aren't patched.
 
 ## Changelog
+
+- **2026-09-30, the effects follow the moves round (geno-fxnormals):**
+  - **Up smash's taller column** (to 30.4): the Star Gun bursts sit on the new spheres (17.5 / r5.4, 25.4 / r5.0) and
+    the second spray rises to 28.5. The back flare, now a sourspot, gets a smaller, lighter spray (N_STAR_SOUR: pale
+    stars and white twinkles, no glow) so front and back read differently.
+  - **Cannon Charge** (the dash attack):
+    - on 6, a heavier Hand Cannon blast and shock ring at the mouth (N_CANNON_HEAVY) and a fire burst on its blast
+      sphere, riding the cannon (RArmJ);
+    - on 10, a fire burst for the lingering hit;
+    - smoke curling from the barrel on 9-18 (N_BARREL_SMOKE, to ~21);
+    - the engine's skid dust at his feet on 8-17.
+  - **Down smash re-paced:** the held cannons smoke from both barrels on 10-19 (lingering to ~22), and the landing thud
+    raises dust on 14.
+  - **The grabs' longer, open-palmed flight** (16.0 / 18.5): the trail follows the animation's path (4.4-5.2 units off
+    the socket standing, 2.4-3.5 dashing). The launch star moved from the socket to the flying hand's wrist (HandN
+    -0.5, as the forward throw's ignition).
+
+- **2026-09-30, specials v1.5b: Michael's calls** (measured in `specials_v15_lab`'s norecall, absorb and bmark groups and
+  in `reflect_lab`; the review page has the tables):
+  - **The Whirl's recall is gone completely** ("The recall behavior for Whirl should be completely removed now"): its
+    state, its travel home and its 6% hit, the input path, the catch and its radius, its sound cue and the trail's recall
+    case. With the disc out, side B is the timed-hit check in flight and nothing otherwise: no animation, no throw.
+    Pressed in the travel, the grind, the hover (grounded and in the air) and the spin-down, and mashed through a whole
+    throw, the disc never came back and side B never played; the timed hit still lands (10%). The lockout is now 30
+    frames after every despawn (a catch used to waive it): pressed 11 frames after, nothing; 38 after, a new throw.
+  - **Bullets are physical, the rest energy** ("All projectiles except finger bullets should be absorbable by Ness, I
+    would say. Bullets are physical, the rest are energy-based."). The Finger Shot and the down throw's shots drop the
+    item hitbox's absorb bit (word 5's `x1_b4`, `HitCapsule.x42_b0`) and keep the reflect bit. Against a held PSI Magnet
+    (Ness at 30%), the Finger Shot hits him for 3% and the down throw's shot for 2%. Absorbed, with his percent after:
+    the Beam at one, two and three stars (18, 8, 0) and the timed release (0), the up throw's star (28), the Whirl (16),
+    the Blast's single column (12) and all three (0), and the Flash (0).
+  - **The Flash sun doesn't reflect** ("Flash almost certainly should not be"): a shine, cape or powershield took it over
+    and grew it onto Geno. Its flags drop the reflect bit and keep absorb (0xEDD000). Fox's shine and Mario's cape now
+    take the burst (18%), a powershield blocks it, and nothing turns it.
+  - **The Blast stays reflectable and falls in place** ("Thunder (pikachu down-b) is reflectable, and giving
+    anti-blast-edgeguard play to reflectors is a good balancing change. I vote let the blast be reflectable and fall in
+    place"). A shine at the mark takes the column over, and it keeps falling where it was (x unchanged); with Geno
+    under it, it hits him (14%, the reflect's 1.5x).
+  - **A reflected Whirl is still his.** The item keeps its thrower, since a reflect makes the reflector its owner, so
+    side B found no Whirl of his and threw a second. Now side B stays locked until it ends, and the 30-frame relock
+    follows. A press on it does nothing. A timed hit armed before the reflect is disarmed, so it lands on Geno as the
+    plain hit (11% after the shine's 1.5x), not the crit. Against Fox's shine, Mario's cape and a powershield: one
+    Whirl, never two.
+  - **The forgiving mark** ("read the stick at any point in the charge before level 2 to place the mark ... much more
+    forgiving"; "the 3 possible stage-1 mark positions match the CURRENT stage-2 laser positions"). The stick picks 36,
+    50 or 64 ahead at the press and on every charge frame until the second star, or until B is let go (a tap keeps the
+    last reading made with B held). During the charge it takes 0.5 to go near or far and under 0.25 to come back, so a
+    stick held at 0.375 kept its place both ways in the lab. The one mark slides there in 3 frames (the same item, moved:
+    its tell keeps animating, and its floor look follows it over the void). **The second star marks all three places**
+    ("it simply cover[s] all 3 of the possible locations from stage 1"), whatever the stick. Stage 1's reach is 36-64
+    (was 25-75); Michael finds that acceptable, effectively a buff. Measured: taps struck at 36, 50 and 64; steering
+    slid the mark and struck where it ended; the stick pushed forward after a tap's release left it at mid; star 2
+    struck 36, 50 and 64 with the stick back or forward; an aerial cast steered from where he pressed (no drift creep);
+    near the ledge the far mark sat over the void on the stage's plane.
+  - The director gains a `shoot` cue: fire any laser-type article state as a port's projectile (the throw shots
+    against the magnet, which a throw can't aim at a third party).
+
+- **2026-09-30, Michael's playtest: up smash, the dash attack, the grabs, down smash and down air:**
+  - **Up smash:** "can't hit through a Battlefield platform to hit someone standing on it. Can we extend the hitbox and
+    visual slightly so that it does? ... make the back a sourspot, don't weaken the front and top. Keep it with short
+    horizontal range." The column reached 26.8 and a Fox standing on a side platform (27.2) reaches ~0.6 below it: it
+    missed him from under the platform's middle. The top sphere rose to 25.4 (r 5.0; the lower to 17.5): reach 30.4
+    (56th to 83rd percentile; 11 of the 26 cast up smashes reach a side platform, Ganon's 36.6 the highest). On
+    Battlefield it now hits him under the platform's middle and 5 either side (14%), not 10 away. The back flare is the
+    sourspot: 8%, kbg 80, bkb 30 (12%, 100, 40 in front, unchanged; the column, 15%, takes anyone within ~7 either
+    side). The top platform (54.4) is out of scope: it sits between the side platforms, so no up smash from the ground
+    or a side platform reaches it (the cast's longest reach is 36.6). The effects agent extends the visual to 30.4.
+  - **Dash attack:** "both very visually unclear what action it's supposed to be, and the animation feels puny /
+    unfinished. We might want to rework that move entirely." Now Cannon Charge: the right arm folds into the Hand
+    Cannon on the run, he lunges with it thrust out and fires point-blank on 6; the recoil brakes the charge into a
+    heel skid, the barrel smoking. The same frame data and knockback (9% on 6-9, 6% on 10-15, IASA 38); the hitboxes
+    ride the cannon (its mouth and barrel), so it gains disjoint (-0.02 to 3.9) and its slide shortens (28 to 22; reach
+    29.3 to 27.9). Concept note and strips on the review page.
+  - **The grabs:** "I'm fine extending their range to make them visually read better as rocket fists. Major balance
+    change, but acceptable. Keep the range under all of the grapple grabs, and under Marth's but on the long end of the
+    cast." Measured in game (`director/grab_reach_lab.py`: the farthest distance that still catches a standing Fox):
+    standing, Samus 46, Link 38, Young Link 28, Yoshi 24, Marth 22, Roy 21, Geno 16; out of a dash, Samus 50, Link 47,
+    Young Link 44, Yoshi 41, Marth 38, Roy 36, Geno 21. The grapples all reach further than Marth, so Marth's grab is
+    the ceiling. The fists now fly out further, the boxes riding them, on the same timing: the grab reaches 16.0
+    (13.53; 83rd percentile, under Marth's 19.3, Roy's 18.1, Bowser's 17.8 and DK's 17.6; 19 in game), the dash grab
+    18.5 (16.37; 87th, under Marth's 20.7; 23 in game). The growth keeps Mario's cost (1.83x and 2.0x cost 0.67 and 0.80
+    of disjoint at the new reach too). Every throw and the pummel play the same from a grab 17 apart (the hold point is
+    unchanged).
+  - **Open hands:** "The grabs read as rocket PUNCHES, not grabs. They should probably be mostly-open-palm?" The hands
+    open as they launch and fly open and reaching, the fingers a little cupped (`poses_ground.REACH`), staying open on
+    a whiff and the return; a catch cuts to CatchWait's grip. The hurtbox is the hand bone's, open or closed, so the
+    growth stays; the open hand fills 0.36 and 0.39 of the grab box (the fist 0.32 and 0.35; Mario's 0.47).
+  - **Down air:** "yeah, slow it down. Probably give the startup animation a clear 'readying rocket punch' read." The
+    fist cocks back beside his head, the rocket rings snap on (5), and it draws further back and holds, trembling, as
+    the rocket readies (7-10), then fires on 12: startup 9 to 13, total 38 to 50 (both 44th percentile), the flight
+    unchanged and a longer ride-out of the dock. The meteor on the close hit, the weak tail and the landing blend stay;
+    landing lag 24, L-cancel 12 (37th), autocancel from 44 (6 before the end; the cast's median 5.5). Reach and
+    disjoint unchanged. The aerials agent's C is untouched.
+  - **Down smash:** "frame data is probably fine then, but we might want to extend the animation / effects so it's not
+    purely frontloaded." The frame data stays (7, 7-9, 43). The wind-up reads inside the startup (a gather, then the
+    drop into the squat); after the blasts a bigger recoil bounce and a thud (10-16), the smoking cannons held out and
+    shuddering as they sink (17-24), folded back at 28 (was 24), and a slow rise to the idle (28-43).
+
+- **2026-09-30, the Blast, Star Road and the Whirl, from Michael's playtest (geno-fx; visual only):**
+  - **The Blast, richer** ("the beam effects seem lower-quality than the rest of Geno's kit"). Each column is now three
+    layers in SMRPG's colours: a wide soft glow, the band (faint horizontal banding, soft streaks, bright edge lines)
+    and a hot core. It shimmers in width, a flare rides its falling foot, and it comes from far up (a high cast no
+    longer shows it appearing mid-screen). It lands in SMRPG's white cartoon cloud (shaded, lit from the top left)
+    with a shock ring on the floor. The tell is a double-rimmed oval and a beam with a glow.
+  - **The Blast over the void** ("janky ... casting it offstage and higher vertically than ground level"). The item
+    checks for a floor under each column's mark. Over the void it hides the floor oval and the foot's flare, fades the
+    column into the depths (a tail) and lands no cloud; over a floor, as before. Each column is checked on its own (a
+    widened Blast straddling the ledge draws one of each). The mark's geometry is the specials'.
+  - **The tell over a long hold** (the marks will stand through the whole charge): it breathes slowly instead of
+    widening once, its sparkles are sparse (every 12 frames) and quicken over the last 9 frames before the strike, and a
+    cancelled mark (the cannon committing, a ledge grab) vanishes cleanly: its ring closes in and a few sparkles lift
+    away (`itGe_BlastVanish`, for the specials' cannon-commit path).
+  - **Star Road's stars** ("a little minimalist ... star particles both on startup and trailing him"): a burst of 5
+    no-damage stars from each hand at the launch and one from his waist every 3 frames of the flight, 16 in all, at
+    most 15 on screen. They're small, cream-white with a blue rim, spinning (after the Flash's finishing stars), not
+    the gold of the moves that hit.
+  - **The Whirl as a spiked sun** (Michael, after the remake's: "clearly be small spikes like a stylized sun, but
+    rotating"): a white-gold core and a rim of 22 small straight spikes, rotating; the trail's fading rings get the
+    same spiked rim over a hollow, darker centre. Three angles to Melee's side-on camera were built and compared at
+    match distance and close up: facing the camera and spun in the screen's plane (built: the clearest sun, its spikes
+    crisp and its spin plain), the SNES's 48-degree oval (the spikes squeeze at its sides and the spin reads as a
+    shimmer; the alternative, `WHIRL_LOOK=tilt`), and a 70-degree tilt (more edge-on, a sliver). Hits, the crit flash
+    and timing are unchanged.
+
+- **2026-09-30, Michael's playtest: the grabs' rocket fists, the up tilt's stars, the neutral air's spinning stars
+  (geno-fxnormals):**
+  - **The grab and dash grab** ("it isn't obvious what they're actually supposed to represent"). The borrowed red spark
+    (1062) is gone. Each fist now leaves its socket with the forward throw's rocket-launch star (N_ROCKET_FLARE:
+    ROCKET_LAUNCH's look in 6 frames, drawn without the depth test), and trails the Double Punch's exhaust while it's
+    over 1.2 units off its socket (`moves.grab_tails`, from the grab animation's own path, so longer grabs carry it).
+  - **The dash grab's effect behind his body.** The spark was spawned at the fists' sockets and stayed where it was
+    spawned while the dash grab's slide carried him forward, so within a few frames it sat behind him. The far socket's
+    was also hidden by his body. Now the star draws over the body and is gone in 6 frames, and the dash grab's exhaust
+    (N_EXHAUST_QUICK) fades in 6, before the slide takes him through it.
+  - **Up tilt** ("the star particles rather than the default-engine flash"). The engine's star glint (1011), star ring
+    (1012) and sparkles (1010) are replaced with his own:
+    - a gold SMRPG star over a warm glow on each arc sphere, on its frame;
+    - a bigger star throwing a ring of six small ones at the top of the arc;
+    - white twinkles shed from the twirling hands.
+  - **Neutral air** ("the spinning star effects seem to be missing now?"). It never had them. No branch's script, the
+    decomp or the transcripts ever spawned an effect on neutral air: "star core" named its hitboxes. It gets them now,
+    as a pair of gold stars wheeling round the core hitbox's centre at its radius (45 degrees a frame, front-high over the
+    top and round behind, as the spin goes) with a glow at the core on the clean hit (3-6). White twinkles continue
+    through the late hit to frame 12.
+  - **A regression check** of every gun move, against the final chunk numbers:
+    - Within the lab's scatter: the ratio moved 0.00-0.10 on every move except down air, and cover 0.00-0.07.
+    - Down air dropped (0.94 -> 0.38), as meant: it is a rocket fist now, its Hand Cannon bursts removed by the aerials
+      agent.
+    - The face-up get-up missed its segment in that run (he'd fallen from the previous one); the face-down get-up shares
+      its effect code and measured 0.95 / 0.56.
+
+- **2026-09-29, approvals (Michael):** the back throw's single-shot cannon (550061) as built, not one of the four
+  alternative takes; the model polish as built: the low model's face, and the capelet's static skinning to the arms,
+  accepting a little more clipping in some arms-down poses (no helper joint).
 
 - **2026-09-29, the back throw's BOOM is one chunky single shot (Michael, §6f; geno-fxnormals):**
   - The old sound, 550002, is SMRPG's Hand Cannon as its battle plays it: ROM 109 triggered three times, 6 frames apart.
@@ -1310,6 +1468,27 @@ Everything a vanilla character has that Geno doesn't yet (placeholders count as 
   numbers against the vanilla caps). The copy's hat interface is unchanged; `PlKbCpGe.dat` drops in. Checked in game on
   all six Kirby costumes, beside Luigi's, Mario's and Link's caps, with Geno in his default and non-default costumes
   (Mallow's among them), through idle, squat, jumps, the copy's attacks and the taunt that takes it off.
+
+- **2026-09-30, specials v1.5 from Michael's playtest** (measured in `specials_v15_lab`; the review page has the numbers):
+  - **Neutral B:** B let go before frame 20 from the press is the Finger Shot (it was 6: "difficult to trigger the
+    finger-guns tap"). The stars light 20 later, at 40, 60 and 80; it fires itself at 84; the timed windows move with them.
+    The charge sound starts at frame 20, so a Finger Shot plays none. Kirby's copy matches.
+  - **Side B:** no recall ("a code path that can trigger the boomerang effect": a late press recalled the disc). With a
+    Whirl in play, side B plays no animation: the press is the timed-hit check alone; the lockout press does nothing.
+    The timed hit is now 10% (from 7%) and a small vertical launcher (85°, kbg 40, bkb 80), where it was the plain hit
+    with x1.35 growth: a short-hop neutral air combos from it on Fox, Falco and Falcon at 0 and 50%, and an up air on
+    Falcon at 50%. The range is ~108 units (was ~52), toward Link's smash-input boomerang (measured 120).
+  - **Down B:** the mark shows from the move's first frame (the stick at the press sets its distance, and nothing moves
+    it after); the side marks appear at the second star; the marks vanish when the cannon commits. A release strikes
+    them 32 frames on, as before. Over the void a mark sits on the stage's plane (the nearest floor's height back toward
+    the stage), not 50 below Geno. The airborne meteor is kbg 50, bkb 10 (was 80, 20): an offstage column leaves Fox
+    37-49 units shallower at the end of hitstun, and a 90% Fox is no longer KO'd by it outright. Geno Flash's third star
+    moves from frame 49 to 61, so the widened Blast's window is 25-60. Down B can't be shield- or roll-cancelled: tested
+    with shield and roll held through the charge, the release and the Flash (grounded and in the air); the first guard
+    comes at the release's IASA or the Flash's end.
+  - **Up B:** Star Road travels 16 frames, ~45 units (was 20, 56). A straight drop and Star Road straight up sweetspots
+    the ledge from 60-72 units under it (was 72-84), 12 further from the blast zone. The rise is now 59 units, Falco's
+    56 (Fox 79, Marth 51, Falcon 38). The Star Guns power it (the hands were Hand Cannons).
 
 - **2026-09-29, down air becomes a rocket fist (Michael):** "I misspoke on the earlier 'disjoint hand cannon shot.' I had
   intended 'hand cannon' to mean 'rocket fist' ... Let's try the rocket fist design, similar to ftilt and fsmash -- it's

@@ -169,8 +169,8 @@
    "median": 9.5
   },
   "reach": {
-   "geno": 29.31,
-   "pct": 37,
+   "geno": 27.86,
+   "pct": 33,
    "median": 31.21
   },
   "radius": {
@@ -179,8 +179,8 @@
    "median": 4.495
   },
   "disjoint": {
-   "geno": -0.02,
-   "pct": 33,
+   "geno": 3.88,
+   "pct": 79,
    "median": 1.02
   }
  },
@@ -243,8 +243,8 @@
    "median": 15.0
   },
   "reach": {
-   "geno": 26.8,
-   "pct": 56,
+   "geno": 30.4,
+   "pct": 83,
    "median": 26.5
   },
   "radius": {
@@ -253,7 +253,7 @@
    "median": 5.359999999999999
   },
   "disjoint": {
-   "geno": 11.53,
+   "geno": 15.12,
    "pct": 102,
    "median": 6.484999999999999
   }
@@ -485,8 +485,8 @@
  },
  "dair": {
   "startup": {
-   "geno": 9,
-   "pct": 25,
+   "geno": 13,
+   "pct": 44,
    "median": 13.5
   },
   "active": {
@@ -495,8 +495,8 @@
    "median": 18.0
   },
   "total": {
-   "geno": 38,
-   "pct": 10,
+   "geno": 50,
+   "pct": 44,
    "median": 55.0
   },
   "damage": {
@@ -552,8 +552,8 @@
    "median": 0.0
   },
   "reach": {
-   "geno": 13.53,
-   "pct": 56,
+   "geno": 16,
+   "pct": 83,
    "median": 12.865
   },
   "radius": {
@@ -589,7 +589,7 @@
    "median": 0.0
   },
   "reach": {
-   "geno": 16.37,
+   "geno": 18.5,
    "pct": 87,
    "median": 13.085
   },
@@ -599,7 +599,7 @@
    "median": 3.8
   },
   "disjoint": {
-   "geno": 2.07,
+   "geno": 2.06,
    "pct": 52,
    "median": 2.035
   }

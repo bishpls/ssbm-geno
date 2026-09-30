@@ -78,11 +78,16 @@ enum {
     DIR_ANIM,       /* port; a: action-table entry. Play that entry's animation and script in the current state, through
                      * the engine's own idle-variant player (ftCo_8008A6D8, Wait's): for animations no state plays
                      * (ItemBlind) */
-    DIR_GRDUMP      /* a: 0 floors only, 1 every line. The stage as the engine holds it this frame: STAGE s grkind stkind
+    DIR_GRDUMP,     /* a: 0 floors only, 1 every line. The stage as the engine holds it this frame: STAGE s grkind stkind
                      * blast l r t b cam l r t b offset x y; LINE s id flags lo x0 y0 x1 y1 for each live collision line
                      * (after joint binding, so moving platforms read where they are); GROUND s port x y air line motion
                      * ledge for every fighter (the floor line it stands on; the ledge line it holds, in the cliff states).
                      * For stage labs and stage-build checks */
+    DIR_ITEMS,      /* Log ITEMS s kind x y per live item this frame (a lab's projectile paths: Link's boomerang, Geno's Whirl) */
+    DIR_SHOOT       /* port: the owner; a: kind*16 + state + 4096*(speed*10); b, c: the spawn's offset from the owner (b along
+                     * his facing, c up). A laser-type projectile (it_8029C504: Fox's, Falco's, Geno's Finger Shot and Beam
+                     * states) fired straight ahead, as its owner's: a lab fires any state of those articles where a move
+                     * can't aim it (Geno's throw shots at a PSI Magnet). Logs SHOOT s port kind state x y speed */
 };
 
 typedef struct DirCue {

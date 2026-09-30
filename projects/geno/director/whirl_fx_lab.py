@@ -3,7 +3,6 @@ and crit flash (EfGeData.dat WHIRL_*), against Fox:
   hit        the outbound hit on Fox 15 ahead (the burst), then the spin-down (the disc shrinks away)
   crit       side B again 39 frames in (contact +42): the timed crit (the blue flash), Fox at 60%
   shield     Fox shields 5 ahead: the grind (three spark bursts), then the hover and its fade
-  recall     Fox 70 ahead: the hover, then side B at 60 recalls it through him (the trail on the way back)
   match      the outbound hit at match distance
 GENO_WHIRL_MODEL=0 in the fighter build gives the donor's ball (the "before"). Each segment opens with a sync slate.
     .venv/bin/python tools/machinima/melee/build.py projects/geno whirl_fx_lab
@@ -20,10 +19,12 @@ SEGS = [
     ('hit', 110, MID, [(0, 3, SB, 'B')], 15, [], 0),
     ('crit', 110, MID, [(0, 3, SB, 'B'), (39, 2, SB, 'B')], 15, [], 60),
     ('shield', 150, MID, [(0, 3, SB, 'B')], 5, [(0, 110, (0, 0), 'R')], 0),
-    ('recall', 130, MID, [(0, 3, SB, 'B'), (60, 3, SB, 'B')], 70, [], 0),
     ('match', 110, MATCH, [(0, 3, SB, 'B')], 15, [], 0),
 ]
 SYNC = 10
+ONLY = [x for x in os.environ.get('LAB_ONLY', '').split(',') if x]
+if ONLY:
+    SEGS = [s for s in SEGS if s[0] in ONLY]
 f = Film(len_s=(70 + sum(s[1] for s in SEGS) + 40) / 60)
 f.setup(players=[('geno', dict(x=-30, face=1)), ('fox', dict(x=15, face=-1))], seed=5)
 geno, fox = f.port(GENO), f.port(FOX)

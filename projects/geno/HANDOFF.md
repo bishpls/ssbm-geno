@@ -194,6 +194,10 @@ Crash hunting is his playtests plus the targeted labs. `cpu_soak` stays as a lab
 
 ## 5. Hard-won facts (read before touching the area)
 
+- **Agent builds go to their sandbox:** `build.py` from an agent worktree (`animation-pipeline-<name>`) now refuses to
+  run unless `MELEE_DECOMP` and `MELEE_DISC` are set (eval `sandbox.sh NAME`). On 2026-09-30 an unguarded lab build
+  overwrote the shared decomp's director and put a lab DOL on the main disc in place of Michael's playtest build.
+
 - **Never `git stash` in a worktree:** every Geno worktree shares one repository and so one stash list. One agent's
   `stash pop` took another agent's stash (2026-09-29; no damage, the pop conflicted). Commit WIP to your own branch.
 
@@ -432,7 +436,9 @@ yet. `lb/lbaudio_ax.c`'s `lbl_803BB3C0` is the bank-per-character table, not the
 - **The Forest Maze stage** (geno-stage; `projects/geno/stage/`): Michael's calls 2026-09-29: layout A, the Clearing (one
   mushroom cap at 28, ledges ±70); a proper stage-select slot; static assets only (no Wiggler for now); image-model style
   targets approved, kept to GameCube-era Melee aesthetics; music: Forest Maze metal draft 2 (not the GLADE version),
-  cut to a stage loop. Milestones: M1 greybox in its real slot with the loop, M2 style targets, M3 production art.
+  cut to a stage loop. Milestones: M1 greybox in its real slot with the loop (done and merged 2026-09-30; Michael kept the
+  layout and approved the stage select: the icon at the bottom row's left end, stage names scaled 0.84 to clear it), M2 style
+  targets (waits on Michael's go), M3 production art.
 - **KO and star-KO sound:** decided 2026-09-29: silence (Michael). Nothing to build; the shared KO sounds play.
 - **Costumes:** done: six, Michael's set (2026-09-29; DESIGN §12 "Costumes"): Geno, Mario, Bowser, Mallow, Peach and
   Dark. The review page is `~/games/melee/sandbox/geno-menuart/board/review_menuart.html`.
@@ -444,8 +450,8 @@ yet. `lb/lbaudio_ax.c`'s `lbl_803BB3C0` is the bank-per-character table, not the
   - done 2026-09-29 (geno-cannon polish, DESIGN changelog): the low model's face (its own 64x64 CI8 face texture, the
     high nose; `director/lowface_lab.py` shows the magnifier bubbles) and the arms through the capelet's front panels
     (the panels ride the arm: `model/cape_clip.py` measures every action, `model/cape_fit.py` fits the weights,
-    `director/capelet_lab.py` checks in game). Open, Michael's call: a pose-driven helper joint per side, so the panels
-    ride only a raised arm (static skinning costs some arms-down poses: the shield, item swings, the walk);
+    `director/capelet_lab.py` checks in game). Michael accepted the static
+    skinning's trade (2026-09-29): no helper joint;
   - done 2026-09-29: the throws' victim animations, measured on Fox, Falco, Falcon, Bowser and Pichu against his holding
     hand and against Fox's own throws on Fox (`throws_lab.py --grip`). Authored where the donor didn't fit: the down
     throw's pin (Fox's frames 25-34 roll the body below its pivot, into the floor) and the up throw's overhead hold

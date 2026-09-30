@@ -19,6 +19,8 @@ cp "$MW"/rig/out/PlGe*.dat "$MW"/rig/out/GmRstMGe.dat "$DISC/files/"
 [ -f "$MW/music/fanfare/ff_geno.hps" ] && cp "$MW/music/fanfare/ff_geno.hps" "$DISC/files/audio/"
 # his effect file (EfGeData.dat, built from projects/geno/fx/efge.py; without it the game plays the borrowed effects)
 MELEE_DISC="$DISC" MELEE_WORK="$MW" "$PY" "$ROOT/projects/geno/fx/efge.py" --install >/dev/null
+# the Forest Maze stage's files (built locally into $MW/stage; the DOL expects them once the stage is merged)
+[ -f "$MW/stage/out/GrFm.dat" ] && MELEE_DISC="$DISC" MELEE_WORK="$MW" sh "$ROOT/projects/geno/stage/install.sh" >/dev/null
 "$PY" "$ROOT/tools/machinima/melee/build.py" "$ROOT/projects/geno" play | tail -1
 if [ ! -f "$PROFILE/Config/Dolphin.ini" ]; then
     mkdir -p "$PROFILE/Config"

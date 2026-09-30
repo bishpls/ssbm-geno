@@ -175,6 +175,23 @@ def root(children):
     return efge.root(children)
 
 
+NO_Z = 0x10000000               # HSD_ParticleKind NoZComp: drawn without the depth test (over the body)
+
+
+def rocket_flare():
+    """efge.rocket_launch()'s four-point star (white, a blue rim, turning 45 degrees), in 6 frames rather than 10"""
+    c = NCmd().tex(0).primenv().prim(255, 255, 255, 255).env(200, 220, 255, 0).size(1.5)
+    c.size(4.4, 1).wait(1).rotate(math.pi / 4).size(3.4, 2).wait(2).size(1.0, 3).prim(a=0, frames=3).wait(3)
+    return c.end()
+
+
+def pop_star(size, cols, life, spin=1.2):
+    """a star that pops to `size` on its first frame, spins, shrinks and fades over `life`"""
+    c = NCmd().tex(0).primenv().prim(*cols[0], 255).env(*cols[1], 0).size(size).rot_rand(-0.4, 0.8).rotate(spin, life)
+    c.wait(max(1, life // 3)).size(size * 0.35, life - life // 3).prim(a=0, frames=life - life // 3).wait(life - life // 3)
+    return c.end()
+
+
 # ------------------------------------------------------------------------------------------------------- generators
 def generators(tex, first):
     """(name, header, command list) for ids first, first + 1, ... (after efge's own); tex: every texture group's index
@@ -245,4 +262,47 @@ def generators(tex, first):
     ex = add('n_exhaust', disc('n_puff', 1, 0.0, 0.0, 16), puff(1.2, ((240, 236, 226), (150, 140, 128)), SMOKE, 1, 14,
                                                                  grow=1.6, rise=0.05, a0=200, vary=0.15))
     rootgen('N_EXHAUST', [ex])
+    exq = add('n_exhaust_quick', disc('n_puff', 1, 0.0, 0.0, 7), puff(1.2, ((240, 236, 226), (150, 140, 128)), SMOKE, 1, 5,
+                                                                     grow=1.4, rise=0.05, a0=200, vary=0.15))
+    rootgen('N_EXHAUST_QUICK', [exq])      # (the dash grab's: gone in 6 frames, before his slide carries him through it)
+    # ---- round 6 (Michael's playtest)
+    # the grabs' rocket fists: the forward throw's launch star (efge ROCKET_LAUNCH's look), shorter and drawn over the
+    # body (no depth test), so the far fist's reads and the dash grab's doesn't trail behind him as he slides on
+    fl = add('n_rocket_flare', dict(type=DISC, texg=tex['flash'], genlife=1, life=6, kind=BLEND_ONE | NO_Z, random=-1,
+                                    size=0.8), rocket_flare())
+    rootgen('N_ROCKET_FLARE', [fl])
+    # the up tilt's glints in his own stars: a plump gold star popping on each arc sphere over a warm glow, a star burst
+    # at the top of the arc, and twinkles shed from the twirling hands (in place of the engine's 1010-1012)
+    ug = add('n_utilt_glow', disc('n_puff', 1, 0.0, 0.0, 4, kind=BLEND_ONE), glow(3.6, STAR_GLOW, 3))
+    us = add('n_utilt_star', disc('star', 1, 0.0, 0.0, 8), pop_star(3.0, STAR_GOLD, 7))
+    rootgen('N_UTILT_GLINT', [ug, us])
+    ur = add('n_utilt_ring', dict(type=DISC, texg=tex['star'], genlife=1, life=14, kind=FRICTION, fric=0.84,
+                                  v=[0, 0, 0.9], radius=-1.0, angle=-math.pi / 2, random=-6, size=0.2,
+                                  params=[0.0, 2 * math.pi, 0.0]), spray_star(1.3, STAR_GOLD, 0.05, 14))
+    uc = add('n_utilt_big', disc('star', 1, 0.0, 0.0, 12), pop_star(4.4, STAR_GOLD, 11))
+    rootgen('N_UTILT_TOP', [ug, uc, ur])
+    ut = add('n_utilt_twinkle', disc('twinkle', 2, 0.6, 0.12, 10, fric=0.88), spray_star(0.9, STAR_WHITE, 0.05, 10))
+    rootgen('N_UTILT_TRAIL', [ut])
+    # the neutral air's spinning star core: a pair of small gold stars placed round the core frame by frame (the script
+    # turns them 45 degrees a frame, so they wheel round him with the spin), a warm glow at the core on the clean hit,
+    # and white twinkles for the late hit
+    nc = add('n_nair_core', disc('n_puff', 1, 0.0, 0.0, 6, kind=BLEND_ONE), glow(4.4, STAR_GLOW, 5))
+    rootgen('N_NAIR_CORE', [nc])
+    ns = add('n_nair_star', disc('star', 1, 0.0, 0.0, 7), pop_star(1.7, STAR_GOLD, 6, spin=2.0))
+    rootgen('N_NAIR_STAR', [ns])
+    nt = add('n_nair_twinkle', disc('twinkle', 1, 0.0, 0.0, 6), pop_star(1.4, STAR_WHITE, 5, spin=1.0))
+    rootgen('N_NAIR_TWINKLE', [nt])
+    # ---- round 7 (the moves round): the up smash's back sourspot, a smaller and lighter spray (pale stars and white
+    # twinkles, no glow) than the Star Gun's full bursts; the Cannon Charge's heavier blast; smoke curling from a barrel
+    ss = add('n_star_sour', disc('star', 3, 3.0, 0.3, 12, fric=0.82), spray_star(1.0, STAR_WHITE, 0.4, 12))
+    sw2 = add('n_star_sour_tw', disc('twinkle', 3, 3.4, 0.3, 10, fric=0.82), spray_star(1.1, STAR_WHITE, 0.35, 10))
+    rootgen('N_STAR_SOUR', [ss, sw2])
+    hf = add('n_can_flash_heavy', dict(type=DISC, texg=tex['flash'], genlife=1, life=8, kind=BLEND_ONE, random=-1,
+                                       size=0.2), flash(5.6, (255, 250, 220), (255, 130, 30), life=8))
+    hr = add('n_can_ring_heavy', dict(type=DISC, texg=tex['n_ring'], genlife=1, life=8, kind=BLEND_ONE, random=-1,
+                                      size=0.2), ring(6.4, (255, 226, 170), (255, 120, 30), life=8))
+    rootgen('N_CANNON_HEAVY', [hf, hr, cs])
+    bs = add('n_barrel_smoke', disc('n_puff', 1, 0.3, 0.05, 11, fric=0.9),
+             puff(0.9, SMOKE, SMOKE, 2, 9, grow=1.9, rise=0.12, a0=SMOKE_A))
+    rootgen('N_BARREL_SMOKE', [bs])
     return gens

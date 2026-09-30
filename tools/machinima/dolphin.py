@@ -23,7 +23,7 @@ def ini(sections):
     return ''.join(f'[{s}]\n' + ''.join(f'{k} = {v}\n' for k, v in kv.items()) for s, kv in sections.items())
 
 
-def configure(user, res, widescreen, png_level, logonly=False):
+def configure(user, res, widescreen, png_level, logonly=False, audioonly=False):
     """logonly: no frame or audio dumps, and emulation unthrottled (EmulationSpeed 0): for labs read from the game's
     log alone (a kill sweep), which then run as fast as the machine can, with nothing written but the log."""
     cfg = os.path.join(user, 'Config'); os.makedirs(cfg, exist_ok=True)
@@ -38,7 +38,8 @@ def configure(user, res, widescreen, png_level, logonly=False):
                  # the dump stays one image per game frame; game logic is unchanged either way
                  'OverclockEnable': 'True', 'Overclock': '2.0', **({'EmulationSpeed': '0.0'} if logonly else {})},
         'DSP': {'Backend': 'No Audio Output', 'DumpAudio': str(not logonly), 'DumpAudioSilent': 'True', 'Volume': '0'},
-        'Movie': {'DumpFrames': str(not logonly), 'DumpFramesSilent': 'True'},
+        # audioonly: the game's audio dump without frames (long captures: a stage's music loop), at normal speed
+        'Movie': {'DumpFrames': str(not logonly and not audioonly), 'DumpFramesSilent': 'True'},
     }))
     open(os.path.join(cfg, 'GFX.ini'), 'w').write(ini({
         'Settings': {'InternalResolution': str(res), 'DumpFramesAsImages': 'True', 'PNGCompressionLevel': str(png_level),
@@ -92,7 +93,7 @@ def run(a):
     slot = take_slot()
     for sub in ('Dump/Frames', 'Dump/Audio', 'Logs'):
         shutil.rmtree(os.path.join(user, sub), ignore_errors=True)
-    configure(user, a.res, a.widescreen, a.png, a.logonly)
+    configure(user, a.res, a.widescreen, a.png, a.logonly, a.audioonly)
     dump, logf = os.path.join(user, 'Dump', 'Frames'), os.path.join(user, 'Logs', 'dolphin.log')
     t0 = time.time()
     p = subprocess.Popen([DOLPHIN, '-u', user, '-b', '-e', game], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -145,6 +146,7 @@ if __name__ == '__main__':
     r.add_argument('--png', type=int, default=1, help='PNG zlib level for dumps (1 is fast; plates are re-encoded later)')
     r.add_argument('--timeout', type=float, default=900); r.add_argument('--user', default=USER); r.add_argument('--quiet', action='store_true')
     r.add_argument('--logonly', action='store_true', help='no frame or audio dumps, emulation unthrottled: stop with --until')
+    r.add_argument('--audioonly', action='store_true', help='the audio dump without frames, normal speed: stop with --until')
     lg = sp.add_parser('log'); lg.add_argument('out')
     a = ap.parse_args()
     if a.cmd == 'run': run(a)

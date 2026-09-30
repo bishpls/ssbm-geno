@@ -208,7 +208,8 @@ static class StageKit
         {
             int g = Array.FindIndex(gobjs, m => m.RootNode != null && gpnt.JOBJReference != null && m.RootNode._s == gpnt.JOBJReference._s);
             List<J> js = g >= 0 ? gj[g] : Joints(gpnt.JOBJReference, null, scale, frames);
-            foreach (var p in gpnt.Points ?? Array.Empty<SBM_GeneralPointInfo>())
+            // the engine reads the count at +8; HSDRaw's array is sized from the (padded) buffer
+            foreach (var p in (gpnt.Points ?? Array.Empty<SBM_GeneralPointInfo>()).Take(gpnt._s.GetInt32(0x08)))
             {
                 var j = p.JOBJIndex < js.Count ? js[p.JOBJIndex] : null;
                 pts.Add(new

@@ -9,6 +9,13 @@ import os, re, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+# An agent's worktree (animation-pipeline-<name>) builds only into its own sandbox: without MELEE_DECOMP and MELEE_DISC set,
+# a build from there would overwrite the shared decomp and the main disc (2026-09-30: a lab DOL replaced Michael's playtest
+# build that way). Integration builds run from the main geno checkout.
+if re.search(r'animation-pipeline-[^/]+$', ROOT) and os.path.basename(ROOT) != 'animation-pipeline-geno' and not (
+        os.environ.get('MELEE_DECOMP') and os.environ.get('MELEE_DISC')):
+    sys.exit(f'build.py: {ROOT} is an agent worktree; eval "$(sh tools/machinima/melee/sandbox.sh NAME)" first, '
+             'so the build goes to its sandbox and not the shared decomp or main disc')
 DECOMP = os.path.expanduser(os.environ.get('MELEE_DECOMP', '~/games/melee/decomp'))
 DISC = os.path.expanduser(os.environ.get('MELEE_DISC', '~/games/melee/disc'))
 WIBO = os.path.expanduser(os.environ.get('MELEE_WRAPPER', '~/games/melee/bin/wibo-macos'))

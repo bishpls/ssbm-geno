@@ -8,7 +8,24 @@ layout, a playmap, that the existing starters don't have (Michael's brief, 2026-
 - `research/starters.md`: the six starters measured from the disc and checked in game.
 - `research/layouts.{csv,json}`: the numbers below; `layouts.py` generates them and the diagrams.
 
-**Status: a sketch for Michael's calls** (§6 lists them).
+**Status: decided (Michael, 2026-09-29); building.** The calls are in §0; §6 keeps the questions as they were asked.
+
+## 0. Decided (Michael, 2026-09-29)
+
+- **Layout A, Clearing** (the single platform): "Stage A, the single-plat option, is my pick." It is built exactly as
+  specced in §2-3: ledges ±70, one cap at 28 (x −27 to 27), blast zones ±225 / 200 / −120. The recommendation was B;
+  A's lean toward Final Destination's archetypes and its room for Geno's lanes (§3) stay on the list for the playtests
+  (§5).
+- **A real stage-select slot:** "Build the proper stage select icon." Icon, name, preview, the random list and the
+  stage count, not the temporary hook (SCOPE §5 step 4 (b)).
+- **No Wiggler for now:** "An animating wiggler in the background is a cute idea but a lot of extra work for minimal
+  gain for now; let's ship with static assets first." Static assets only.
+- **Style targets approved:** "Approving the image model calls, but careful to keep to GameCube-era and Melee-specific
+  aesthetics." Melee's texture density, lighting, palette and the polycount look of its nature stages; targets are
+  references only.
+- **Music: Forest Maze metal draft 2** ("forest maze metal draft 2 was better"), cut into a stage loop (§7).
+- **M1 built (2026-09-30):** the greybox Clearing, selectable from its own stage-select slot (the bottom row's left end, Michael 2026-09-30), with the
+  draft 2 loop; SCOPE.md "M1: built" has every measurement.
 
 ## 1. What a starter has to be
 
@@ -148,7 +165,7 @@ is the point: the gap between the platform stages and Final Destination. C stays
 - **Why it's third:** it adds a second Yoshi's Story-style lean to the pool rather than filling the gap. The
   first version (sides at 40) broke rule 8 and was retuned to 30 to pass.
 
-### Recommendation: **B, Twin Boughs**
+### Recommendation: **B, Twin Boughs** (Michael picked A, §0)
 
 It fills the gap in §1, open flanks with a central platform game, while leaning least toward any archetype. It is also
 the least favourable of the three to Geno, which is what "not a home-field stage" asks for.

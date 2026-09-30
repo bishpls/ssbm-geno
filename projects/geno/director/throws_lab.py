@@ -26,7 +26,7 @@ LAB_SET picks a test set:
   stars    the up throw at LAB_PCTS (0,30,60,90,120) with no DI and full DI either side, watched: the stars that hit
   kill     the back and forward throws near the ledge at 80-180%, no DI and full DI either side (a clean KO: Fox dies
            before he can act)
-LAB_COLL=1 shows hitboxes and hurtboxes.
+LAB_COLL=1 shows hitboxes and hurtboxes. LAB_APART (default 7) sets how far apart they stand for the grab.
 
     .venv/bin/python projects/geno/director/throws_lab.py --board RUN PLAN OUT_DIR [BEFORE_RUN BEFORE_PLAN]
             [--only THROW --crop X0,Y0,X1,Y1 --width PX]
@@ -628,7 +628,7 @@ for i, t in enumerate(T):
     face = 1 if not t.get('ledge') or t['throw'] == 'fthrow' else -1
     if t.get('ledge') and t['throw'] == 'bthrow':
         gx = L - 22                                     # his back to the ledge: the back throw sends Fox off it
-    fx = gx + 7 * face
+    fx = gx + float(os.environ.get("LAB_APART", 7)) * face     # LAB_APART: grab from further (the long grabs)
     f.reset(t0 - 30, GENO, gx, face); f.reset(t0 - 30, FOX, fx, -face)
     f.percent(t0 - 26, GENO, 0); f.percent(t0 - 26, FOX, t['pct'])
     f.mark(t0, i, t['label'])

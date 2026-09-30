@@ -4,6 +4,67 @@ What adding a new stage to Melee takes, worked out from the decomp (`src/melee/g
 disc's stage files, with the pipeline planned by analogy with Geno's (`datkit fighter-build` from a spec and a glTF).
 The design sketch is DESIGN.md; the measurements are `research/starters.md`.
 
+## Decided (Michael, 2026-09-29)
+
+- Layout A (Clearing), built by `stage-build` from the spec, with static assets only (no Wiggler).
+- **The real stage-select slot** (§2.8), not the temporary hook: the greybox milestone (M1) includes it.
+- The music is Forest Maze metal draft 2, cut into a stage loop under a new music id (§2.7).
+- Style targets by image model are approved, kept to GameCube-era, Melee-specific looks (M2), before production art (M3).
+
+Milestones: **M1** a playable greybox in a real stage-select slot, with the music loop, verified in game; **M2** style
+targets; **M3** production art after Michael picks a target.
+
+## M1: built (2026-09-30)
+
+A playable greybox Forest Maze (layout A, Clearing) in a real stage-select slot, with its own music loop. Everything
+below is measured in game on the sandbox disc (`~/games/melee/sandbox/geno-stage`); the main disc is untouched.
+
+**The slot: the unused Akaneia stage (a compromise, and a good one).** The stage select stores each entry's stage kind in
+a byte (`mnStageSel_803F06D0[].stkind`, u8), so the new StKind 286 planned in §2.1 can't be stored there. Melee already
+has a dummied stage in the VS range: StKind 0x15 (`St_Kind_Akaneia`) maps to GrKind 0x1A (`Gr_Kind_Unk26`), whose
+`stage_datas` entry is NULL, and whose menu text (0x19) is "アカネイア". The Forest Maze takes that pair: no table grows,
+every "VS stage < 0x21" assumption holds, it isn't in the unlock table (so always unlocked), and its sound row (no bank,
+reverb 1) is Fountain's. The decomp points `stage_datas[0x1A]` at `grFm_StageData` (non-matching only).
+
+| Piece | Where | Measured |
+|---|---|---|
+| Stage file `GrFm.dat` (8.8 KB) | `datkit stage-build` from `stage_spec.py` (spec) + Battlefield's file (template) | `stage-dump` = spec to 0.001; `starter_lab` in game: cap 28.0 (x -27 to 27), floor 0, ledges (±70, 0) held, blast zones ±225 / 200 / -120, camera ±160 / 140 / -55 centred (0, 30): **5/5 pass** |
+| Greybox art | the spec's faces: the stump (collision outline extruded z -30..22), the cap box (z ±14), a fogged back card and trunks | **edge lab**: both top surfaces on the image's centre row (0 px), ends within 0.06 px (stump) and 0.24 px (cap) of the collision at 6.57 px/unit |
+| Stage code | decomp `src/melee/gr/grforest.c` (Battlefield's pattern, 3 gobjs, static), `ground.c` table entry | logs `GRFOREST INIT grkind 26 stkind 21` on load |
+| Stage select | `datkit menus-stage` edits `MnSlMap.usd`: a 20th position joint (x -4.0, the bottom row's left end), the icon as image 7 of the single icons, the name plate scaled 0.84 and moved 2.4 left, the name as image 30 (frame 600), the hologram as segment 30 (frames 1500-1549, free in the vanilla file); decomp `mnstagesel.c`: entry 29, Random moves to 30, none to 31 (`MNSS_*` macros, vanilla values when matching) | menu test: hover 29, name and hologram show, A loads the Forest Maze |
+| Where the icon sits | **the bottom row's left end (-4.0, -9.1), Michael's call (2026-09-30)**, as a single icon (the bottom row's model, image 7) | see "The icon's place" below |
+| Random list | `gm_1601.c` random-switch index 29 → StKind 0x15 (the table's spare 30th entry), its 29-stage loops to 30; `mnstagesel.c` random picker over 30 | START with nothing hovered picks at random (Venom in the test run); the Forest Maze is in the pool by construction (stage_mask bit 29 is on by default) |
+| Random Stage Switch menu | `mnstagesw.c`: a 30th row (column 2's 15th; the rows are built in code), its name from menu text 0x19, relabelled "Forest Maze" in `SdMenu.usd`; column 2's last row `MNSW_LAST` | code only: the menu wasn't opened in a test |
+| Stage count | `mncount.c` and `mndatadel.c` loop to 30 | code only |
+| Music | `gr_forestmaze.hps`, HPS id 0x64 (`lbaudio_ax.c`, next to Geno's fanfare 0x63; falls back to Battlefield's when absent); the stage's music row plays it | see below |
+| VS flow | menu test `sss_forest.py` (look / flow / back) | pick Fox and Falco, the Forest Maze, a 110 s match, pause-quit, results, character select, stage select, START: a random stage loads |
+
+**The icon's place (2026-09-30).** Michael asked for the bottom row's open left end. There, every hovered name's right
+end ran over the icon: `names_report.py` counted 420-1073 name pixels on its rectangle (x 246-302 at res 1) for the
+Forest Maze, Battlefield, Final Destination, Dream Land, Kongo Jungle 64, Princess Peach's Castle and Yoshi's Story. The
+widest names span x 15-288, so the plate can't move left (they'd leave the screen) or up (the middle block sits above).
+The fix is data only, in `MnSlMap.usd`: the name plate's joint (StageNameModel j1, the tilt) is scaled 0.84 about its
+centre and moved 2.4 left. Every name now ends at x 224-239, with 0 pixels on the icon, and still starts on screen; the
+names are 16% smaller than vanilla. `menus-stage` now builds from vanilla copies (`$MELEE_WORK/stage/vanilla`), since the
+main disc carries the installed files.
+
+**The music loop** (`music.py build`, from metal draft 2):
+- Intro 0-9.6 s once; the loop from Theme A's downbeat (9.6 s) to the end of the final chorus (91.2 s), 81.6 s (68 bars at
+  200 BPM), leaving out the final hit; the chorus's own 8th-note dropout breathes into the theme.
+- 32 kHz stereo DSP-ADPCM, 52 blocks. The loop starts exactly on the downbeat: 16 samples of silence lead the stream, so
+  the loop start (307216) is a whole number of 56-sample groups, and `hps.py`'s new `exact_loop` cuts the block before it
+  short, as HAL's own streams vary their block sizes. ADPCM SNR 33.3 / 33.6 dB (one coefficient set per channel over a
+  dense metal mix; a vanilla stream re-encodes at 42.8).
+- Level: the six starters' streams measure -15.3 to -11.0 LUFS (median -12.8), true peaks -4.6 to +0.1 dBTP. The cut
+  is gained -2.8 dB to -12.8 LUFS, true peak -3.5 dBTP.
+- **The seam, in game:** a 110 s match's audio dump matches the stream sample for sample (correlation 0.98-0.998 at 30,
+  60 and 85 s; 0 samples offset) and wraps at 110.40 s (91.2 s into it) to the loop start (0 samples, correlation
+  0.998). At the wrap the high-frequency burst is +1.87 dB over its surroundings; 32% of the arrangement's own downbeats
+  in the same capture burst more (median +0.69, p90 +3.14), and the sample step is 0.63 of the local 99th percentile:
+  a downbeat, not a click. (Dolphin labels its DSP dump 32028 Hz; the stream plays at 32000 samples per second of it.)
+
+**Kept:** the matching build matches (`08e0bf20`); `remeasure.sh` leaves `projects/geno/research` unchanged.
+
 ## 0. Summary
 
 | Piece | What it is | Estimate (agent-days) | Risk |
@@ -59,6 +120,8 @@ The feasibility probe (Part D, §6) retired the biggest pipeline risk:
 ## 2. The pieces
 
 ### 2.1 Stage kind and table entries (decomp, all inside `#ifndef MUST_MATCH`)
+
+*Superseded in M1: the stage takes the unused Akaneia slot (StKind 0x15, GrKind 0x1A), not new kinds; see "M1: built".*
 
 - `GrKind` **0x47** (`Gr_Kind_ForestMaze`): `stage_datas[0x47]` is currently a `grTe_StageData` filler. Point it at
   `grFm_StageData`.
@@ -361,7 +424,8 @@ as Geno's blocky rig was.
    - (a) **a temporary hook**: on the SSS, Z on Battlefield's icon picks the Forest Maze. 0.25 day, and the greybox is
      playable at once;
    - (b) **the real slot** (§2.8). 2-3 days more before anyone plays it.
-   - Recommendation: (a) for the greybox, (b) as milestone 2 alongside the art.
+   - Recommendation: (a) for the greybox, (b) as milestone 2 alongside the art. **Michael chose (b) for M1**
+     (2026-09-29).
 5. **Acceptance, measured:**
    - `starter_lab` on the new stage: every platform's height and extent, both ledges, blast zones and camera range
      match the spec to 0.01 in game;

@@ -1,5 +1,5 @@
 diff --git a/configure.py b/configure.py
-index 2bab8ea..3160594 100755
+index 2bab8ea..ad787db 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -246,6 +246,7 @@ config.compilers_tag = "20251118"
@@ -18,10 +18,16 @@ index 2bab8ea..3160594 100755
              Object(Matching, "melee/it/kinds/itfoxillusion.c"),
              Object(Matching, "melee/it/kinds/itlinkbomb.c"),
              Object(Matching, "melee/it/kinds/itlinkboomerang.c"),
-@@ -2007,6 +2009,21 @@ config.libs = [
+@@ -2007,6 +2009,27 @@ config.libs = [
              ),
          ],
      ),
++    MeleeLib(
++        "new stages (animation-pipeline)",
++        [
++            Object(Equivalent, "melee/gr/grforest.c"),
++        ],
++    ),
 +    MeleeLib(
 +        "new fighters (animation-pipeline)",
 +        [
@@ -55,10 +61,10 @@ index 77a02ae..c0a1525 100644
       * Current framing extents, eased toward #CmSubject::target_ext by 0.5 per
 diff --git a/src/melee/director/director.c b/src/melee/director/director.c
 new file mode 100644
-index 0000000..2fbf85a
+index 0000000..53bd25c
 --- /dev/null
 +++ b/src/melee/director/director.c
-@@ -0,0 +1,866 @@
+@@ -0,0 +1,902 @@
 +/* director.c: the runtime half of the machinima director (see director.h). C89, prototypes required (-requireprotos). */
 +#include "director.h"
 +
@@ -88,9 +94,11 @@ index 0000000..2fbf85a
 +#include <melee/if/ifall.h>
 +#include <melee/it/it_26B1.h>
 +#include <melee/it/item.h>
++#include <melee/it/kinds/itfoxlaser.h>
 +#include <melee/it/types.h>
 +#include <melee/lb/lbaudio_ax.h>
 +#include <melee/mn/mncharsel.h>
++#include <melee/mn/mnstagesel.h>
 +#include <melee/pl/forward.h>
 +#include <melee/pl/player.h>
 +#include <melee/pl/plstale.h>
@@ -226,7 +234,7 @@ index 0000000..2fbf85a
 +    int port, i;
 +    u8 mode = gm_GetCurrentGameMode(), scene = gm_GetCurrentSceneIndex();
 +    if (mode != last_mode || scene != last_scene) {
-+        OSReport("SCENE %d mode %d scene %d\n", boot_F, mode, scene);
++        OSReport("SCENE %d mode %d scene %d stkind %d\n", boot_F, mode, scene, (int) Stage_80225194());
 +        last_mode = mode;
 +        last_scene = scene;
 +        if (dir_results_music && F > 0) {
@@ -266,7 +274,20 @@ index 0000000..2fbf85a
 +        ps->nml_subStickY = p->cy / 80.0f;
 +        ps->nml_analogL = ps->nml_analogR = p->trig / 140.0f;
 +    }
++    if (dir_boot_mode != GM_DEBUG_VS && boot_F == dir_len) {
++        OSReport("DIRECTOR MENU END %d\n", boot_F); /* a menu test's length: dolphin.py --until stops here */
++    }
 +    menu_goto();
++    {
++        /* the stage select (menu tests): the hovered entry and the cursor, every 4 frames and on each change */
++        static int last_hover = -2;
++        f32 xy[2];
++        int count, hover = mnStageSel_DebugState(xy, &count);
++        if (hover >= 0 && (hover != last_hover || boot_F % 4 == 0)) {
++            OSReport("SSS %d hover %d cursor %.2f %.2f stages %d\n", boot_F, hover, xy[0], xy[1], count);
++        }
++        last_hover = hover;
++    }
 +    show_coll();
 +    boot_F++;
 +}
@@ -834,6 +855,27 @@ index 0000000..2fbf85a
 +        OSReport("SFX %d id %d voice %d\n", F - DIR_SLATE, (int) c->a,
 +                 lbAudioAx_800237A8((int) c->a, c->b > 0.0f ? (int) c->b : 0x7F, 0x40));
 +        break;
++    case DIR_SHOOT:
++        if (fp != NULL) {
++            int packed = (int) c->a;
++            int kind = (packed & 4095) >> 4, state = packed & 15;
++            f32 speed = (f32) (packed >> 12) / 10.0f;
++            p = fp->cur_pos;
++            p.x += fp->facing_dir * c->b;
++            p.y += c->c;
++            p.z = 0.0f;
++            it_8029C504(Player_GetEntity(c->port), &p, state, kind, fp->facing_dir < 0.0f ? 3.14159265f : 0.0f, speed);
++            OSReport("SHOOT %d %d kind %d state %d %.2f %.2f %.1f\n", F - DIR_SLATE, c->port, kind, state, p.x, p.y, speed);
++        }
++        break;
++    case DIR_ITEMS: {
++        HSD_GObj* ig;
++        for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL; ig = ig->next) {
++            Item* ip = (Item*) ig->user_data;
++            OSReport("ITEMS %d kind %d %.2f %.2f\n", F - DIR_SLATE, (int) ip->kind, ip->pos.x, ip->pos.y);
++        }
++        break;
++    }
 +    case DIR_GRDUMP: {
 +        MapCollData* cd = mpLib_8004D164();
 +        CollLine* ln = mpGetGroundCollLine();
@@ -927,10 +969,10 @@ index 0000000..2fbf85a
 +}
 diff --git a/src/melee/director/director.h b/src/melee/director/director.h
 new file mode 100644
-index 0000000..0bb682c
+index 0000000..8b2ef8f
 --- /dev/null
 +++ b/src/melee/director/director.h
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,157 @@
 +/* director: turns Super Smash Bros. Melee (the doldecomp/melee decompilation, non-matching build) into a deterministic
 + * machinima renderer. The game boots straight into a VS match set up by the script, the HUD and music are off, and every game
 + * frame the director writes the script's controller states, camera and one-shot cues. It reports back through OSReport, which
@@ -1011,11 +1053,16 @@ index 0000000..0bb682c
 +    DIR_ANIM,       /* port; a: action-table entry. Play that entry's animation and script in the current state, through
 +                     * the engine's own idle-variant player (ftCo_8008A6D8, Wait's): for animations no state plays
 +                     * (ItemBlind) */
-+    DIR_GRDUMP      /* a: 0 floors only, 1 every line. The stage as the engine holds it this frame: STAGE s grkind stkind
++    DIR_GRDUMP,     /* a: 0 floors only, 1 every line. The stage as the engine holds it this frame: STAGE s grkind stkind
 +                     * blast l r t b cam l r t b offset x y; LINE s id flags lo x0 y0 x1 y1 for each live collision line
 +                     * (after joint binding, so moving platforms read where they are); GROUND s port x y air line motion
 +                     * ledge for every fighter (the floor line it stands on; the ledge line it holds, in the cliff states).
 +                     * For stage labs and stage-build checks */
++    DIR_ITEMS,      /* Log ITEMS s kind x y per live item this frame (a lab's projectile paths: Link's boomerang, Geno's Whirl) */
++    DIR_SHOOT       /* port: the owner; a: kind*16 + state + 4096*(speed*10); b, c: the spawn's offset from the owner (b along
++                     * his facing, c up). A laser-type projectile (it_8029C504: Fox's, Falco's, Geno's Finger Shot and Beam
++                     * states) fired straight ahead, as its owner's: a lab fires any state of those articles where a move
++                     * can't aim it (Geno's throw shots at a PSI Magnet). Logs SHOOT s port kind state x y speed */
 +};
 +
 +typedef struct DirCue {
@@ -2216,10 +2263,10 @@ index 0000000..1d023d1
 +}
 diff --git a/src/melee/ft/kinds/ftGeno/ftgeno.h b/src/melee/ft/kinds/ftGeno/ftgeno.h
 new file mode 100644
-index 0000000..fee3986
+index 0000000..9425256
 --- /dev/null
 +++ b/src/melee/ft/kinds/ftGeno/ftgeno.h
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,142 @@
 +/* animation-pipeline: Geno (Super Mario RPG), a new fighter kind: Ft_Kind_Geno = CKind_Geno = 0x22, SELKIND_GENO = 0x19. */
 +#ifndef MELEE_FT_KINDS_FTGENO_FTGENO_H
 +#define MELEE_FT_KINDS_FTGENO_FTGENO_H
@@ -2318,7 +2365,7 @@ index 0000000..fee3986
 +typedef struct ftGe_BeamTuning {
 +    int star_frames;         /* a star every this many frames of charge, counted from the press */
 +    int grace;               /* frames past the third star before it fires itself */
-+    int tap;                 /* releasing B before this frame of the start is a tap: Finger Shot */
++    int tap;                 /* releasing B before this frame from the press is a tap: Finger Shot (v1.5: 20) */
 +    int store_decay;         /* unused since v1.4 (no store) */
 +    int start_frames;        /* the start's length (SpecialNStart) */
 +    int fire_frame;          /* the release spawns the Beam on this frame (SpecialNEnd) ... */
@@ -2344,8 +2391,11 @@ index 0000000..fee3986
 + * *stars to the star it caught (a release at 57-59 is three stars, timed). mv.ge.flags carries GE_BEAM_TIMED from the
 + * release to the spawn, for Geno and for Kirby's copy (its own flags are the low bits). */
 +#define GE_BEAM_TIMED 0x400
++#define GE_BLAST_NONE 0x800 /* mv.ge.flags: this down B marks nothing (a set of marks is already out) */
 +#define GE_BEAM_TIMED_WINDOW 3
 +int ftGe_BeamTimed(int f, int* stars);
++int ftGe_BeamStars(int f); /* v1.5: stars lit at charge frame f (from the press): 40, 60, 80 */
++int ftGe_BeamAuto(int f);  /* v1.5: past the third star's timed window: it fires itself */
 +void ftGe_BeamTimedCue(Fighter_GObj* gobj);
 +void ftGe_FingerPuff(Fighter_GObj* gobj, Vec3* pos); /* the Finger Shot's muzzle puff (geno-fx) */
 +void ftGe_BeamDrawIn(Fighter_GObj* gobj, int f, int star_frames, HSD_JObj* hand, f32 along); /* the charge's draw-in stars */   /* the chime and the sparkle, on the release */
@@ -2380,10 +2430,10 @@ index 0000000..881d25a
 +    { "PlGeBk.dat", "PlyGeno5KBk_Share_joint", "PlyGeno5KBk_Share_matanim_joint" },
 diff --git a/src/melee/ft/kinds/ftGeno/ftgeno_efge.h b/src/melee/ft/kinds/ftGeno/ftgeno_efge.h
 new file mode 100644
-index 0000000..ac4549e
+index 0000000..76ab9aa
 --- /dev/null
 +++ b/src/melee/ft/kinds/ftGeno/ftgeno_efge.h
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,170 @@
 +/* generated by projects/geno/fx/efge.py --c: EfGeData.dat's generator ids by name. Don't edit: rerun it after any
 + * change to its lists (efge.py, efge_normals.py). Spawn with efSync_Spawn(EFGE_<NAME>, gobj, &pos), or on a joint
 + * with efLib_CreateGenerator_Attach_AddAppSRT. */
@@ -2440,86 +2490,118 @@ index 0000000..ac4549e
 +#define EFGE_FLASH_FIN_RING 22047
 +#define EFGE_FLASH_FIN_SPARKS 22048
 +#define EFGE_FLASH_FINISH 22049
-+#define EFGE_n_gun_core_30 22050
-+#define EFGE_n_gun_side_30 22051
-+#define EFGE_N_GUN_30 22052
-+#define EFGE_n_gun_star_30 22053
-+#define EFGE_N_GUN_TIP_30 22054
-+#define EFGE_n_tap_core_30 22055
-+#define EFGE_n_tap_side_30 22056
-+#define EFGE_n_tap_star_30 22057
-+#define EFGE_N_TAP_30 22058
-+#define EFGE_n_star_glow_30 22059
-+#define EFGE_n_star_gold_30 22060
-+#define EFGE_n_star_white_30 22061
-+#define EFGE_n_star_core_30 22062
-+#define EFGE_N_STAR_30 22063
-+#define EFGE_n_can_core_30 22064
-+#define EFGE_n_can_side_30 22065
-+#define EFGE_N_CANNON_30 22066
-+#define EFGE_n_gun_core_36 22067
-+#define EFGE_n_gun_side_36 22068
-+#define EFGE_N_GUN_36 22069
-+#define EFGE_n_gun_star_36 22070
-+#define EFGE_N_GUN_TIP_36 22071
-+#define EFGE_n_tap_core_36 22072
-+#define EFGE_n_tap_side_36 22073
-+#define EFGE_n_tap_star_36 22074
-+#define EFGE_N_TAP_36 22075
-+#define EFGE_n_star_glow_36 22076
-+#define EFGE_n_star_gold_36 22077
-+#define EFGE_n_star_white_36 22078
-+#define EFGE_n_star_core_36 22079
-+#define EFGE_N_STAR_36 22080
-+#define EFGE_n_can_core_36 22081
-+#define EFGE_n_can_side_36 22082
-+#define EFGE_N_CANNON_36 22083
-+#define EFGE_n_gun_core_44 22084
-+#define EFGE_n_gun_side_44 22085
-+#define EFGE_N_GUN_44 22086
-+#define EFGE_n_gun_star_44 22087
-+#define EFGE_N_GUN_TIP_44 22088
-+#define EFGE_n_tap_core_44 22089
-+#define EFGE_n_tap_side_44 22090
-+#define EFGE_n_tap_star_44 22091
-+#define EFGE_N_TAP_44 22092
-+#define EFGE_n_star_glow_44 22093
-+#define EFGE_n_star_gold_44 22094
-+#define EFGE_n_star_white_44 22095
-+#define EFGE_n_star_core_44 22096
-+#define EFGE_N_STAR_44 22097
-+#define EFGE_n_can_core_44 22098
-+#define EFGE_n_can_side_44 22099
-+#define EFGE_N_CANNON_44 22100
-+#define EFGE_n_gun_core_52 22101
-+#define EFGE_n_gun_side_52 22102
-+#define EFGE_N_GUN_52 22103
-+#define EFGE_n_gun_star_52 22104
-+#define EFGE_N_GUN_TIP_52 22105
-+#define EFGE_n_tap_core_52 22106
-+#define EFGE_n_tap_side_52 22107
-+#define EFGE_n_tap_star_52 22108
-+#define EFGE_N_TAP_52 22109
-+#define EFGE_n_star_glow_52 22110
-+#define EFGE_n_star_gold_52 22111
-+#define EFGE_n_star_white_52 22112
-+#define EFGE_n_star_core_52 22113
-+#define EFGE_N_STAR_52 22114
-+#define EFGE_n_can_core_52 22115
-+#define EFGE_n_can_side_52 22116
-+#define EFGE_N_CANNON_52 22117
-+#define EFGE_n_gun_flash 22118
-+#define EFGE_N_GUN_FLASH 22119
-+#define EFGE_n_star_flash 22120
-+#define EFGE_N_STAR_FLASH 22121
-+#define EFGE_n_can_flash 22122
-+#define EFGE_n_can_ring 22123
-+#define EFGE_n_can_smoke 22124
-+#define EFGE_N_CANNON_FLASH 22125
-+#define EFGE_n_exhaust 22126
-+#define EFGE_N_EXHAUST 22127
++#define EFGE_BLAST_LAND_RING 22050
++#define EFGE_BLAST_VANISH_RING 22051
++#define EFGE_BLAST_VANISH_SPARK 22052
++#define EFGE_BLAST_VANISH 22053
++#define EFGE_SR_BURST 22054
++#define EFGE_SR_TRAIL 22055
++#define EFGE_n_gun_core_30 22056
++#define EFGE_n_gun_side_30 22057
++#define EFGE_N_GUN_30 22058
++#define EFGE_n_gun_star_30 22059
++#define EFGE_N_GUN_TIP_30 22060
++#define EFGE_n_tap_core_30 22061
++#define EFGE_n_tap_side_30 22062
++#define EFGE_n_tap_star_30 22063
++#define EFGE_N_TAP_30 22064
++#define EFGE_n_star_glow_30 22065
++#define EFGE_n_star_gold_30 22066
++#define EFGE_n_star_white_30 22067
++#define EFGE_n_star_core_30 22068
++#define EFGE_N_STAR_30 22069
++#define EFGE_n_can_core_30 22070
++#define EFGE_n_can_side_30 22071
++#define EFGE_N_CANNON_30 22072
++#define EFGE_n_gun_core_36 22073
++#define EFGE_n_gun_side_36 22074
++#define EFGE_N_GUN_36 22075
++#define EFGE_n_gun_star_36 22076
++#define EFGE_N_GUN_TIP_36 22077
++#define EFGE_n_tap_core_36 22078
++#define EFGE_n_tap_side_36 22079
++#define EFGE_n_tap_star_36 22080
++#define EFGE_N_TAP_36 22081
++#define EFGE_n_star_glow_36 22082
++#define EFGE_n_star_gold_36 22083
++#define EFGE_n_star_white_36 22084
++#define EFGE_n_star_core_36 22085
++#define EFGE_N_STAR_36 22086
++#define EFGE_n_can_core_36 22087
++#define EFGE_n_can_side_36 22088
++#define EFGE_N_CANNON_36 22089
++#define EFGE_n_gun_core_44 22090
++#define EFGE_n_gun_side_44 22091
++#define EFGE_N_GUN_44 22092
++#define EFGE_n_gun_star_44 22093
++#define EFGE_N_GUN_TIP_44 22094
++#define EFGE_n_tap_core_44 22095
++#define EFGE_n_tap_side_44 22096
++#define EFGE_n_tap_star_44 22097
++#define EFGE_N_TAP_44 22098
++#define EFGE_n_star_glow_44 22099
++#define EFGE_n_star_gold_44 22100
++#define EFGE_n_star_white_44 22101
++#define EFGE_n_star_core_44 22102
++#define EFGE_N_STAR_44 22103
++#define EFGE_n_can_core_44 22104
++#define EFGE_n_can_side_44 22105
++#define EFGE_N_CANNON_44 22106
++#define EFGE_n_gun_core_52 22107
++#define EFGE_n_gun_side_52 22108
++#define EFGE_N_GUN_52 22109
++#define EFGE_n_gun_star_52 22110
++#define EFGE_N_GUN_TIP_52 22111
++#define EFGE_n_tap_core_52 22112
++#define EFGE_n_tap_side_52 22113
++#define EFGE_n_tap_star_52 22114
++#define EFGE_N_TAP_52 22115
++#define EFGE_n_star_glow_52 22116
++#define EFGE_n_star_gold_52 22117
++#define EFGE_n_star_white_52 22118
++#define EFGE_n_star_core_52 22119
++#define EFGE_N_STAR_52 22120
++#define EFGE_n_can_core_52 22121
++#define EFGE_n_can_side_52 22122
++#define EFGE_N_CANNON_52 22123
++#define EFGE_n_gun_flash 22124
++#define EFGE_N_GUN_FLASH 22125
++#define EFGE_n_star_flash 22126
++#define EFGE_N_STAR_FLASH 22127
++#define EFGE_n_can_flash 22128
++#define EFGE_n_can_ring 22129
++#define EFGE_n_can_smoke 22130
++#define EFGE_N_CANNON_FLASH 22131
++#define EFGE_n_exhaust 22132
++#define EFGE_N_EXHAUST 22133
++#define EFGE_n_exhaust_quick 22134
++#define EFGE_N_EXHAUST_QUICK 22135
++#define EFGE_n_rocket_flare 22136
++#define EFGE_N_ROCKET_FLARE 22137
++#define EFGE_n_utilt_glow 22138
++#define EFGE_n_utilt_star 22139
++#define EFGE_N_UTILT_GLINT 22140
++#define EFGE_n_utilt_ring 22141
++#define EFGE_n_utilt_big 22142
++#define EFGE_N_UTILT_TOP 22143
++#define EFGE_n_utilt_twinkle 22144
++#define EFGE_N_UTILT_TRAIL 22145
++#define EFGE_n_nair_core 22146
++#define EFGE_N_NAIR_CORE 22147
++#define EFGE_n_nair_star 22148
++#define EFGE_N_NAIR_STAR 22149
++#define EFGE_n_nair_twinkle 22150
++#define EFGE_N_NAIR_TWINKLE 22151
++#define EFGE_n_star_sour 22152
++#define EFGE_n_star_sour_tw 22153
++#define EFGE_N_STAR_SOUR 22154
++#define EFGE_n_can_flash_heavy 22155
++#define EFGE_n_can_ring_heavy 22156
++#define EFGE_N_CANNON_HEAVY 22157
++#define EFGE_n_barrel_smoke 22158
++#define EFGE_N_BARREL_SMOKE 22159
 +
-+#define EFGE_COUNT 128
++#define EFGE_COUNT 160
 +
 +#endif
 diff --git a/src/melee/ft/kinds/ftGeno/ftgeno_rig.inc b/src/melee/ft/kinds/ftGeno/ftgeno_rig.inc
@@ -2556,15 +2638,15 @@ index 0000000..8d30d07
 +/* joints: 0:TopN 1:TransN 2:XRotN 3:YRotN 4:HipN 5:WaistN 6:LShoulderN 7:LShoulderJA 8:LShoulderJ 9:LArmJ 10:LHandN 11:L1stNa 12:L1stNb 13:L2ndNa 14:L2ndNb 15:L3rdNa 16:L3rdNb 17:L4thNa 18:L4thNb 19:LThumbNa 20:LThumbNb 21:LHandNb 22:NeckN 23:HeadN 24:CapN 25:CapMidN 26:CapTipN 27:CapTip2N 28:CapTip3N 29:CapeAN 30:CapeBN 31:CapeCN 32:CapeDN 33:CapeLAN 34:CapeLBN 35:CapeLCN 36:CapeLDN 37:CapeRAN 38:CapeRBN 39:CapeRCN 40:CapeRDN 41:RShoulderN 42:RShoulderJA 43:RShoulderJ 44:RArmJ 45:RHandN 46:R1stNa 47:R1stNb 48:R2ndNa 49:R2ndNb 50:R3rdNa 51:R3rdNb 52:R4thNa 53:R4thNb 54:RThumbNa 55:RThumbNb 56:RHandNb 57:LLegJA 58:LLegJ 59:LKneeJ 60:LFootJA 61:LFootJ 62:LToeN 63:RLegJA 64:RLegJ 65:RKneeJ 66:RFootJA 67:RFootJ 68:RToeN 69:ThrowN 70:TransN2 71:CannonN 72:CannonBarrelN 73:CannonWheelN */
 diff --git a/src/melee/ft/kinds/ftGeno/ftgeno_specials.c b/src/melee/ft/kinds/ftGeno/ftgeno_specials.c
 new file mode 100644
-index 0000000..5fe5ec9
+index 0000000..2499b5c
 --- /dev/null
 +++ b/src/melee/ft/kinds/ftGeno/ftgeno_specials.c
-@@ -0,0 +1,1397 @@
+@@ -0,0 +1,1567 @@
 +/* animation-pipeline: Geno's specials (DESIGN.md v1.1 ¬ß5), the fighter side.
 + *   Neutral B  Geno Beam: hold to charge through three stars (15/30/45), release to fire; a tap fires Finger Shot. No
 + *              store (Michael, 2026-09-28: not Samus's or Mewtwo's charge shot): a shield press cancels the charge and its
 + *              stars are lost; just past the third star's timed window it fires by itself.
-+ *   Side B     Geno Whirl: throw the disc (one in play); side B again while it hovers recalls it.
++ *   Side B     Geno Whirl: throw the disc (one in play); side B again in flight is the timed hit (no recall since v1.5).
 + *   Up B       Star Road: fold into the cannon, aim (16 directions), travel 20 frames with no hitbox after the launch,
 + *              then helpless; the ledge catches from travel frame 4 (descending), and steeply into a wall slides along it.
 + *   Down B     Geno Blast: place a mark by the stick; hold to widen (second star) and, at the third, Geno Flash.
@@ -2615,13 +2697,27 @@ index 0000000..5fe5ec9
 +/* ---- tuning (DESIGN.md v1.1 ¬ß5; move to PlGe.dat's special attributes once they settle) */
 +#define BEAM_STAR_FRAMES 20    /* a star every 20 frames of charge (v1.3: was 15) */
 +#define BEAM_GRACE 4           /* past the third star: it fires itself just after the star's +-3 timed window */
++#ifdef MUST_MATCH
 +#define BEAM_TAP 6             /* releasing B before this frame of the start is a tap: Finger Shot */
++#else
++#define BEAM_TAP 20            /* v1.5 (Michael, 2026-09-30): B let go before this frame from the press is a tap, the Finger
++                                * Shot, and the stars light BEAM_TAP + 20k (40, 60, 80); the charge sound starts here */
++#endif
 +#define STARROAD_SPEED 2.8f    /* units a frame */
++#ifdef MUST_MATCH
 +#define STARROAD_FRAMES 20               /* v1.3: 56 units (v1.2: 24 frames, 67): easier to aim, a shorter recovery */
++#else
++#define STARROAD_FRAMES 16               /* v1.5 (Michael, 2026-09-30: dropping to sweetspot took him too near the blast zone):
++                                          * 45 units (v1.3: 20 frames, 56) */
++#endif
 +#define STARROAD_LEDGE_FROM 4            /* v1.3: the ledge catches from travel frame 4 (v1.2: 14, and it never looked) */
 +#define STARROAD_WALL_SLIDE 0.5f         /* v1.3: into a wall rising or falling faster than this, he slides along it */
 +#define BLAST_WIDEN_FRAME 24             /* v1.3 held down B: the second star (was 18) ... */
++#ifdef MUST_MATCH
 +#define BLAST_FLASH_FRAME 48             /* ... and, grounded, Geno Flash at the third (was 36) */
++#else
++#define BLAST_FLASH_FRAME 60             /* ... and, grounded, Geno Flash at the third (v1.5, Michael: 48 locked in too early) */
++#endif
 +#define STARROAD_FREEFALL_MOBILITY 0.6f
 +#define STARROAD_LANDING_LAG 30.0f
 +#define FOLD_FALL_ACCEL 0.04f
@@ -2736,10 +2832,8 @@ index 0000000..5fe5ec9
 +#define GE_SFX_BEAM_RELEASE 550014
 +#define GE_SFX_BEAM_FIRE 550015
 +#define GE_SFX_BEAM_FULL 550016
-+#define GE_SFX_WHIRL_RECALL 550019
 +
 +#define GE_STORE_DECAY 150 /* unused since v1.4 removed the store; kept so ftGe_BeamTuning's layout holds */
-+#define GE_WHIRL_LOCK 30    /* frames side B stays locked after a Whirl ends uncaught */
 +
 +/* An unusable special does nothing: straight back to Wait or Fall (Melee has no refusal, so this is the refusal). */
 +static void ftGe_Refuse(Fighter_GObj* gobj)
@@ -2890,10 +2984,12 @@ index 0000000..5fe5ec9
 +    fp->u.ge.whirl = itGe_SpawnWhirl(gobj, &pos, fp->facing_dir, bend);
 +}
 +
-+#define GE_BLAST_NEAR 25.0f   /* the mark: stick back, neutral, forward */
 +#define GE_BLAST_MID 50.0f
-+#define GE_BLAST_FAR 75.0f
 +#define GE_BLAST_SPREAD 14.0f /* the second star: three columns, this far apart */
++/* v1.5 (Michael, 2026-09-30: "the 3 possible stage-1 mark positions match the CURRENT stage-2 laser positions"): the
++ * stick picks the mark from star 2's three columns, 36, 50 and 64 ahead (were 25, 50, 75) */
++#define GE_BLAST_NEAR (GE_BLAST_MID - GE_BLAST_SPREAD)
++#define GE_BLAST_FAR (GE_BLAST_MID + GE_BLAST_SPREAD)
 +
 +#ifndef MUST_MATCH
 +/* animation-pipeline (geno-atk-air): each column strikes the floor under its own mark, as SMRPG's beams come down from
@@ -2903,47 +2999,166 @@ index 0000000..5fe5ec9
 + * over another floor or a platform's edge. Over the void (no floor within reach) the column still sweeps its 50 down
 + * from his height (the strike's drop) instead of stopping at his feet. */
 +#define GE_BLAST_RAY_UP 20.0f
-+#define GE_BLAST_RAY_DOWN 200.0f
++#define GE_BLAST_RAY_DOWN 400.0f /* v1.5: from any height he can cast at */
 +#define GE_BLAST_VOID_DROP 50.0f
++#define GE_BLAST_EDGE_STEP 4.0f  /* v1.5: over the void, look back toward the stage this far at a time ... */
++#define GE_BLAST_EDGE_REACH 120.0f /* ... up to this far */
 +
-+static f32 ftGe_BlastFloor(Fighter* fp, f32 x)
++static bool ftGe_BlastRay(f32 x, f32 y, f32* out)
 +{
 +    Vec3 hit, normal;
 +    int line;
 +    u32 flags;
-+    f32 y = fp->cur_pos.y;
 +    if (mpCheckFloor(x, y + GE_BLAST_RAY_UP, x, y - GE_BLAST_RAY_DOWN, 0.0f, &hit, &line, &flags, &normal, -1, -1, -1,
 +                     NULL, NULL))
 +    {
-+        return hit.y;
++        *out = hit.y;
++        return true;
++    }
++    return false;
++}
++
++/* v1.5 (Michael, 2026-09-30: offstage and high casts placed the mark oddly): a column strikes the first floor under its
++ * mark. Over the void it strikes the plane of the nearest floor back toward the stage (its ledge's height), so an
++ * offstage mark sits level with the stage instead of hanging 50 below wherever he happened to be; with no floor
++ * anywhere near, 50 below him as before. */
++static f32 ftGe_BlastFloor(Fighter* fp, f32 x)
++{
++    f32 y = fp->cur_pos.y, fy, d, dir = x > 0.0f ? -1.0f : 1.0f;
++    if (ftGe_BlastRay(x, y, &fy)) {
++        return fy;
++    }
++    for (d = GE_BLAST_EDGE_STEP; d <= GE_BLAST_EDGE_REACH; d += GE_BLAST_EDGE_STEP) {
++        if (ftGe_BlastRay(x + dir * d, y, &fy)) {
++            OSReport("GENO BLAST over the void: the stage's plane %d, %d back (x100)\n", (int) (fy * 100.0f),
++                     (int) (d * 100.0f));
++            return fy;
++        }
 +    }
 +    return y - GE_BLAST_VOID_DROP;
 +}
 +
-+static void ftGe_SpawnBlast(Fighter_GObj* gobj, int stars)
++/* v1.5 (Michael, 2026-09-30): the mark shows from the move's first frame, all three marks the moment the second star
++ * lights, and they go when the cannon commits (the third star, grounded); a release strikes the marks shown.
++ * The forgiving mark (Michael: "read the stick at any point in the charge before level 2 to place the mark"): the stick
++ * picks near, mid or far (36, 50, 64 ahead) at the press and on every frame of the charge after it, and the one mark
++ * slides there (the same item, moved: its tell keeps animating); it locks when the second star lights, or when B is let
++ * go first (a tap keeps the last reading made with B held). The press reads the stick past 0.25 either way (inside down B's band: |x|
++ * under 0.6); after it the stick is free, so the charge moves the mark only past 0.5 and brings it back to mid only
++ * under 0.25: a stick resting at a boundary never flickers the mark. The places are measured from where he pressed
++ * (mv.ge.vx), so an aerial drift doesn't creep the mark. The mark's x is kept in mv.ge.angle (down B has no bend), the
++ * zone and the lock in mv.ge.flags. */
++#define GE_BLAST_PRESS_X 0.25f  /* the press: past this either way, near or far */
++#define GE_BLAST_ENTER_X 0.5f   /* the charge: past this, near or far ... */
++#define GE_BLAST_LEAVE_X 0.25f  /* ... and back to mid only inside this */
++#define GE_BLAST_SLIDE 5.0f     /* units a frame the mark slides (14 between marks: 3 frames) */
++#define GE_BLAST_ZONE 0x3000    /* mv.ge.flags: the mark's zone, 0 near, 1 mid, 2 far (<< 12) */
++#define GE_BLAST_LOCKED 0x4000  /* mv.ge.flags: the mark is locked (star 2 or B let go) */
++#define GE_BLAST_ZONE_OF(fp) (((fp)->mv.ge.flags & GE_BLAST_ZONE) >> 12)
++static const f32 ftGe_BlastDist[3] = { GE_BLAST_NEAR, GE_BLAST_MID, GE_BLAST_FAR };
++
++static void ftGe_BlastColumn(Fighter_GObj* gobj, f32 cx)
++{
++    Fighter* fp = GET_FIGHTER(gobj);
++    f32 fy = ftGe_BlastFloor(fp, cx);
++    OSReport("GENO BLAST column x %d floor %d (x100)\n", (int) (cx * 100.0f), (int) (fy * 100.0f));
++    itGe_SpawnBlast(gobj, cx, fy, fp->facing_dir);
++}
++
++static void ftGe_BlastPlace(Fighter_GObj* gobj)
 +{
 +    Fighter* fp = GET_FIGHTER(gobj);
 +    f32 sx = fp->input.lstick[0].x * fp->facing_dir; /* forward is positive */
-+    f32 d = sx > 0.3f ? GE_BLAST_FAR : sx < -0.3f ? GE_BLAST_NEAR : GE_BLAST_MID;
-+    f32 x = fp->cur_pos.x + fp->facing_dir * d;
++    /* the press is a down B only with y below -0.55 and |x| under 0.6 (side B from 0.6): past 0.25 either way picks the
++     * near or far mark, so down-back and down-forward (20-37 degrees off straight down) both still read as down B */
++    int z = sx > GE_BLAST_PRESS_X ? 2 : sx < -GE_BLAST_PRESS_X ? 0 : 1;
 +    int live = itGe_CountOwned(gobj, It_Kind_Geno_Blast);
-+    int k;
-+    OSReport("GENO SPAWN blast stars %d frame %d dist %d live %d geno_y %d (x100)\n", stars, (int) fp->cur_anim_frame,
-+             (int) d, live, (int) (fp->cur_pos.y * 100.0f));
++    fp->mv.ge.flags = (fp->mv.ge.flags & ~(GE_BLAST_ZONE | GE_BLAST_LOCKED)) | (z << 12);
++    fp->mv.ge.vx = fp->cur_pos.x; /* the places' origin */
++    fp->mv.ge.angle = fp->mv.ge.vx + fp->facing_dir * ftGe_BlastDist[z];
++    OSReport("GENO BLAST mark at the press: dist %d live %d geno_y %d (x100)\n", (int) ftGe_BlastDist[z], live,
++             (int) (fp->cur_pos.y * 100.0f));
 +    if (live > 0) {
-+        return; /* one set of marks at a time */
-+    }
-+    if (fp->ground_or_air == GA_Air && fp->cur_pos.y < 0.0f) {
-+        /* no Blast below ledge height (¬ß8 rule 2), now that the mark comes at the release: a charge carried off the
-+         * stage and falling below the ledge before it releases marks nothing */
-+        OSReport("GENO BLAST refused at the release: below ledge height\n");
++        fp->mv.ge.flags |= GE_BLAST_NONE; /* one set of marks at a time: this cast marks nothing */
 +        return;
 +    }
-+    for (k = stars >= 2 ? -1 : 0; k <= (stars >= 2 ? 1 : 0); k++) {
-+        f32 cx = x + k * GE_BLAST_SPREAD, fy = ftGe_BlastFloor(fp, cx);
-+        OSReport("GENO BLAST column x %d floor %d (x100)\n", (int) (cx * 100.0f), (int) (fy * 100.0f));
-+        itGe_SpawnBlast(gobj, cx, fy, fp->facing_dir);
++    ftGe_BlastColumn(gobj, fp->mv.ge.angle);
++}
++
++/* the charge, each frame until the lock: read the stick (with its deadzone; not on B's release frame, where the
++ * last reading with B held stands), slide the mark toward its zone's place; a lock snaps it there */
++static void ftGe_BlastSteer(Fighter_GObj* gobj, bool read, bool lock)
++{
++    Fighter* fp = GET_FIGHTER(gobj);
++    f32 sx = fp->input.lstick[0].x * fp->facing_dir;
++    int z = GE_BLAST_ZONE_OF(fp), z0 = z;
++    f32 to, x;
++    if (fp->mv.ge.flags & GE_BLAST_LOCKED) {
++        return;
 +    }
++    if (!read) {
++        /* B let go: lock where the last reading put it */
++    } else if (sx >= GE_BLAST_ENTER_X) {
++        z = 2;
++    } else if (sx <= -GE_BLAST_ENTER_X) {
++        z = 0;
++    } else if ((z == 2 && sx < GE_BLAST_LEAVE_X) || (z == 0 && sx > -GE_BLAST_LEAVE_X)) {
++        z = 1;
++    }
++    fp->mv.ge.flags = (fp->mv.ge.flags & ~GE_BLAST_ZONE) | (z << 12);
++    to = fp->mv.ge.vx + fp->facing_dir * ftGe_BlastDist[z];
++    x = fp->mv.ge.angle;
++    if (lock || (to - x <= GE_BLAST_SLIDE && x - to <= GE_BLAST_SLIDE)) {
++        x = to; /* there (or locked: snapped there) */
++    } else {
++        x += to > x ? GE_BLAST_SLIDE : -GE_BLAST_SLIDE;
++    }
++    if (z != z0) {
++        OSReport("GENO BLAST mark zone %d -> %d (stick %d)\n", z0, z, (int) (sx * 100.0f));
++    }
++    if (lock) {
++        fp->mv.ge.flags |= GE_BLAST_LOCKED;
++        OSReport("GENO BLAST mark locked: dist %d x %d (x100)\n", (int) ftGe_BlastDist[z], (int) (to * 100.0f));
++    }
++    if (x != fp->mv.ge.angle || lock) {
++        fp->mv.ge.angle = x;
++        if (!(fp->mv.ge.flags & GE_BLAST_NONE)) {
++            itGe_BlastMove(gobj, x, ftGe_BlastFloor(fp, x));
++        }
++    }
++}
++
++/* v1.5 (Michael, 2026-09-30: "stage 2 covers all three"): the second star marks all three places, 36, 50 and 64 ahead,
++ * whatever the stick: the one mark (locked, snapped to its place) and the other two */
++static void ftGe_BlastSides(Fighter_GObj* gobj)
++{
++    Fighter* fp = GET_FIGHTER(gobj);
++    int z, k;
++    ftGe_BlastSteer(gobj, true, true);
++    if (fp->mv.ge.flags & GE_BLAST_NONE) {
++        return;
++    }
++    z = GE_BLAST_ZONE_OF(fp);
++    for (k = 0; k < 3; k++) {
++        if (k != z) {
++            ftGe_BlastColumn(gobj, fp->mv.ge.vx + fp->facing_dir * ftGe_BlastDist[k]);
++        }
++    }
++}
++
++static void ftGe_SpawnBlast(Fighter_GObj* gobj, int stars)
++{
++    /* v1.5: the release strikes the marks already shown (placed at the press, widened at star 2) */
++    Fighter* fp = GET_FIGHTER(gobj);
++    OSReport("GENO BLAST release arms the marks: stars %d frame %d\n", stars, (int) fp->cur_anim_frame);
++    if (fp->ground_or_air == GA_Air && fp->cur_pos.y < 0.0f) {
++        /* no Blast below ledge height (¬ß8 rule 2): a charge carried off the stage and falling below the ledge before it
++         * releases strikes nothing; its marks go */
++        OSReport("GENO BLAST refused at the release: below ledge height\n");
++        itGe_BlastClear(gobj);
++        return;
++    }
++    itGe_BlastArm(gobj);
 +    if (efGe_Loaded()) { /* geno-fx: SMRPG's cast, blue sparkles rising at his hand (EfGeData.dat BLAST_CAST) */
 +        Vec3 hand;
 +        ftGe_MuzzlePos(gobj, &hand, GE_PART_RHAND, 0.0f, "blast cast");
@@ -3025,7 +3240,9 @@ index 0000000..5fe5ec9
 +    fp->mv.ge.stars = 0;
 +    fp->mv.ge.flags = 0;
 +    fp->accessory4_cb = NULL;
++#ifdef MUST_MATCH
 +    ft_80088478(fp, GE_SFX_BEAM_CHARGE, 0x7F, 0x40); /* the charge, from the press (a tap stops it) */
++#endif
 +}
 +
 +void ftGe_SpecialN_Enter(Fighter_GObj* gobj)
@@ -3078,6 +3295,10 @@ index 0000000..5fe5ec9
 +    Fighter* fp = GET_FIGHTER(gobj);
 +    Vec3 hp, tip, off;
 +    int lv, k;
++    f -= BEAM_TAP; /* v1.5: the waves land on the stars, which light BEAM_TAP later */
++    if (f < 0) {
++        return;
++    }
 +    if (!efGe_Loaded() || hand == NULL || (f + GE_DRAW_T) % GE_DRAW_PERIOD != 0 || f + GE_DRAW_T > 3 * star_frames) {
 +        return;
 +    }
@@ -3118,7 +3339,20 @@ index 0000000..5fe5ec9
 +{
 +    Fighter* fp = GET_FIGHTER(gobj);
 +    int f = ++fp->mv.ge.frames;
++#ifndef MUST_MATCH
++    int stars = ftGe_BeamStars(f);
++    if (f == BEAM_TAP) { /* the charge begins: no charge sound inside the tap window */
++        OSReport("GENO CHARGE sound from frame %d\n", f);
++        ft_80088478(fp, GE_SFX_BEAM_CHARGE, 0x7F, 0x40);
++    }
++    if (!(fp->input.held_buttons[0] & HSD_PAD_B) && f < BEAM_TAP) {
++        OSReport("GENO FINGER from the charge, frame %d\n", f);
++        ftGe_Finger(gobj);
++        return;
++    }
++#else
 +    int stars = f / BEAM_STAR_FRAMES;
++#endif
 +    if (stars > 3) {
 +        stars = 3;
 +    }
@@ -3155,7 +3389,7 @@ index 0000000..5fe5ec9
 +        }
 +        return;
 +    }
-+    if (f >= 3 * BEAM_STAR_FRAMES + BEAM_GRACE) {
++    if (ftGe_BeamAuto(f)) {
 +        ftGe_BeamFire(gobj, stars);
 +    }
 +#else
@@ -3166,11 +3400,23 @@ index 0000000..5fe5ec9
 +}
 +
 +#ifndef MUST_MATCH
++/* v1.5: the stars light at BEAM_TAP + 20k from the press (40, 60, 80); it fires itself BEAM_GRACE past the third */
++int ftGe_BeamStars(int f)
++{
++    int s = f < BEAM_TAP ? 0 : (f - BEAM_TAP) / BEAM_STAR_FRAMES;
++    return s > 3 ? 3 : s;
++}
++
++int ftGe_BeamAuto(int f)
++{
++    return f >= BEAM_TAP + 3 * BEAM_STAR_FRAMES + BEAM_GRACE;
++}
++
 +int ftGe_BeamTimed(int f, int* stars)
 +{
 +    int k;
 +    for (k = 1; k <= 3; k++) {
-+        int d = f - k * BEAM_STAR_FRAMES;
++        int d = f - BEAM_TAP - k * BEAM_STAR_FRAMES;
 +        if (d >= -GE_BEAM_TIMED_WINDOW && d <= GE_BEAM_TIMED_WINDOW) {
 +            if (*stars < k) {
 +                *stars = k;
@@ -3363,8 +3609,6 @@ index 0000000..5fe5ec9
 +}
 +
 +/* ======================================================================================================== side B */
-+#define GE_WHIRL_RECALLED 0x100 /* mv.ge.flags: this side B recalled the disc, so it throws nothing */
-+
 +static void ftGe_WhirlCb(Fighter_GObj* gobj)
 +{
 +    Fighter* fp = GET_FIGHTER(gobj);
@@ -3372,7 +3616,7 @@ index 0000000..5fe5ec9
 +    if (sy > 0.3f || sy < -0.3f) {
 +        fp->mv.ge.angle = sy; /* the bend: the stick's last tilt from the input to the throw */
 +    }
-+    if (ftGe_TakeFlag(fp) && !(fp->mv.ge.flags & GE_WHIRL_RECALLED)) {
++    if (ftGe_TakeFlag(fp)) {
 +        ftGe_SpawnWhirl(gobj);
 +    }
 +}
@@ -3387,46 +3631,47 @@ index 0000000..5fe5ec9
 +    return fp->u.ge.whirl;
 +}
 +
-+static void ftGe_WhirlRecallIfOut(Fighter_GObj* gobj)
++/* v1.5 (Michael, 2026-09-30: "the recall behavior for Whirl should be completely removed"; a late press brought the disc
++ * back like a boomerang). With his Whirl in play side B plays nothing: in flight the press is the timed-hit check (the
++ * window before contact), otherwise it does nothing; and inside the lockout after one ends (GE_WHIRL_LOCK frames after
++ * every despawn), nothing either. One on screen still. Returns true when it handled the press, so the caller changes no
++ * state. (The pre-v1.5 recall path under MUST_MATCH went too: the matching DOL never builds Geno.) */
++static bool ftGe_WhirlPress(Fighter_GObj* gobj)
 +{
 +    Fighter* fp = GET_FIGHTER(gobj);
 +    if (ftGe_Whirl(gobj) != NULL) {
 +        if (itGe_WhirlPhase(fp->u.ge.whirl) == GE_WHIRL_TRAVEL) {
-+            itGe_WhirlArmCrit(fp->u.ge.whirl); /* in flight: the timed press */
++            itGe_WhirlArmCrit(fp->u.ge.whirl);
 +        } else {
-+            itGe_WhirlRecall(fp->u.ge.whirl);
-+            OSReport("GENO WHIRL recall\n");
-+            ft_PlaySFX(fp, GE_SFX_WHIRL_RECALL, 0x7F, 0x40);
++            OSReport("GENO WHIRL press ignored (phase %d)\n", itGe_WhirlPhase(fp->u.ge.whirl));
 +        }
++        return true;
 +    }
++    if (ftGe_WhirlLocked(gobj)) {
++        OSReport("GENO WHIRL locked\n");
++        return true;
++    }
++    return false;
 +}
 +
 +void ftGe_SpecialS_Enter(Fighter_GObj* gobj)
 +{
-+    int out = ftGe_Whirl(gobj) != NULL;
-+    if (ftGe_WhirlLocked(gobj)) {
-+        OSReport("GENO WHIRL locked\n");
-+        ftGe_Refuse(gobj);
++    if (ftGe_WhirlPress(gobj)) {
 +        return;
 +    }
-+    ftGe_WhirlRecallIfOut(gobj);
 +    ftGe_Change(gobj, ftGe_MS_SpecialS);
-+    GET_FIGHTER(gobj)->mv.ge.flags = out ? GE_WHIRL_RECALLED : 0; /* motion vars carry over between actions */
++    GET_FIGHTER(gobj)->mv.ge.flags = 0; /* motion vars carry over between actions */
 +    GET_FIGHTER(gobj)->mv.ge.angle = GET_FIGHTER(gobj)->input.lstick[0].y; /* the bend, from the input */
 +    GET_FIGHTER(gobj)->accessory4_cb = ftGe_WhirlCb;
 +}
 +
 +void ftGe_SpecialAirS_Enter(Fighter_GObj* gobj)
 +{
-+    int out = ftGe_Whirl(gobj) != NULL;
-+    if (ftGe_WhirlLocked(gobj)) {
-+        OSReport("GENO WHIRL locked\n");
-+        ftGe_Refuse(gobj);
++    if (ftGe_WhirlPress(gobj)) {
 +        return;
 +    }
-+    ftGe_WhirlRecallIfOut(gobj);
 +    ftGe_Change(gobj, ftGe_MS_SpecialAirS);
-+    GET_FIGHTER(gobj)->mv.ge.flags = out ? GE_WHIRL_RECALLED : 0; /* motion vars carry over between actions */
++    GET_FIGHTER(gobj)->mv.ge.flags = 0; /* motion vars carry over between actions */
 +    GET_FIGHTER(gobj)->mv.ge.angle = GET_FIGHTER(gobj)->input.lstick[0].y; /* the bend, from the input */
 +    GET_FIGHTER(gobj)->accessory4_cb = ftGe_WhirlCb;
 +}
@@ -3690,7 +3935,9 @@ index 0000000..5fe5ec9
 +    ftGe_Change(gobj, ms);
 +    fp->mv.ge.frames = 0;
 +    fp->mv.ge.stars = 1;
-+    fp->accessory4_cb = NULL; /* the charge marks nothing */
++    fp->mv.ge.flags = 0;
++    fp->accessory4_cb = NULL;
++    ftGe_BlastPlace(gobj); /* v1.5: the mark from the first frame */
 +}
 +
 +void ftGe_SpecialLw_Enter(Fighter_GObj* gobj)
@@ -3725,14 +3972,19 @@ index 0000000..5fe5ec9
 +    Fighter* fp = GET_FIGHTER(gobj);
 +    int f = ++fp->mv.ge.frames;
 +    bool held = (fp->input.held_buttons[0] & HSD_PAD_B) != 0;
++    if (!(held && f == BLAST_WIDEN_FRAME)) {
++        ftGe_BlastSteer(gobj, held, !held); /* until star 2 (below) or B let go: the stick moves the mark */
++    }
 +    if (held && f == BLAST_WIDEN_FRAME && fp->mv.ge.stars < 2) {
 +        fp->mv.ge.stars = 2;
 +        OSReport("GENO BLAST star 2 move frame %d\n", f + 1);
 +        ft_PlaySFX(fp, GE_SFX_BLAST_STAR2, 0x7F, 0x40);
++        ftGe_BlastSides(gobj); /* v1.5: the lock, and all three marks as the second star lights */
 +    }
 +    if (held && f == BLAST_FLASH_FRAME) {
 +        if (fp->ground_or_air == GA_Ground) {
 +            OSReport("GENO FLASH instead of the Blast, move frame %d\n", f + 1);
++            itGe_BlastClear(gobj); /* v1.5: the cannon commits: the marks go */
 +            ftGe_Change(gobj, ftGe_MS_SpecialLwFlash);
 +            fp->accessory4_cb = ftGe_FlashCb;
 +        } else {
@@ -4312,10 +4564,10 @@ index 9ca8f17..4961fd2 100644
  };
 diff --git a/src/melee/ft/kinds/ftKirby/ftkirbyspecialgeno.c b/src/melee/ft/kinds/ftKirby/ftkirbyspecialgeno.c
 new file mode 100644
-index 0000000..531bac0
+index 0000000..19c6de4
 --- /dev/null
 +++ b/src/melee/ft/kinds/ftKirby/ftkirbyspecialgeno.c
-@@ -0,0 +1,489 @@
+@@ -0,0 +1,499 @@
 +/* animation-pipeline: Kirby's copy of Geno (kind 0x22), non-matching builds only.
 + *
 + * As the decomp's ftkirbyspecial*.c files are Kirby's versions of each fighter's neutral B, this is Kirby's version of
@@ -4529,7 +4781,7 @@ index 0000000..531bac0
 +    fp->mv.ge.stars = 0;
 +    fp->mv.ge.flags = 0;
 +    fp->accessory4_cb = NULL;
-+    ft_80088478(fp, KBGE_T->sfx_charge, 0x7F, 0x40); /* the charge, from the press (a tap stops it) */
++    /* v1.5: the charge sound starts when a real charge begins (KBGE_T->tap), not at the press */
 +}
 +
 +void ftKb_SpecialNGe_Enter(Fighter_GObj* gobj)
@@ -4580,11 +4832,21 @@ index 0000000..531bac0
 +        }
 +        return;
 +    }
-+    f = ++fp->mv.ge.frames;
-+    stars = f / KBGE_T->star_frames;
-+    if (stars > 3) {
-+        stars = 3;
++    if (fp->mv.ge.flags & KBGE_FINGER) { /* a tap from the charge (v1.5: before frame 20): the Finger Shot's windup */
++        if (--KBGE_WINDUP(fp) <= 0.0f) {
++            ftKbGe_ShootFinger(gobj);
++        }
++        return;
 +    }
++    f = ++fp->mv.ge.frames;
++    if (f == KBGE_T->tap) {
++        ft_80088478(fp, KBGE_T->sfx_charge, 0x7F, 0x40);
++    }
++    if (!(fp->input.held_buttons[0] & HSD_PAD_B) && f < KBGE_T->tap) {
++        ftKbGe_Tap(gobj);
++        return;
++    }
++    stars = ftGe_BeamStars(f);
 +    if (stars != fp->mv.ge.stars) {
 +        fp->mv.ge.stars = stars;
 +        OSReport("KBGE STAR %d frame %d port %d\n", stars, f, fp->player_idx);
@@ -4603,7 +4865,7 @@ index 0000000..531bac0
 +        }
 +        return;
 +    }
-+    if (f >= 3 * KBGE_T->star_frames + KBGE_T->grace) {
++    if (ftGe_BeamAuto(f)) {
 +        ftKbGe_Release(gobj, stars);
 +    }
 +}
@@ -4847,7 +5109,7 @@ index 02ff328..3c8fb53 100644
          some_angle = (float) M_PI_2;
  
 diff --git a/src/melee/ft/types.h b/src/melee/ft/types.h
-index f3f409a..4517fd4 100644
+index f3f409a..333da2b 100644
 --- a/src/melee/ft/types.h
 +++ b/src/melee/ft/types.h
 @@ -1901,6 +1901,17 @@ struct Fighter {
@@ -4859,7 +5121,7 @@ index f3f409a..4517fd4 100644
 +            int stored_stars;  ///< unused since v1.4 (the Geno Beam has no store)
 +            int store_decay;   ///< unused since v1.4
 +            void* whirl;       ///< the Geno Whirl in play (one on screen)
-+            int whirl_lock;    ///< side B is locked until this match frame (30 after a Whirl ends uncaught)
++            int whirl_lock;    ///< side B is locked until this match frame (GE_WHIRL_LOCK after a Whirl ends)
 +            void* blast;       ///< the pending Geno Blast
 +            float catch_dx;    ///< the ledge catch: where he was less where CliffCatch's path puts him (x),
 +            float catch_dy;    ///< and y; eased out over CliffCatch so the grab has no jump (ftcliffcommon.c)
@@ -4897,7 +5159,7 @@ index f3f409a..4517fd4 100644
  struct IKState {
      /* 0x00 */ HSD_JObj* jobj0;
 diff --git a/src/melee/gm/gm_1601.c b/src/melee/gm/gm_1601.c
-index 273eb40..830a278 100644
+index 273eb40..b3de3a9 100644
 --- a/src/melee/gm/gm_1601.c
 +++ b/src/melee/gm/gm_1601.c
 @@ -17,6 +17,9 @@
@@ -4910,7 +5172,7 @@ index 273eb40..830a278 100644
  #include <melee/gr/ground.h>
  #include <melee/gr/stage.h>
  #include <melee/if/ifstatus.h>
-@@ -68,18 +71,30 @@ struct ResultAnimEntry {
+@@ -68,25 +71,42 @@ struct ResultAnimEntry {
  /* 3B75F8 */ static const float lbl_803B75F8[] = {
      0.95, 0.8, 1, 0.65, 1,    1,   1, 1, 1,   1, 1, 1, 1, 1, 0.67, 1, 1,
      1,    1,   1, 1,    0.95, 0.8, 1, 1, 0.9, 1, 1, 1, 1, 1, 1,    0,
@@ -4941,7 +5203,20 @@ index 273eb40..830a278 100644
  };
  
  /* 3B7808 */ static const s16 lbl_803B7808[0x3C / 2] = {
-@@ -110,6 +125,9 @@ static const u8 lbl_803B7844[] = {
+     0x0004, 0x0005, 0x000D, 0x0006, 0x0008, 0x0002, 0x0007, 0x0003,
+     0x000A, 0x0009, 0x0019, 0x0013, 0x000B, 0x000C, 0x000E, 0x000F,
+     0x0010, 0x0011, 0x0016, 0x0017, 0x0018, 0x0012, 0x0014, 0x001B,
+-    0x001F, 0x0020, 0x001C, 0x001D, 0x001E, 0x0000,
++    0x001F, 0x0020, 0x001C, 0x001D, 0x001E,
++#ifndef MUST_MATCH
++    0x0015, /* animation-pipeline: random-switch index 29 is the Forest Maze (StKind 0x15, grforest.h) */
++#else
++    0x0000,
++#endif
+ };
+ 
+ static const u8 lbl_803B7844[] = {
+@@ -110,6 +130,9 @@ static const u8 lbl_803B7844[] = {
      CKind_Samus,   CKind_Yoshi,   CKind_Zelda,    CKind_Falco,
      CKind_CLink,   CKind_DrMario, CKind_Emblem,   CKind_Pichu,
      CKind_Ganon,
@@ -4951,7 +5226,7 @@ index 273eb40..830a278 100644
  };
  
  /* 3B78A4 */ static const u8 ckind_to_selkind_map[ChKind_Max] = {
-@@ -146,6 +164,9 @@ static const u8 lbl_803B7844[] = {
+@@ -146,6 +169,9 @@ static const u8 lbl_803B7844[] = {
      /* 1E */ SELKIND_MARIO,
      /* 1F */ SELKIND_MARIO,
      /* 20 */ SELKIND_CAPTAIN
@@ -4961,7 +5236,7 @@ index 273eb40..830a278 100644
  };
  
  /* 3B78C8 */ static const struct UnlockableCharacterData
-@@ -247,6 +268,9 @@ static const s16 lbl_803B7978[] = {
+@@ -247,6 +273,9 @@ static const s16 lbl_803B7978[] = {
      0x0036, 0x0033, 0x0018, 0x0021, 0x0015, 0x0024, 0x0030, 0x0009, 0x000C,
      0x0027, 0x002A, 0x0042, 0x0045, 0x003C, 0x004B, 0x0048, 0x003F, 0xFFFF,
      0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
@@ -4971,7 +5246,7 @@ index 273eb40..830a278 100644
  };
  
  static const s16 lbl_803B79BC[] = {
-@@ -254,6 +278,9 @@ static const s16 lbl_803B79BC[] = {
+@@ -254,6 +283,9 @@ static const s16 lbl_803B79BC[] = {
      0x0037, 0x0034, 0x0019, 0x0022, 0x0016, 0x0025, 0x0031, 0x000A, 0x000D,
      0x0028, 0x002B, 0x0043, 0x0046, 0x003D, 0x004C, 0x0049, 0x0040, 0xFFFF,
      0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
@@ -4981,7 +5256,7 @@ index 273eb40..830a278 100644
  };
  
  static const s16 lbl_803B7A00[] = {
-@@ -261,6 +288,9 @@ static const s16 lbl_803B7A00[] = {
+@@ -261,6 +293,9 @@ static const s16 lbl_803B7A00[] = {
      0x0038, 0x0035, 0x001A, 0x0023, 0x0017, 0x0026, 0x0032, 0x000B, 0x000E,
      0x0029, 0x002C, 0x0044, 0x0047, 0x003E, 0x004D, 0x004A, 0x0041, 0xFFFF,
      0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
@@ -4991,7 +5266,7 @@ index 273eb40..830a278 100644
  };
  /* 46B378 */ static struct lbl_8046B378_t lbl_8046B378;
  /* 4D6598 */ static s8 lbl_804D6598;
-@@ -270,90 +300,104 @@ static const s16 lbl_803B7A00[] = {
+@@ -270,90 +305,104 @@ static const s16 lbl_803B7A00[] = {
  
  /// JP character names
  char* lbl_803D4D74[] = {
@@ -5132,9 +5407,9 @@ index 273eb40..830a278 100644
 +    "ÇfÅ|ÇaÇèÇóÇìÇÖÇí",
 +    "ÇbÇíÇÅÇöÇôÇàÇÅÇéÇÑ",
 +    "ÇrÇÅÇéÇÑÇÇÇÅÇá",
-     NULL,
-+#ifndef MUST_MATCH
 +    NULL,
++#ifndef MUST_MATCH
+     NULL,
 +    "ÇfÇÖÇéÇè",
 +#endif
  };
@@ -5164,7 +5439,7 @@ index 273eb40..830a278 100644
  };
  
  static struct lbl_803D5168_t {
-@@ -372,7 +416,12 @@ static struct lbl_803D5168_t {
+@@ -372,7 +421,12 @@ static struct lbl_803D5168_t {
      { 0x30, 0x0C }, { 0x32, 0x0D }, { 0x28, 0x0E }, { 0x33, 0x0F },
      { 0x34, 0x10 }, { 0x36, 0x11 }, { 0x37, 0x12 }, { 0x35, 0x13 },
      { 0x26, 0x14 }, { 0x23, 0x15 }, { 0x25, 0x16 }, { 0x39, 0x17 },
@@ -5177,7 +5452,7 @@ index 273eb40..830a278 100644
  };
  
  static struct {
-@@ -380,7 +429,11 @@ static struct {
+@@ -380,7 +434,11 @@ static struct {
      /* 1 */ u8 x1;
      /* 2 */ u8 x2;
      /* 3 */ u8 x3;
@@ -5189,7 +5464,7 @@ index 273eb40..830a278 100644
      { 0x06, 0x02, 0x05, 0x04 }, { 0x05, 0x02, 0x03, 0x04 },
      { 0x04, 0x01, 0x02, 0x03 }, { 0x04, 0x01, 0x02, 0x03 },
      { 0x06, 0x03, 0x02, 0x04 }, { 0x04, 0x01, 0x02, 0x00 },
-@@ -394,9 +447,19 @@ static struct {
+@@ -394,9 +452,19 @@ static struct {
      { 0x04, 0x01, 0x02, 0x03 }, { 0x05, 0x01, 0x02, 0x00 },
      { 0x05, 0x01, 0x02, 0x03 }, { 0x05, 0x01, 0x02, 0x03 },
      { 0x04, 0x01, 0x02, 0x03 }, { 0x05, 0x01, 0x02, 0x03 },
@@ -5209,7 +5484,7 @@ index 273eb40..830a278 100644
      {
          CKind_Captain,
          "GmRstMCa.dat",
-@@ -501,13 +564,23 @@ static struct ResultAnimEntry lbl_803D53A8[0x1B] = {
+@@ -501,13 +569,23 @@ static struct ResultAnimEntry lbl_803D53A8[0x1B] = {
          CKind_Emblem,
          "GmRstMFe.dat",
      },
@@ -5233,7 +5508,7 @@ index 273eb40..830a278 100644
      {
          CKind_Captain,
          0x11,
-@@ -612,6 +685,13 @@ static struct VictoryTheme ckind_victory_themes[0x1B] = {
+@@ -612,6 +690,13 @@ static struct VictoryTheme ckind_victory_themes[0x1B] = {
          CKind_Ganon,
          0x15,
      },
@@ -5247,7 +5522,31 @@ index 273eb40..830a278 100644
      {
          ChKind_None,
          -1,
-@@ -4078,6 +4158,11 @@ f32 gm_80168B34(CharacterKind ckind, int arg1, int arg2)
+@@ -2377,7 +2462,11 @@ bool fn_801642A0(void)
+     u8 enabled;
+ 
+     enabled_count = 0;
++#ifndef MUST_MATCH
++    for (i = 0; i < 0x1E; i++) { /* animation-pipeline: + the Forest Maze (random-switch index 29) */
++#else
+     for (i = 0; i < 0x1D; i++) {
++#endif
+         if ((1 << (u16) i) & gmMainLib_GetGamePrefs()->stage_mask) {
+             enabled = true;
+         } else {
+@@ -2410,7 +2499,11 @@ bool gm_80164330(s32 arg0)
+ 
+     total_stages_on = 0;
+     i = 0;
++#ifndef MUST_MATCH
++    for (i = 0; i < 0x1E; i++) { /* animation-pipeline: + the Forest Maze (random-switch index 29) */
++#else
+     for (i = 0; i < 0x1D; i++) {
++#endif
+         if ((1 << (u16) i) & gmMainLib_GetGamePrefs()->stage_mask) {
+             var_r0 = 1;
+         } else {
+@@ -4078,6 +4171,11 @@ f32 gm_80168B34(CharacterKind ckind, int arg1, int arg2)
      if (ckind == CKind_CrezyH) {
          return 27.0F;
      }
@@ -5259,7 +5558,7 @@ index 273eb40..830a278 100644
      if (ckind == CKind_Zelda || ckind == CKind_Seak) {
          if (arg1 == 7) {
              base = 0x19;
-@@ -4188,6 +4273,11 @@ void gm_80168C5C(u32 arg0)
+@@ -4188,6 +4286,11 @@ void gm_80168C5C(u32 arg0)
      case 29:
          lbAudioAx_800243F4(0x7C838);
          break;
@@ -5271,7 +5570,7 @@ index 273eb40..830a278 100644
      }
  }
  
-@@ -4335,6 +4425,11 @@ u8 gm_GetNumCostumesForCKind(u8 ckind)
+@@ -4335,6 +4438,11 @@ u8 gm_GetNumCostumesForCKind(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5283,7 +5582,7 @@ index 273eb40..830a278 100644
      return lbl_803D51A0[ckind].ncolors;
  }
  
-@@ -4343,6 +4438,11 @@ u8 gm_80169264(u8 ckind)
+@@ -4343,6 +4451,11 @@ u8 gm_80169264(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5295,7 +5594,7 @@ index 273eb40..830a278 100644
      return lbl_803D51A0[ckind].x1;
  }
  
-@@ -4351,6 +4451,11 @@ u8 gm_80169290(u8 ckind)
+@@ -4351,6 +4464,11 @@ u8 gm_80169290(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5307,7 +5606,7 @@ index 273eb40..830a278 100644
      return lbl_803D51A0[ckind].x3;
  }
  
-@@ -4359,6 +4464,11 @@ u8 gm_801692BC(u8 ckind)
+@@ -4359,6 +4477,11 @@ u8 gm_801692BC(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5685,6 +5984,197 @@ index 9f8acb0..c7c38f5 100644
      gm_LoadAnnouncer();
  }
  
+diff --git a/src/melee/gr/grforest.c b/src/melee/gr/grforest.c
+new file mode 100644
+index 0000000..bf9d84d
+--- /dev/null
++++ b/src/melee/gr/grforest.c
+@@ -0,0 +1,135 @@
++/* animation-pipeline: the Forest Maze stage (grforest.h). A static starter on Battlefield's pattern (grbattle.c) without
++ * its background swaps or demo placement. Map gobjs, as stage-build writes them (projects/geno/stage/stage_spec.py):
++ *   0  the general points (spawns, camera range, blast zones, items)
++ *   1  the play plane: the stump and the cap; the collision is unbound (static), updated as Battlefield's stage gobj is
++ *   2  the background
++ * No hazards, no yakumono_param, no touch-line dynamics. */
++#include "grforest.h"
++
++#include "granime.h"
++#include "grdisplay.h"
++#include "grlib.h"
++#include "grmaterial.h"
++#include "ground.h"
++#include "stage.h"
++#include "inlines.h"
++#include "types.h"
++
++#include <melee/lb/lb_00F9.h>
++#include <sysdolphin/baselib/gobj.h>
++#include <sysdolphin/baselib/gobjgxlink.h>
++#include <sysdolphin/baselib/gobjproc.h>
++#include <sysdolphin/baselib/jobj.h>
++#include <dolphin/os.h>
++
++static void grForest_OnInit(void);
++static void grForest_OnDemoInit(int);
++static void grForest_OnLoad(void);
++static void grForest_OnStart(void);
++static bool grForest_Callback4(void);
++static DynamicsDesc* grForest_OnTouchLine(enum_t);
++static bool grForest_OnCheckShadowRender(Vec3*, int, HSD_JObj*);
++
++static void grForest_Points_Init(Ground_GObj* gobj);
++static void grForest_Stage_Init(Ground_GObj* gobj);
++static void grForest_Stage_Proc(Ground_GObj* gobj);
++static void grForest_Back_Init(Ground_GObj* gobj);
++static bool grForest_False(Ground_GObj* gobj);
++static void grForest_Nop(Ground_GObj* gobj);
++
++static StageCallbacks grFm_StageCallbacks[] = {
++    { grForest_Points_Init, grForest_False, grForest_Nop, grForest_Nop, 0 },
++    { grForest_Stage_Init, grForest_False, grForest_Stage_Proc, grForest_Nop, (1 << 30) | (1 << 31) },
++    { grForest_Back_Init, grForest_False, grForest_Nop, grForest_Nop, 0 },
++};
++
++StageData grFm_StageData = {
++    GR_KIND_FOREST_MAZE,
++    grFm_StageCallbacks,
++    "/GrFm.dat",
++    grForest_OnInit,
++    grForest_OnDemoInit,
++    grForest_OnLoad,
++    grForest_OnStart,
++    grForest_Callback4,
++    grForest_OnTouchLine,
++    grForest_OnCheckShadowRender,
++    (1 << 0),
++    NULL,
++    0,
++};
++
++/* grBattle_80219D84's pattern: set up one map gobj with its callbacks */
++static Ground_GObj* grForest_SetupGObj(int gobj_id)
++{
++    HSD_GObj* gobj;
++    StageCallbacks* callbacks = &grFm_StageCallbacks[gobj_id];
++    gobj = Ground_GetStageGObj(gobj_id);
++    if (gobj != NULL) {
++        Ground* gp = GET_GROUND(gobj);
++        gp->x8_callback = NULL;
++        gp->xC_callback = NULL;
++        GObj_SetupGXLink(gobj, grDisplay_801C5DB0, 3, 0);
++        if (callbacks->callback3 != NULL) {
++            gp->x1C_callback = callbacks->callback3;
++        }
++        if (callbacks->on_init != NULL) {
++            callbacks->on_init(gobj);
++        }
++        if (callbacks->gobj_proc != NULL) {
++            HSD_GObj_SetupProc(gobj, callbacks->gobj_proc, 4);
++        }
++    } else {
++        OSReport("%s:%d: couldn t get gobj(id=%d)\n", __FILE__, __LINE__, gobj_id);
++    }
++    return gobj;
++}
++
++static void grForest_OnInit(void)
++{
++    OSReport("GRFOREST INIT grkind %d stkind %d\n", (int) stage_info.grkind, (int) Stage_80225194());
++    stage_info.unk8C.b4 = 1;
++    stage_info.unk8C.b5 = 1;
++    grForest_SetupGObj(0);
++    grForest_SetupGObj(2);
++    grForest_SetupGObj(1);
++    Ground_801C39C0(); /* the camera range, from points 148-150 */
++    Ground_801C3BB4(); /* the blast zones, from points 151-152 */
++    grLib_801C9A10();
++}
++
++static void grForest_OnDemoInit(int arg0) {}
++static void grForest_OnLoad(void) {}
++static void grForest_OnStart(void) {}
++static bool grForest_Callback4(void) { return false; }
++static DynamicsDesc* grForest_OnTouchLine(enum_t arg0) { return NULL; }
++static bool grForest_OnCheckShadowRender(Vec3* arg0, int arg1, HSD_JObj* arg2) { return true; }
++
++static void grForest_Points_Init(Ground_GObj* gobj)
++{
++    Ground* gp = GET_GROUND(gobj);
++    grAnime_801C8138(gobj, gp->map_id, 0);
++}
++
++static void grForest_Stage_Init(Ground_GObj* gobj)
++{
++    Ground_InitMapCollAndAnim(gobj);
++}
++
++static void grForest_Stage_Proc(Ground_GObj* gobj)
++{
++    Ground_UpdateMapColl(gobj);
++    lb_800115F4();
++}
++
++static void grForest_Back_Init(Ground_GObj* gobj)
++{
++    Ground* gp = GET_GROUND(gobj);
++    HSD_JObj* jobj = GET_JOBJ(gobj);
++    grAnime_801C8138(gobj, gp->map_id, 0);
++    grMaterial_801C94D8(jobj);
++    gp->x11_flags.b012 = 2;
++}
++
++static bool grForest_False(Ground_GObj* gobj) { return false; }
++static void grForest_Nop(Ground_GObj* gobj) {}
+diff --git a/src/melee/gr/grforest.h b/src/melee/gr/grforest.h
+new file mode 100644
+index 0000000..4d48d90
+--- /dev/null
++++ b/src/melee/gr/grforest.h
+@@ -0,0 +1,16 @@
++#ifndef MELEE_GR_GRFOREST_H
++#define MELEE_GR_GRFOREST_H
++/* animation-pipeline: the Forest Maze stage (SMRPG), a static starter. Its archive is GrFm.dat, built by datkit
++ * stage-build from projects/geno/stage (layout A, "Clearing"). It takes the game's unused Akaneia slot: StKind 0x15
++ * (St_Kind_Akaneia) already maps to GrKind 0x1A (Gr_Kind_Unk26), whose stage_datas entry is NULL in the vanilla game;
++ * ground.c points it at grFm_StageData in non-matching builds. The stage select stores stage kinds in a u8, which is why
++ * a new kind past 0xFF could not be used. */
++
++#include <melee/gr/forward.h>
++
++#define GR_KIND_FOREST_MAZE Gr_Kind_Unk26 /* 0x1A */
++#define ST_KIND_FOREST_MAZE St_Kind_Akaneia /* 0x15 */
++
++extern StageData grFm_StageData;
++
++#endif
+diff --git a/src/melee/gr/ground.c b/src/melee/gr/ground.c
+index 150feb3..b056cec 100644
+--- a/src/melee/gr/ground.c
++++ b/src/melee/gr/ground.c
+@@ -5,6 +5,9 @@
+ #include <math.h>
+ 
+ #include "grbattle.h"
++#ifndef MUST_MATCH
++#include "grforest.h" /* animation-pipeline: the Forest Maze stage */
++#endif
+ #include "grbigblue.h"
+ #include "grbigblueroute.h"
+ #include "grcastle.h"
+@@ -166,7 +169,12 @@ static StageData* stage_datas[] = {
+     &grVe_StageData,       &grPs_StageData,       &grPu_StageData,
+     &grMc_StageData,       &grBb_StageData,       &grOt_StageData,
+     &grFs_StageData,       &grIm_StageData,       NULL,
+-    &grI1_StageData,       &grI2_StageData,       NULL,
++    &grI1_StageData,       &grI2_StageData,
++#ifndef MUST_MATCH
++    &grFm_StageData, /* animation-pipeline: 0x1A, the unused Akaneia slot, is the Forest Maze (grforest.h) */
++#else
++    NULL,
++#endif
+     &grFz_StageData,       &grOp_StageData,       &grOy_StageData,
+     &grOk_StageData,       &grNKr_StageData,      &grSh_Route_StageData,
+     &grZe_Route_StageData, &grBb_Route_StageData, &grTe_StageData,
 diff --git a/src/melee/gr/grpstadium.c b/src/melee/gr/grpstadium.c
 index ca7a5e7..2b13741 100644
 --- a/src/melee/gr/grpstadium.c
@@ -5825,10 +6315,10 @@ index 69a7884..740f7b8 100644
  }
 diff --git a/src/melee/it/kinds/itgeno.c b/src/melee/it/kinds/itgeno.c
 new file mode 100644
-index 0000000..0fddebe
+index 0000000..52d2b9b
 --- /dev/null
 +++ b/src/melee/it/kinds/itgeno.c
-@@ -0,0 +1,1078 @@
+@@ -0,0 +1,1217 @@
 +/* Geno's items (a new fighter kind; non-matching builds only): kinds after It_Kind_Kyasarin_Egg with their own
 + * article, logic and render tables, so no existing item shifts. Their articles come from PlGe.dat's article list
 + * (animation-pipeline projects/geno/rig/articles.py), registered by ftGe_Init_OnLoad. */
@@ -5859,7 +6349,9 @@ index 0000000..0fddebe
 +#include <sysdolphin/baselib/jobj.h>
 +#include <melee/ef/efasync.h>
 +#include <melee/ef/efsync.h>
++#include <melee/mp/mplib.h>
 +#include <melee/ft/kinds/ftGeno/ftgeno_efge.h>
++#include <melee/ft/kinds/ftGeno/ftgeno.h>
 +
 +Article* itGe_Articles[ITGE_COUNT];
 +
@@ -5872,16 +6364,15 @@ index 0000000..0fddebe
 +};
 +
 +/* ---- Geno Whirl (side B): the pressure piece he runs in behind (DESIGN v1.2 ¬ß5). Travel, easing from v0 to v1; on a
-+ * shield it grinds (three hits, 13 frames apart, in the article's state script); after a hit, a grind or the travel it
-+ * hovers; side B during the hover recalls it into his hands. Each phase opens its hitbox in a new hit group, so each
-+ * hits a given opponent once per throw (the article's scripts, projects/geno/rig/articles.py). */
++ * shield it grinds (three hits, 13 frames apart, in the article's state script); after the travel or a grind it hovers,
++ * and after the outbound hit it spins down. No recall (v1.5, Michael, 2026-09-30: "the recall behavior for Whirl should
++ * be completely removed"): side B while it is out is only the timed-hit check (ftgeno_specials.c). The hitbox stays live
++ * from the travel into the hover, so each hits a given opponent once per throw (projects/geno/rig/articles.py). */
 +typedef struct itGe_WhirlAttr {
 +    f32 v0, v1;       /* speed at the start and the end of the travel */
 +    f32 travel;       /* travel frames */
 +    f32 hover;        /* hover frames */
-+    f32 recall_speed; /* units a frame back to him */
 +    f32 grind;        /* grind frames */
-+    f32 catch_r;      /* recalled within this of his centre: caught */
 +    f32 bend;         /* the stick's bend, radians at full tilt */
 +    f32 hover_dmg;    /* the hover's numbers, when the travel's hitbox carries into it */
 +    f32 hover_angle;
@@ -5891,7 +6382,7 @@ index 0000000..0fddebe
 +#define GE_SFX_WHIRL_CRIT 550020
 +#define GE_SFX_BLAST_COLUMNS 550022
 +#define GE_SFX_FLASH_EXPLOSION 550025
-+#define GE_WHIRL_SPIN_FRAMES 20 /* after the outbound hit: no hitbox, recallable, then gone (Michael, v1.2) */
++#define GE_WHIRL_SPIN_FRAMES 20 /* after the outbound hit: no hitbox, then gone (Michael, v1.2) */
 +/* On a shield (Michael, 2026-09-29: the grind carried it past the shielder). The disc still presses in at 0.4 a frame,
 + * as before, but only up to the shield's front: its centre stops BITE in front of the shield's near surface (its 3.6
 + * hitbox overlapping the shield, so the grind hits land as before), never through the shield and the shielder. A light
@@ -5905,6 +6396,7 @@ index 0000000..0fddebe
 +#define GE_WHIRL_SETTLE 12
 +#define WV(ip) ((ip)->xDD4_itemVar.genowhirl)
 +static void itGe_WhirlStop(Item_GObj* g);
++static void itGe_WhirlDisarm(Item_GObj* g);
 +#define WA(ip) ((itGe_WhirlAttr*) (ip)->xC4_article_data->x4_specialAttributes)
 +
 +/* Into the hover without a state change: the travel's hitbox stays live (its victims can't be hit again) and drops to
@@ -5931,29 +6423,27 @@ index 0000000..0fddebe
 +    Item_80268E5C(g, phase, ITEM_ANIM_UPDATE);
 +}
 +
-+static void itGe_OwnerCentre(Item* ip, Vec3* out)
-+{
-+    Fighter* fp = GET_FIGHTER(ip->owner);
-+    *out = fp->cur_pos;
-+    out->y += 8.0f;
-+}
-+
 +/* DESIGN ¬ß8 rule 1: a ledge grab or a helpless fall despawns his Whirl and cancels any pending Blast (no planking
 + * with stage coverage, no recovering under cover). The items check their owner each frame. */
-+static bool itGe_OwnerForbids(Item* ip)
++static bool itGe_FighterForbids(HSD_GObj* owner)
 +{
 +    Fighter* fp;
-+    if (ip->owner == NULL || !ftLib_IsFighter(ip->owner)) {
++    if (owner == NULL || !ftLib_IsFighter(owner)) {
 +        return false;
 +    }
-+    fp = GET_FIGHTER(ip->owner);
++    fp = GET_FIGHTER(owner);
 +    return fp->motion_id == ftCo_MS_CliffCatch || fp->motion_id == ftCo_MS_CliffWait ||
 +           fp->motion_id == ftCo_MS_FallSpecial || fp->motion_id == ftCo_MS_FallSpecialF ||
 +           fp->motion_id == ftCo_MS_FallSpecialB;
 +}
 +
++static bool itGe_OwnerForbids(Item* ip)
++{
++    return itGe_FighterForbids(ip->owner);
++}
++
 +/* geno-fx: the Whirl's look (projects/geno/fx/whirl_model.py, efge.py WHIRL_*): SMRPG's trail of fading ovals, dropped
-+ * every few frames of the throw and the recall; the bursts on its hits; the disc shrinks away as it spins down after
++ * every few frames of the throw; the bursts on its hits; the disc shrinks away as it spins down after
 + * the outbound hit and at the end of its hover (its model's children: the tilted disc and its aura) */
 +#define GE_WHIRL_RING_EVERY 3
 +#define GE_WHIRL_FADE 8
@@ -5970,7 +6460,7 @@ index 0000000..0fddebe
 +    itGe_WhirlAttr* a = WA(ip);
 +    f32 k = 1.0f;
 +    HSD_JObj* j;
-+    if ((WV(ip).phase == GE_WHIRL_TRAVEL || WV(ip).phase == GE_WHIRL_RECALL) && WV(ip).t % GE_WHIRL_RING_EVERY == 1) {
++    if (WV(ip).phase == GE_WHIRL_TRAVEL && WV(ip).t % GE_WHIRL_RING_EVERY == 1) {
 +        itGe_WhirlFx(g, EFGE_WHIRL_RING);
 +    }
 +    if (WV(ip).phase == GE_WHIRL_SPIN) {
@@ -6060,7 +6550,7 @@ index 0000000..0fddebe
 +    itGe_WhirlAttr* a = WA(ip);
 +    itGe_WhirlLook(g);
 +    itGe_WhirlTrace(ip);
-+    if (itGe_OwnerForbids(ip)) {
++    if (itGe_FighterForbids(WV(ip).thrower)) { /* his rule, even once a reflect has made another its owner */
 +        OSReport("GENO WHIRL despawn: owner on the ledge or helpless\n");
 +        return true;
 +    }
@@ -6068,7 +6558,7 @@ index 0000000..0fddebe
 +    switch (WV(ip).phase) {
 +    case GE_WHIRL_TRAVEL:
 +        if (WV(ip).crit == 1 && --WV(ip).crit_t <= 0) { /* the window closed with no contact: voided for this throw */
-+            ip->x5D4_hitboxes[0].hit.x24 = WV(ip).kbg;
++            itGe_WhirlDisarm(g);
 +            WV(ip).crit = 2;
 +            OSReport("GENO WHIRL crit voided\n");
 +        }
@@ -6101,21 +6591,6 @@ index 0000000..0fddebe
 +            return true; /* spun down: side B is free again */
 +        }
 +        break;
-+    case GE_WHIRL_RECALL: {
-+        Vec3 c;
-+        f32 dx, dy;
-+        if (ip->owner == NULL || !ftLib_IsFighter(ip->owner) || WV(ip).t > 150) {
-+            return true;
-+        }
-+        itGe_OwnerCentre(ip, &c);
-+        dx = c.x - ip->pos.x;
-+        dy = c.y - ip->pos.y;
-+        if (dx * dx + dy * dy <= a->catch_r * a->catch_r) {
-+            WV(ip).caught = 1;
-+            return true;
-+        }
-+        break;
-+    }
 +    }
 +    return false;
 +}
@@ -6130,22 +6605,6 @@ index 0000000..0fddebe
 +        f32 v = a->v0 + (a->v1 - a->v0) * (u > 1.0f ? 1.0f : u);
 +        ip->x40_vel.x = ip->facing_dir * v * cosf(WV(ip).angle);
 +        ip->x40_vel.y = v * sinf(WV(ip).angle);
-+        break;
-+    }
-+    case GE_WHIRL_RECALL: {
-+        Vec3 c;
-+        f32 dx, dy, d;
-+        if (ip->owner == NULL || !ftLib_IsFighter(ip->owner)) {
-+            break;
-+        }
-+        itGe_OwnerCentre(ip, &c);
-+        dx = c.x - ip->pos.x;
-+        dy = c.y - ip->pos.y;
-+        d = sqrtf(dx * dx + dy * dy);
-+        if (d > 0.01f) {
-+            ip->x40_vel.x = dx / d * a->recall_speed;
-+            ip->x40_vel.y = dy / d * a->recall_speed;
-+        }
 +        break;
 +    }
 +    case GE_WHIRL_GRIND: { /* it presses into the shield up to its front, never through it */
@@ -6193,7 +6652,6 @@ index 0000000..0fddebe
 +    { 0, itGe_Whirl_Anim, itGe_Whirl_Phys, itGe_Whirl_Coll },
 +    { 1, itGe_Whirl_Anim, itGe_Whirl_Phys, itGe_Whirl_Coll },
 +    { 2, itGe_Whirl_Anim, itGe_Whirl_Phys, itGe_Whirl_Coll },
-+    { 3, itGe_Whirl_Anim, itGe_Whirl_Phys, itGe_Whirl_Coll },
 +};
 +
 +static bool itGe_Whirl_DmgDealt(Item_GObj* g) /* it hit someone: the outbound hit ends the travel */
@@ -6210,7 +6668,7 @@ index 0000000..0fddebe
 +        itGe_WhirlFx(g, EFGE_WHIRL_HIT);
 +    }
 +    if (WV(ip).phase == GE_WHIRL_TRAVEL) {
-+        /* after the outbound hit the disc drops its hitbox and spins down (still recallable): a lingering hitbox that
++        /* after the outbound hit the disc drops its hitbox and spins down: a lingering hitbox that
 +         * can't hit its only opponent again was noise, and it held side B (Michael, v1.2) */
 +        it_802725D4(g);
 +        WV(ip).phase = GE_WHIRL_SPIN;
@@ -6258,6 +6716,19 @@ index 0000000..0fddebe
 +    return ip->xCA0 >= GE_WHIRL_BREAK;
 +}
 +
++/* Reflected (a shine, a cape, a powershield: the reflector is now its owner, Item_80269F14). An armed timed hit is
++ * disarmed first, so no crit lands on anyone; Geno, its thrower, stays locked out of side B until it ends (WV.thrower) */
++static bool itGe_Whirl_Reflected(Item_GObj* g)
++{
++    Item* ip = GET_ITEM(g);
++    if (WV(ip).crit == 1) {
++        itGe_WhirlDisarm(g);
++    }
++    WV(ip).crit = 2;
++    OSReport("GENO WHIRL reflected phase %d t %d\n", WV(ip).phase, WV(ip).t);
++    return it_80273030(g);
++}
++
 +static bool itGe_Whirl_Keep(Item_GObj* g)
 +{
 +    OSReport("GENO WHIRL keep (clank/bounce) phase %d\n", WV(GET_ITEM(g)).phase);
@@ -6269,17 +6740,15 @@ index 0000000..0fddebe
 +    return true;
 +}
 +
-+static void itGe_Whirl_Destroyed(Item_GObj* g) /* frees his side B */
++static void itGe_Whirl_Destroyed(Item_GObj* g) /* frees his side B (the thrower's: a reflected disc is still his) */
 +{
 +    Item* ip = GET_ITEM(g);
-+    OSReport("GENO WHIRL gone phase %d t %d caught %d\n", WV(ip).phase, WV(ip).t, WV(ip).caught);
-+    if (ip->owner != NULL && ftLib_IsFighter(ip->owner)) {
-+        Fighter* fp = GET_FIGHTER(ip->owner);
++    OSReport("GENO WHIRL gone phase %d t %d%s\n", WV(ip).phase, WV(ip).t, ip->owner != WV(ip).thrower ? " (reflected)" : "");
++    if (WV(ip).thrower != NULL && ftLib_IsFighter(WV(ip).thrower)) {
++        Fighter* fp = GET_FIGHTER(WV(ip).thrower);
 +        if (fp->kind == Ft_Kind_Geno && fp->u.ge.whirl == g) {
 +            fp->u.ge.whirl = NULL;
-+            if (!WV(ip).caught) { /* uncaught: side B stays locked a while (a caught one frees it at once) */
-+                fp->u.ge.whirl_lock = (int) gm_GetFrameCount() + 30;
-+            }
++            fp->u.ge.whirl_lock = (int) gm_GetFrameCount() + GE_WHIRL_LOCK; /* every end: nothing waives it */
 +        }
 +    }
 +}
@@ -6438,8 +6907,38 @@ index 0000000..0fddebe
 +/* geno-fx: the Blast's look (projects/geno/fx/blast_model.py, efge.py BLAST_*): the mark's tell (the floor oval and its
 + * beam, in the model) sends up a few sparkles; each column is one of SMRPG's colours in turn (the model's strike group
 + * holds one column per colour, the rest are hidden); the column lands in a white cloud */
-+#define GE_BLAST_TELL_EVERY 8
++#define GE_BLAST_TELL_EVERY 12
++#define GE_BLAST_TELL_SOON 9
 +static int itGe_BlastColours;
++
++/* geno-fx (2026-09-30): is there a floor under the column's foot? Over the void the mark hangs on nothing (the column
++ * sweeps a fixed drop below him), so the model's floor parts (the oval, the foot's flare) are hidden, the column fades
++ * into the depths (its void tail) and no cloud lands. Whatever floor the mark was given, it is checked where it is */
++static bool itGe_BlastOnFloor(Item* ip);
++
++/* geno-fx: a pending mark taken away (the cannon committing to Geno Flash, a ledge grab): its ring closes in and a few
++ * sparkles lift away (EfGeData.dat BLAST_VANISH). Call it just before the item goes */
++void itGe_BlastVanish(HSD_GObj* g)
++{
++    Item* ip = GET_ITEM(g);
++    Vec3 at;
++    if (!efGe_Loaded()) {
++        return;
++    }
++    at.x = ip->pos.x;
++    at.y = BV(ip).floor_y;
++    at.z = 0.0f;
++    efSync_Spawn(EFGE_BLAST_VANISH, g, &at);
++}
++
++static bool itGe_BlastOnFloor(Item* ip)
++{
++    Vec3 hit, normal;
++    int line;
++    u32 flags;
++    return mpCheckFloor(ip->pos.x, BV(ip).floor_y + 4.0f, ip->pos.x, BV(ip).floor_y - 4.0f, 0.0f, &hit, &line, &flags,
++                        &normal, -1, -1, -1, NULL, NULL);
++}
 +static void itGe_BlastFx(Item_GObj* g, int gfx)
 +{
 +    Item* ip = GET_ITEM(g);
@@ -6459,6 +6958,7 @@ index 0000000..0fddebe
 +    HSD_JObj* grp = mark != NULL ? HSD_JObjGetNext(mark) : NULL;
 +    HSD_JObj* c;
 +    int k = 0, n = 0;
++    bool onfloor;
 +    if (grp == NULL) {
 +        return; /* a donor model */
 +    }
@@ -6466,25 +6966,68 @@ index 0000000..0fddebe
 +        n++;
 +    }
 +    BV(ip).colour = n > 0 ? itGe_BlastColours++ % n : 0;
++    onfloor = itGe_BlastOnFloor(ip);
++    if (HSD_JObjGetChild(mark) != NULL && !onfloor) {
++        HSD_JObjSetFlags(HSD_JObjGetChild(mark), JOBJ_HIDDEN); /* the floor oval */
++    }
 +    for (c = HSD_JObjGetChild(grp); c != NULL; c = HSD_JObjGetNext(c), k++) {
-+        if (k != BV(ip).colour) { /* hidden, not scaled to 0: a camera-facing joint divides by its own axes */
++        HSD_JObj* foot = HSD_JObjGetChild(c);
++        HSD_JObj* tail = foot != NULL ? HSD_JObjGetNext(foot) : NULL;
++        if (k != BV(ip).colour) { /* hidden, not scaled to 0: a camera-facing joint divides by its own axes; the
++                                   * flag hides a joint's own meshes, not its children's, so its foot and tail too */
 +            HSD_JObjSetFlags(c, JOBJ_HIDDEN);
++            if (foot != NULL) {
++                HSD_JObjSetFlags(foot, JOBJ_HIDDEN);
++            }
++            if (tail != NULL) {
++                HSD_JObjSetFlags(tail, JOBJ_HIDDEN);
++            }
++        } else if (foot != NULL && tail != NULL) {
++            HSD_JObjSetFlags(onfloor ? tail : foot, JOBJ_HIDDEN);
 +        }
 +    }
++    OSReport("GENO BLAST draw x %d floor %d on the floor %d\n", (int) ip->pos.x, (int) BV(ip).floor_y, onfloor);
++}
++
++/* v1.5: a shown mark (not yet released) lives only while its owner charges or releases down B */
++static bool itGe_BlastOwnerCasting(Item* ip)
++{
++    Fighter* fp;
++    if (ip->owner == NULL || !ftLib_IsFighter(ip->owner)) {
++        return false;
++    }
++    fp = GET_FIGHTER(ip->owner);
++    return fp->motion_id == ftGe_MS_SpecialLw || fp->motion_id == ftGe_MS_SpecialAirLw ||
++           fp->motion_id == ftGe_MS_SpecialLwEnd || fp->motion_id == ftGe_MS_SpecialAirLwEnd;
 +}
 +
 +static bool itGe_Blast_Anim(Item_GObj* g)
 +{
 +    Item* ip = GET_ITEM(g);
 +    if (BV(ip).phase == GE_BLAST_MARK && itGe_OwnerForbids(ip)) {
++        itGe_BlastVanish(g);
 +        return true; /* a pending mark is cancelled; a falling column finishes */
 +    }
-+    BV(ip).t++;
-+    if (BV(ip).phase == GE_BLAST_MARK && BV(ip).t % GE_BLAST_TELL_EVERY == 1) {
++    if (BV(ip).armed < 0 || (BV(ip).armed == 0 && !itGe_BlastOwnerCasting(ip))) {
++        OSReport("GENO BLAST mark gone (%s)\n", BV(ip).armed < 0 ? "cleared" : "the cast ended unreleased");
++        itGe_BlastVanish(g); /* geno-fx: the ring closes, sparkles lift away */
++        return true;
++    }
++    BV(ip).age++;
++    /* geno-fx: the tell's sparkles, sparse while the mark stands (v1.5: from the press, through the whole charge),
++     * quickening over its last frames once released: the strike is coming */
++    if (BV(ip).phase == GE_BLAST_MARK &&
++        (BV(ip).armed == 1 && BA(ip)->mark - BV(ip).t <= GE_BLAST_TELL_SOON ? BV(ip).age % 3 == 0
++                                                                              : BV(ip).age % GE_BLAST_TELL_EVERY == 1))
++    {
 +        itGe_BlastFx(g, EFGE_BLAST_TELL);
 +    }
-+    if (BV(ip).phase == GE_BLAST_STRIKE && BV(ip).t >= BA(ip)->strike) {
-+        itGe_BlastFx(g, EFGE_BLAST_LAND);
++    if (BV(ip).armed == 0) {
++        return false; /* shown: the tell doesn't count down until the release */
++    }
++    BV(ip).t++;
++    if (BV(ip).phase == GE_BLAST_STRIKE && BV(ip).t >= BA(ip)->strike && itGe_BlastOnFloor(ip)) {
++        itGe_BlastFx(g, EFGE_BLAST_LAND); /* over the void, nothing lands: the column fades into the depths */
 +    }
 +    if (BV(ip).phase == GE_BLAST_MARK) {
 +        if (BV(ip).t >= BA(ip)->mark) {
@@ -6537,6 +7080,8 @@ index 0000000..0fddebe
 +    BV(ip).phase = GE_BLAST_MARK;
 +    BV(ip).t = 0;
 +    BV(ip).floor_y = floor_y;
++    BV(ip).armed = 0;
++    BV(ip).age = 0;
 +    ip->pos = pos;
 +    Item_80268E5C(g, GE_BLAST_MARK, ITEM_ANIM_UPDATE);
 +    itGe_BlastColour(g);
@@ -6656,6 +7201,73 @@ index 0000000..0fddebe
 +    return g;
 +}
 +
++void itGe_BlastArm(HSD_GObj* owner)
++{
++    HSD_GObj* g;
++    int n = 0;
++    for (g = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; g != NULL; g = g->next) {
++        Item* ip = GET_ITEM(g);
++        if (ip->kind == It_Kind_Geno_Blast && ip->owner == owner && BV(ip).armed == 0) {
++            BV(ip).armed = 1;
++            BV(ip).t = 0;
++            n++;
++        }
++    }
++    OSReport("GENO BLAST armed %d\n", n);
++}
++
++void itGe_BlastClear(HSD_GObj* owner)
++{
++    HSD_GObj* g;
++    for (g = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; g != NULL; g = g->next) {
++        Item* ip = GET_ITEM(g);
++        if (ip->kind == It_Kind_Geno_Blast && ip->owner == owner && BV(ip).armed == 0) {
++            BV(ip).armed = -1;
++        }
++    }
++}
++
++/* v1.5, the forgiving mark (Michael, 2026-09-30): the shown mark slides where the stick puts it until the second star
++ * or the release. The item is moved, not respawned, so its tell keeps animating; its floor parts follow where it now
++ * stands (the floor oval and the column's foot on a floor, the void tail over the void; itGe_BlastColour's rule). */
++void itGe_BlastMove(HSD_GObj* owner, f32 x, f32 floor_y)
++{
++    HSD_GObj* g;
++    for (g = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; g != NULL; g = g->next) {
++        Item* ip = GET_ITEM(g);
++        if (ip->kind == It_Kind_Geno_Blast && ip->owner == owner && BV(ip).armed == 0 && BV(ip).phase == GE_BLAST_MARK) {
++            HSD_JObj* mark = HSD_JObjGetChild(GET_JOBJ(g));
++            HSD_JObj* grp = mark != NULL ? HSD_JObjGetNext(mark) : NULL;
++            HSD_JObj* c;
++            int k = 0;
++            bool onfloor;
++            ip->pos.x = x;
++            ip->pos.y = floor_y + BA(ip)->lift;
++            BV(ip).floor_y = floor_y;
++            onfloor = itGe_BlastOnFloor(ip);
++            if (grp != NULL) {
++                if (HSD_JObjGetChild(mark) != NULL) {
++                    if (onfloor) {
++                        HSD_JObjClearFlags(HSD_JObjGetChild(mark), JOBJ_HIDDEN);
++                    } else {
++                        HSD_JObjSetFlags(HSD_JObjGetChild(mark), JOBJ_HIDDEN);
++                    }
++                }
++                for (c = HSD_JObjGetChild(grp); c != NULL; c = HSD_JObjGetNext(c), k++) {
++                    HSD_JObj* foot = HSD_JObjGetChild(c);
++                    HSD_JObj* tail = foot != NULL ? HSD_JObjGetNext(foot) : NULL;
++                    if (k == BV(ip).colour && foot != NULL && tail != NULL) {
++                        HSD_JObjClearFlags(onfloor ? foot : tail, JOBJ_HIDDEN);
++                        HSD_JObjSetFlags(onfloor ? tail : foot, JOBJ_HIDDEN);
++                    }
++                }
++            }
++            OSReport("GENO BLAST mark moved x %d floor %d on the floor %d (x100)\n", (int) (x * 100.0f),
++                     (int) (floor_y * 100.0f), onfloor);
++        }
++    }
++}
++
 +/* The second star: two more columns either side of the pending mark, on its clock, so all three strike together. */
 +void itGe_BlastWiden(HSD_GObj* owner, f32 spread)
 +{
@@ -6734,7 +7346,7 @@ index 0000000..0fddebe
 +        itGe_Whirl_DmgDealt,
 +        itGe_Whirl_DmgReceived,
 +        NULL,
-+        it_80273030,          /* reflected: the disc turns on its thrower, as reflected items do */
++        itGe_Whirl_Reflected, /* reflected: the disc turns on its thrower, as reflected items do */
 +        itGe_Whirl_Clanked,   /* clanked: breaks on 6% or more, survives (cancelling) less */
 +        itGe_Whirl_Gone,      /* absorbed */
 +        itGe_Whirl_Keep,      /* shield bounced: no, it grinds */
@@ -6810,10 +7422,10 @@ index 0000000..0fddebe
 +    ip = GET_ITEM(g);
 +    WV(ip).angle = bend * WA(ip)->bend;
 +    OSReport("GENO WHIRL angle %d (bend %d%%)\n", (int) (WV(ip).angle * 57.3f), (int) (bend * 100));
-+    WV(ip).caught = 0;
 +    WV(ip).crit = 0;
 +    WV(ip).rolling = 0;
 +    WV(ip).shielder = NULL;
++    WV(ip).thrower = owner;
 +    WV(ip).kick = 0.0f;
 +    WV(ip).front = 0.0f;
 +    itGe_WhirlSet(g, GE_WHIRL_TRAVEL);
@@ -6821,23 +7433,48 @@ index 0000000..0fddebe
 +    return g;
 +}
 +
-+/* The timed hit (DESIGN ¬ß5): side B again while it travels arms a 4-frame window in which the outbound hit's knockback
-+ * growth is x1.35. An early press whose window closes without contact voids the crit for this throw, so mashing
-+ * doesn't work. (On a monster the crit is 9999: the trailer's, not yet.) */
++/* The timed hit (DESIGN ¬ß5): side B again while it travels arms a 4-frame window for the outbound hit. An early press
++ * whose window closes without contact voids it for this throw, so mashing doesn't work. v1.5 (Michael, 2026-09-30:
++ * "no payoff to going for the timed hit"): the timed hit does more damage and pops the target up, a small vertical
++ * launcher to follow up from, instead of the plain hit's x1.35 growth. (On a monster the crit is 9999: the trailer's.) */
 +#define GE_WHIRL_CRIT_WINDOW 4
-+#define GE_WHIRL_CRIT_KBG 1.35f
++#define GE_WHIRL_TIMED_DMG 10     /* the plain hit's 7 */
++#define GE_WHIRL_TIMED_ANGLE 85   /* up, a touch forward (the plain hit's 40) */
++#define GE_WHIRL_TIMED_KBG 40
++#define GE_WHIRL_TIMED_BKB 80
 +void itGe_WhirlArmCrit(HSD_GObj* whirl)
 +{
 +    Item* ip = GET_ITEM(whirl);
 +    HitCapsule* hit = &ip->x5D4_hitboxes[0].hit;
++    if (ip->owner != WV(ip).thrower) {
++        OSReport("GENO WHIRL press ignored (reflected)\n"); /* a reflected disc is no longer his to time */
++        return;
++    }
 +    if (WV(ip).phase != GE_WHIRL_TRAVEL || WV(ip).crit != 0 || hit->state == HitCapsule_Disabled) {
 +        return;
 +    }
 +    WV(ip).crit = 1;
 +    WV(ip).crit_t = GE_WHIRL_CRIT_WINDOW;
 +    WV(ip).kbg = hit->x24;
-+    hit->x24 = (int) (hit->x24 * GE_WHIRL_CRIT_KBG);
++    WV(ip).bkb0 = hit->x2C;
++    WV(ip).angle0 = hit->kb_angle;
++    WV(ip).dmg0 = (int) hit->damage;
++    hit->x24 = GE_WHIRL_TIMED_KBG;
++    hit->x2C = GE_WHIRL_TIMED_BKB;
++    hit->kb_angle = GE_WHIRL_TIMED_ANGLE;
++    it_80272460(hit, (u32) (ip->xC3C * (GE_WHIRL_TIMED_DMG * ip->xC40)), whirl);
 +    OSReport("GENO WHIRL crit armed\n");
++}
++
++/* the window closed with no contact: the travel hit's own numbers again */
++static void itGe_WhirlDisarm(Item_GObj* g)
++{
++    Item* ip = GET_ITEM(g);
++    HitCapsule* hit = &ip->x5D4_hitboxes[0].hit;
++    hit->x24 = WV(ip).kbg;
++    hit->x2C = WV(ip).bkb0;
++    hit->kb_angle = WV(ip).angle0;
++    it_80272460(hit, (u32) (ip->xC3C * (WV(ip).dmg0 * ip->xC40)), g);
 +}
 +
 +/* Is this pointer a live Whirl of this owner's? (A stale pointer must never be dereferenced.) */
@@ -6850,7 +7487,7 @@ index 0000000..0fddebe
 +    for (g = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; g != NULL; g = g->next) {
 +        if (g == whirl) {
 +            Item* ip = GET_ITEM(g);
-+            return ip->kind == It_Kind_Geno_Whirl && ip->owner == owner;
++            return ip->kind == It_Kind_Geno_Whirl && WV(ip).thrower == owner; /* reflected or not: one on screen */
 +        }
 +    }
 +    return false;
@@ -6859,14 +7496,6 @@ index 0000000..0fddebe
 +int itGe_WhirlPhase(HSD_GObj* whirl)
 +{
 +    return WV(GET_ITEM(whirl)).phase;
-+}
-+
-+void itGe_WhirlRecall(HSD_GObj* whirl)
-+{
-+    int ph = WV(GET_ITEM(whirl)).phase;
-+    if (ph == GE_WHIRL_HOVER || ph == GE_WHIRL_GRIND || ph == GE_WHIRL_SPIN) {
-+        itGe_WhirlSet(whirl, GE_WHIRL_RECALL);
-+    }
 +}
 +
 +void itGe_SpawnBeam(HSD_GObj* owner, Vec3* pos, f32 facing, int stars, f32 speed)
@@ -6909,10 +7538,10 @@ index 0000000..0fddebe
 +#endif
 diff --git a/src/melee/it/kinds/itgeno.h b/src/melee/it/kinds/itgeno.h
 new file mode 100644
-index 0000000..6169d8c
+index 0000000..16fc02a
 --- /dev/null
 +++ b/src/melee/it/kinds/itgeno.h
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,38 @@
 +#ifndef MELEE_IT_KINDS_ITGENO_H
 +#define MELEE_IT_KINDS_ITGENO_H
 +#ifndef MUST_MATCH
@@ -6934,16 +7563,20 @@ index 0000000..6169d8c
 +void itGe_SpawnBeamTimed(HSD_GObj* owner, Vec3* pos, f32 facing, int stars, f32 speed, int timed);
 +int itGe_CountOwned(HSD_GObj* owner, int kind);
 +
-+enum { GE_WHIRL_TRAVEL, GE_WHIRL_GRIND, GE_WHIRL_HOVER, GE_WHIRL_RECALL, GE_WHIRL_SPIN };
++enum { GE_WHIRL_TRAVEL, GE_WHIRL_GRIND, GE_WHIRL_HOVER, GE_WHIRL_SPIN }; /* no recall (v1.5, Michael, 2026-09-30) */
++#define GE_WHIRL_LOCK 30 /* frames side B stays locked after every Whirl despawn (no recall, so no catch waives it) */
 +HSD_GObj* itGe_SpawnWhirl(HSD_GObj* owner, Vec3* pos, f32 facing, f32 bend);
 +int itGe_WhirlPhase(HSD_GObj* whirl);
 +bool itGe_IsLiveWhirl(HSD_GObj* owner, HSD_GObj* whirl);
-+void itGe_WhirlRecall(HSD_GObj* whirl);
 +void itGe_WhirlArmCrit(HSD_GObj* whirl);
 +
 +HSD_GObj* itGe_SpawnBlast(HSD_GObj* owner, f32 x, f32 floor_y, f32 facing);
 +void itGe_BlastWiden(HSD_GObj* owner, f32 spread);
++void itGe_BlastArm(HSD_GObj* owner);   /* v1.5: the release: the owner's shown marks strike after their tell */
++void itGe_BlastClear(HSD_GObj* owner); /* v1.5: the owner's shown (unreleased) marks go */
++void itGe_BlastMove(HSD_GObj* owner, f32 x, f32 floor_y); /* v1.5: the owner's shown mark slides (the forgiving mark) */
 +HSD_GObj* itGe_SpawnFlash(HSD_GObj* owner, Vec3* at, f32 facing);
++void itGe_BlastVanish(HSD_GObj* blast); /* geno-fx: a cancelled mark's vanish, before the item goes */
 +
 +#endif
 +#endif
@@ -6961,32 +7594,35 @@ index 8819da2..2ecf088 100644
  static void keep_data(void)
  {
 diff --git a/src/melee/it/types.h b/src/melee/it/types.h
-index bef1556..c83c4e6 100644
+index bef1556..d27f58e 100644
 --- a/src/melee/it/types.h
 +++ b/src/melee/it/types.h
-@@ -625,6 +625,36 @@ struct Item {
+@@ -625,6 +625,39 @@ struct Item {
          itZako_ItemVars zako;
          itZeldaDinFire_ItemVars zeldadinfire;
          itZeldaDinFireExplode_ItemVars zeldadinfireexplode;
 +#ifndef MUST_MATCH
 +        struct itGeWhirl_ItemVars {
-+            int phase;   ///< travel, grind, hover, recall
++            int phase;   ///< travel, grind, hover, spin-down
 +            int t;       ///< frames in this phase
 +            f32 angle;   ///< the throw's bend (radians)
-+            int caught;  ///< recalled into his hands
 +            int crit;    ///< the timed hit: 0 unused, 1 armed, 2 spent (hit or voided)
 +            int crit_t;  ///< frames left in the armed window
 +            int kbg;     ///< the travel hit's own knockback growth, restored when a window closes unused
 +            int rolling; ///< the down-bent throw met the floor and rolls along it (the ground lane)
 +            HSD_GObj* shielder; ///< the fighter whose shield it met (the grind rides its front)
++            HSD_GObj* thrower;  ///< Geno, who threw it: a reflect makes the reflector its owner, never its thrower
 +            f32 kick;           ///< the grind's recoil off the shield after each hit, decaying (units)
 +            f32 front;          ///< the shield's near surface at the disc's height (x), where the grind rides
++            int dmg0, angle0, bkb0; ///< v1.5: the travel hit's own numbers, restored when a timed window closes unused
 +        } genowhirl; ///< animation-pipeline: Geno
 +        struct itGeBlast_ItemVars {
 +            int phase;   ///< mark, strike
 +            int t;       ///< frames in this phase
 +            f32 floor_y; ///< the mark's height
 +            int colour;  ///< its column's colour (geno-fx: SMRPG's colours in turn)
++            int armed;   ///< v1.5: 0 shown (the charge), 1 released (the tell counts down), -1 cleared
++            int age;     ///< frames since it appeared (the tell's cadence)
 +        } genoblast; ///< animation-pipeline: Geno
 +        struct itGeFlash_ItemVars {
 +            int t; ///< frames since it fired
@@ -7050,7 +7686,7 @@ index 3c2d437..b87ee15 100644
      },
  };
 diff --git a/src/melee/lb/lbaudio_ax.c b/src/melee/lb/lbaudio_ax.c
-index 134001c..590485d 100644
+index 134001c..290cc5e 100644
 --- a/src/melee/lb/lbaudio_ax.c
 +++ b/src/melee/lb/lbaudio_ax.c
 @@ -15,6 +15,9 @@
@@ -7158,17 +7794,18 @@ index 134001c..590485d 100644
  };
  
  static const char* hps_files[] = {
-@@ -296,6 +332,9 @@ static const char* hps_files[] = {
+@@ -296,6 +332,10 @@ static const char* hps_files[] = {
      "vl_cosmos.hps",  "vl_figure1.hps", "vl_figure2.hps", "vl_fzero.hps",
      "vl_last_v2.hps", "vs_hyou1.hps",   "vs_hyou2.hps",   "yorster.hps",
      "ystory.hps",     "zebes.hps",      "testnz.hps",
 +#ifndef MUST_MATCH
 +    "ff_geno.hps", /* 0x63 = LBAX_HPS_GENO_FANFARE */
++    "gr_forestmaze.hps", /* 0x64 = LBAX_HPS_FOREST_MAZE (the Forest Maze stage) */
 +#endif
  };
  
  static u8 unk_arr_803BC4A0[0x21][2] = {
-@@ -319,7 +358,11 @@ static u32 offsets_arr_803BC4E4[][2] = {
+@@ -319,7 +359,11 @@ static u32 offsets_arr_803BC4E4[][2] = {
      490240,  0, 360064, 0, 150144,  0, 54208,  0, 387872, 0, 428896, 0,
      304096,  0, 144480, 0, 382272,  1, 34880,  0, 78592,  0, 123104, 0,
      101504,  0, 160576, 0, 1168864, 0, 348160, 1, 363936, 0, 663136, 0,
@@ -7181,7 +7818,7 @@ index 134001c..590485d 100644
  };
  
  static int offsets_arr_803BC6A4[][2] = {
-@@ -383,7 +426,7 @@ int lbAudioAx_800230C8(int i, int* lo, int* hi)
+@@ -383,7 +427,7 @@ int lbAudioAx_800230C8(int i, int* lo, int* hi)
      if (i < 0) {
          return 1;
      }
@@ -7190,7 +7827,7 @@ index 134001c..590485d 100644
          return 1;
      }
      if (lo != NULL) {
-@@ -398,8 +441,12 @@ int lbAudioAx_800230C8(int i, int* lo, int* hi)
+@@ -398,8 +442,12 @@ int lbAudioAx_800230C8(int i, int* lo, int* hi)
  int lbAudioAx_80023130(int arg0)
  {
      int i;
@@ -7204,7 +7841,7 @@ index 134001c..590485d 100644
              if (s32_arr_803BB8D4[i][0] <= arg0 &&
                  arg0 <= s32_arr_803BB8D4[i][1])
              {
-@@ -407,12 +454,12 @@ int lbAudioAx_80023130(int arg0)
+@@ -407,12 +455,12 @@ int lbAudioAx_80023130(int arg0)
              }
          }
      }
@@ -7219,7 +7856,7 @@ index 134001c..590485d 100644
          return s32_arr_803BB5D0[idx][3];
      }
      return 0;
-@@ -422,14 +469,14 @@ int lbAudioAx_80023220(int idx)
+@@ -422,14 +470,14 @@ int lbAudioAx_80023220(int idx)
  static inline void fn_80023254_shift(int count)
  {
      int i;
@@ -7236,7 +7873,7 @@ index 134001c..590485d 100644
      int count;
      int index;
      int i;
-@@ -437,13 +484,13 @@ static void fn_80023254(int arg0)
+@@ -437,13 +485,13 @@ static void fn_80023254(int arg0)
  
      PAD_STACK(8);
  
@@ -7254,7 +7891,7 @@ index 134001c..590485d 100644
              if (arg0 == s32_arr_803BB5D0[index][0] && !used[index] &&
                  offsets_arr_803BC4E4[lbl_80433B44[count]][0] <
                      offsets_arr_803BC4E4[index][0])
-@@ -546,6 +593,11 @@ bool lbAudioAx_80023730(void)
+@@ -546,6 +594,11 @@ bool lbAudioAx_80023730(void)
  
  static int fn_80023750(int id, int vol, int pan, int track, int channel)
  {
@@ -7266,7 +7903,7 @@ index 134001c..590485d 100644
      vol *= 2;
      if (vol < 0) {
          vol = 0;
-@@ -565,7 +617,11 @@ static int fn_80023750(int id, int vol, int pan, int track, int channel)
+@@ -565,7 +618,11 @@ static int fn_80023750(int id, int vol, int pan, int track, int channel)
  
  int lbAudioAx_800237A8(int id, int vol, int pan)
  {
@@ -7278,7 +7915,7 @@ index 134001c..590485d 100644
          return fn_80023750(0x83D60, 0, PAN_MID, 0, 7);
      } else {
          return fn_80023750(id, vol, pan, 0, 7);
-@@ -678,7 +734,7 @@ int lbAudioAx_80023B24(int id)
+@@ -678,7 +735,7 @@ int lbAudioAx_80023B24(int id)
  
              {
                  int k;
@@ -7287,7 +7924,7 @@ index 134001c..590485d 100644
                      if (s32_arr_803BB5D0[k][2] != 5) {
                          lbl_804337C4[k] = -1;
                          lbl_804338A4[k] = -1;
-@@ -748,6 +804,18 @@ int lbAudioAx_80023F28(int arg0)
+@@ -748,6 +805,19 @@ int lbAudioAx_80023F28(int arg0)
  {
      const char* filename;
  
@@ -7295,18 +7932,19 @@ index 134001c..590485d 100644
 +    /* animation-pipeline: Geno's fanfare sits past the "no music" id 0x62, so it is resolved here and the vanilla
 +     * bounds below stay as they are. A stream the disc lacks would be opened with entry -1 (no check downstream), so
 +     * a disc without ff_geno.hps plays Mario's fanfare. */
-+    if (arg0 == LBAX_HPS_GENO_FANFARE) {
++    /* the stage streams past it the same way: the Forest Maze's falls back to Battlefield's (sp_zako.hps, 0x51) */
++    if (arg0 == LBAX_HPS_GENO_FANFARE || arg0 == LBAX_HPS_FOREST_MAZE) {
 +        strcpy(&cur_hps_file[hps_stem_pos], hps_files[arg0]);
 +        if (DVDConvertPathToEntrynum(cur_hps_file) != -1) {
 +            return lbAudioAx_80023F28_helper1(cur_hps_file);
 +        }
-+        arg0 = 0x16;
++        arg0 = arg0 == LBAX_HPS_FOREST_MAZE ? 0x51 : 0x16;
 +    }
 +#endif
      if (arg0 < 0 || arg0 >= 0x62) {
          return true;
      }
-@@ -1745,7 +1813,11 @@ HSD_GObj* lbAudioAx_800263E8(float f1, HSD_GObj* owner, int arg2, int sfx_id,
+@@ -1745,7 +1815,11 @@ HSD_GObj* lbAudioAx_800263E8(float f1, HSD_GObj* owner, int arg2, int sfx_id,
      HSD_GObj* gobj;
      SoundParams params;
  
@@ -7318,7 +7956,7 @@ index 134001c..590485d 100644
          params.owner = owner;
          params.x4 = arg2;
          params.sfx_id = sfx_id;
-@@ -1853,7 +1925,7 @@ static int fn_80026650(void)
+@@ -1853,7 +1927,7 @@ static int fn_80026650(void)
      int i;
      int priority;
      for (priority = 4; priority >= 0; priority--) {
@@ -7327,7 +7965,7 @@ index 134001c..590485d 100644
              if (priority == s32_arr_803BB5D0[i][1] && lbl_804338A4[i] == 1 &&
                  lbl_80433984[i] == -1)
              {
-@@ -1873,7 +1945,7 @@ static void fn_800267B0(void)
+@@ -1873,7 +1947,7 @@ static void fn_800267B0(void)
      }
  
      for (i = 0; i < 5; i++) {
@@ -7336,7 +7974,7 @@ index 134001c..590485d 100644
          {
              if (lbl_80433984[j] != -1 && i == s32_arr_803BB5D0[j][2] &&
                  lbl_804338A4[j] == -1)
-@@ -1899,7 +1971,7 @@ static void fn_800268B4(void)
+@@ -1899,7 +1973,7 @@ static void fn_800268B4(void)
      lbl_804D644C = 0;
      lbl_804D6448 = 0;
  
@@ -7345,7 +7983,7 @@ index 134001c..590485d 100644
          int flag1, flag2;
          int flags;
  
-@@ -1942,7 +2014,7 @@ static void fn_800269AC(void)
+@@ -1942,7 +2016,7 @@ static void fn_800269AC(void)
      PAD_STACK(8);
  
      if (HSD_SynthSFXGetPendingLoadCount() != 0) {
@@ -7354,7 +7992,7 @@ index 134001c..590485d 100644
              if (s32_arr_803BB5D0[i][1] != 5 && lbl_80433A64[i] != -1 &&
                  lbl_80433984[i] == -1)
              {
-@@ -1961,7 +2033,7 @@ static void fn_800269AC(void)
+@@ -1961,7 +2035,7 @@ static void fn_800269AC(void)
          if (HSD_SynthSFXGetPendingLoadCount() != 0) {
              HSD_SynthSFXWaitForLoadCompletion(lb_800195D0);
              HSD_SynthSFXUnloadBank(2);
@@ -7363,7 +8001,7 @@ index 134001c..590485d 100644
                  if (s32_arr_803BB5D0[i][1] != 5) {
                      lbl_80433984[i] = -1;
                      lbl_80433A64[i] = -1;
-@@ -1977,7 +2049,7 @@ static void fn_80026C04(int arg0, int unused)
+@@ -1977,7 +2051,7 @@ static void fn_80026C04(int arg0, int unused)
      int slot;
  
      if (arg0 != -1) {
@@ -7372,7 +8010,7 @@ index 134001c..590485d 100644
              if (arg0 == lbl_80433A64[i]) {
                  lbl_80433984[i] = 1;
                  lbl_804D644C -= offsets_arr_803BC4E4[i][0];
-@@ -2094,7 +2166,7 @@ void lbAudioAx_8002702C(u32 flags, u64 mask)
+@@ -2094,7 +2168,7 @@ void lbAudioAx_8002702C(u32 flags, u64 mask)
  static inline void lbAudioAx_80027168_inline(void)
  {
      int i;
@@ -7381,7 +8019,7 @@ index 134001c..590485d 100644
          if (s32_arr_803BB5D0[i][1] != 5 && lbl_80433984[i] == 2) {
              lbl_80433984[i] = 1;
          }
-@@ -2118,7 +2190,7 @@ void lbAudioAx_80027168(void)
+@@ -2118,7 +2192,7 @@ void lbAudioAx_80027168(void)
  
      lbAudioAx_80027168_inline();
  
@@ -7390,7 +8028,7 @@ index 134001c..590485d 100644
          if (s32_arr_803BB5D0[i][1] != 5 && lbl_804337C4[i] != -1) {
              count++;
          }
-@@ -2130,7 +2202,7 @@ void lbAudioAx_80027168(void)
+@@ -2130,7 +2204,7 @@ void lbAudioAx_80027168(void)
  
      fn_800269AC();
  
@@ -7399,7 +8037,7 @@ index 134001c..590485d 100644
          lbl_804338A4[i] = lbl_804337C4[i];
      }
  
-@@ -2150,13 +2222,13 @@ static int fn_80027488(void)
+@@ -2150,13 +2224,13 @@ static int fn_80027488(void)
  {
      int i;
  
@@ -7415,7 +8053,7 @@ index 134001c..590485d 100644
          if (lbl_804338A4[i] == 1 && lbl_80433984[i] == 1) {
              lbl_80433984[i] = 2;
          }
-@@ -2181,7 +2253,7 @@ void lbAudioAx_8002785C(void)
+@@ -2181,7 +2255,7 @@ void lbAudioAx_8002785C(void)
      if (gm_8016B184()) {
          result = lbAudioAx_80026E84(Player_GetPlayerCharacter(0));
          for (i = 0; i < 3; i++) {
@@ -7424,7 +8062,7 @@ index 134001c..590485d 100644
                  int opp = gm_80169370(i);
                  result |= lbAudioAx_80026E84(opp);
                  if (opp == 4) {
-@@ -2251,7 +2323,7 @@ void lbAudioAx_80027AB0(int id)
+@@ -2251,7 +2325,7 @@ void lbAudioAx_80027AB0(int id)
  
          {
              int i;
@@ -7433,7 +8071,7 @@ index 134001c..590485d 100644
                  if (i != 0) {
                      lbl_80433A64[i] = -1;
                      lbl_804337C4[i] = -1;
-@@ -2463,7 +2535,7 @@ void lbAudioAx_8002838C(void)
+@@ -2463,7 +2537,7 @@ void lbAudioAx_8002838C(void)
      HSD_SynthSFXAllocateBank(lbl_804D6440);
      HSD_SynthSFXAllocateBank(lbl_804D6444);
  
@@ -7442,7 +8080,7 @@ index 134001c..590485d 100644
          lbl_804337C4[i] = -1;
          lbl_804338A4[i] = -1;
          lbl_80433984[i] = -1;
-@@ -2508,7 +2580,7 @@ void lbAudioAx_80028690(void)
+@@ -2508,7 +2582,7 @@ void lbAudioAx_80028690(void)
          strcpy(&cur_ssm_file[ssm_stem_pos], "smash2.sem");
          AXDriver_8038DA70(cur_ssm_file, lb_800195D0);
  
@@ -7452,10 +8090,10 @@ index 134001c..590485d 100644
                  lbl_80433A64[i] = -1;
                  lbl_804337C4[i] = -1;
 diff --git a/src/melee/lb/lbaudio_ax.h b/src/melee/lb/lbaudio_ax.h
-index ac5ee51..51966e0 100644
+index ac5ee51..3181c07 100644
 --- a/src/melee/lb/lbaudio_ax.h
 +++ b/src/melee/lb/lbaudio_ax.h
-@@ -35,6 +35,11 @@ int lbAudioAx_80023968(int);
+@@ -35,6 +35,13 @@ int lbAudioAx_80023968(int);
  int lbAudioAx_80023A44(int, int);
  int lbAudioAx_80023B24(int);
  int lbAudioAx_80023F28(int);
@@ -7463,6 +8101,8 @@ index ac5ee51..51966e0 100644
 +/* animation-pipeline: Geno's own victory fanfare (ff_geno.hps), one past the vanilla table. 0x62 (testnz.hps) stays
 + * the "no music" id; lbAudioAx_80023F28 plays Mario's fanfare (0x16) instead when the disc has no ff_geno.hps. */
 +#define LBAX_HPS_GENO_FANFARE 0x63
++/* animation-pipeline: the Forest Maze stage's music (gr_forestmaze.hps); Battlefield's (0x51) when the disc lacks it */
++#define LBAX_HPS_FOREST_MAZE 0x64
 +#endif
  void lbAudioAx_80024030(int);
  int lbAudioAx_800240B4(int);
@@ -8017,6 +8657,38 @@ index a53caa8..b0a2d85 100644
  /* 266D70 */ void mnCharSel_Scene_OnExit(void*);
  
  #endif
+diff --git a/src/melee/mn/mncount.c b/src/melee/mn/mncount.c
+index 97439f8..21ac152 100644
+--- a/src/melee/mn/mncount.c
++++ b/src/melee/mn/mncount.c
+@@ -26,7 +26,11 @@
+ #include <sysdolphin/baselib/sislib.h>
+ 
+ // DATA / MELEE RECORDS / MISC RECORDS
++#ifndef MUST_MATCH
++#define NUM_STAGES 30 /* animation-pipeline: + the Forest Maze (random-switch index 29, StKind 0x15) */
++#else
+ #define NUM_STAGES 29
++#endif
+ #define MAX_SCROLL 20
+ 
+ AnimLoopSettings mnCount_803EFA88[2] = {
+diff --git a/src/melee/mn/mndatadel.c b/src/melee/mn/mndatadel.c
+index eed8fb7..eb6a293 100644
+--- a/src/melee/mn/mndatadel.c
++++ b/src/melee/mn/mndatadel.c
+@@ -147,7 +147,11 @@ void mnDataDel_8024E940(void)
+     gm_801647D0();
+     gmMainLib_8015F490();
+     var_r30 = (i = 0);
++#ifndef MUST_MATCH
++    for (i = 0; i < 0x1E; i++) { /* animation-pipeline: + the Forest Maze (index 29) */
++#else
+     for (i = 0; i < 0x1D; i++) {
++#endif
+         if ((gm_80164430(gm_801641CC(i)) != 0) &&
+             ((gm_IsStageUnlocked((u16) i) & (0xFFFF & 0xFF)) != 0))
+         {
 diff --git a/src/melee/mn/mndiagram.c b/src/melee/mn/mndiagram.c
 index 9852f58..86f72f2 100644
 --- a/src/melee/mn/mndiagram.c
@@ -8408,6 +9080,360 @@ index 3999487..8c7e351 100644
                  mnNameNew_CurrentNameText[cursor * 3 + 2] =
                      *((GlyphChar*) mnNameNew_NullCharacter);
                  lbAudioAx_80024030(1);
+diff --git a/src/melee/mn/mnstagesel.c b/src/melee/mn/mnstagesel.c
+index b8929c1..7699698 100644
+--- a/src/melee/mn/mnstagesel.c
++++ b/src/melee/mn/mnstagesel.c
+@@ -28,7 +28,15 @@
+ #include <sysdolphin/baselib/random.h>
+ 
+ #define MAX_ITER 100000
++/* animation-pipeline: the Forest Maze (grforest.h) is entry 29 in non-matching builds; Random moves to 30 and "nothing
++ * selected" to 31. In the matching build these are the vanilla 29 stages, Random 29 (0x1D) and none 30 (0x1E). */
++#ifndef MUST_MATCH
++#define NUM_STAGES 30
++#else
+ #define NUM_STAGES 29
++#endif
++#define MNSS_RANDOM NUM_STAGES
++#define MNSS_NONE (NUM_STAGES + 1)
+ 
+ static struct StageListInfo {
+     /* +00 */ HSD_JObj* x0;
+@@ -41,7 +49,7 @@ static struct StageListInfo {
+     /* +10 */ f32 x10;
+     /* +14 */ f32 x14;
+     /* +18 */ f32 x18;
+-} mnStageSel_803F06D0[30] = {
++} mnStageSel_803F06D0[NUM_STAGES + 1] = {
+     { 0, 0, 0x2, 0x00, 0x00, 0x04, 3.1F, 2.7F, 1.0F, 1.0F },
+     { 0, 0, 0x2, 0x01, 0x0C, 0x0B, 3.1F, 2.7F, 1.0F, 1.0F },
+     { 0, 0, 0x2, 0x02, 0x01, 0x05, 3.1F, 2.7F, 1.0F, 1.0F },
+@@ -71,6 +79,11 @@ static struct StageListInfo {
+     { 0, 0, 0x2, 0x1A, 0x1A, 0x1C, 2.9F, 2.1F, 0.8F, 0.8F },
+     { 0, 0, 0x2, 0x1B, 0x1B, 0x1D, 2.9F, 2.1F, 0.8F, 0.8F },
+     { 0, 0, 0x2, 0x1C, 0x1C, 0x1E, 2.9F, 2.1F, 0.8F, 0.8F },
++#ifndef MUST_MATCH
++    /* the Forest Maze: name and preview frame 30 (image 30, segment 30 in MnSlMap.usd), random-switch bit 29, StKind
++     * 0x15; a single icon's cursor box and hover scale, as the bottom row's */
++    { 0, 0, 0x2, 0x1E, 0x1D, 0x15, 2.9F, 2.1F, 0.8F, 0.8F },
++#endif
+     { 0, 0, 0x2, 0x1D, 0x00, 0x00, 3.6F, 2.7F, 1.2F, 1.0F },
+ };
+ ASSERT_SIZE(mnStageSel_803F06D0[0], 0x1C);
+@@ -111,6 +124,9 @@ static s8 mnStageSel_804D6CAC;
+ static s8 mnStageSel_804D6CAD;
+ static u8 mnStageSel_804D6CAE;
+ static u8 mnStageSel_804D6CAF;
++#ifndef MUST_MATCH
++static HSD_JObj* mnStageSel_cursor_dbg; /* animation-pipeline: the cursor, for mnStageSel_DebugState */
++#endif
+ 
+ struct StageSelUserData {
+     u16 x0;
+@@ -198,12 +214,12 @@ void mnStageSel_80259C28(void)
+         return;
+     }
+     switch (mnStageSel_804D6CAE) {
+-    case 30:
++    case MNSS_NONE:
+         if (!(mnStageSel_804D6CA0 & 0x1000)) {
+             return;
+         }
+         break;
+-    case 29:
++    case MNSS_RANDOM:
+         if (!(mnStageSel_804D6CA0 & 0x1100)) {
+             return;
+         }
+@@ -212,7 +228,7 @@ void mnStageSel_80259C28(void)
+         if (!(mnStageSel_804D6CA0 & 0x1100)) {
+             return;
+         }
+-        if (mnStageSel_804D6CAE < 0x1E &&
++        if (mnStageSel_804D6CAE < MNSS_NONE &&
+             mnStageSel_803F06D0[mnStageSel_804D6CAE].x8 >= 2)
+         {
+             goto skip_randomize;
+@@ -259,7 +275,7 @@ void fn_80259D84(HSD_GObj* gobj)
+             mnStageSel_80259C28();
+         }
+         if (temp_r31->x0 != mnStageSel_804D6CAE) {
+-            if (temp_r31->x0 < 0x1E &&
++            if (temp_r31->x0 < MNSS_NONE &&
+                 mnStageSel_803F06D0[temp_r31->x0].x8 >= 2)
+             {
+                 HSD_JObjReqAnimAllByFlags(jobj, 1, 10.0F);
+@@ -310,7 +326,7 @@ void mnStageSel_80259ED8(int id)
+     temp_r3_2->x0 = id;
+     temp_r3_2->x4 = 0;
+     temp_r3_2->x2 = 0;
+-    if (id < 0x1E && mnStageSel_803F06D0[id].x8 >= 2) {
++    if (id < MNSS_NONE && mnStageSel_803F06D0[id].x8 >= 2) {
+         do_anim(jobj, 20.0F * mnStageSel_803F06D0[id].x9);
+     }
+ }
+@@ -328,12 +344,12 @@ void fn_8025A090(HSD_GObj* gobj)
+     temp_r30 = HSD_GObjGetUserData(gobj);
+     var_r3 = mnStageSel_804D6CAE;
+     if (mnStageSel_803F06D0[mnStageSel_804D6CAE].x8 < 2) {
+-        var_r3 = 0x1E;
++        var_r3 = MNSS_NONE;
+     }
+     if (temp_r30->x0 != var_r3) {
+         temp_r30->x0 = var_r3;
+         temp_r30->x4 = 0;
+-        if ((s32) var_r3 < 0x1D) {
++        if ((s32) var_r3 < MNSS_RANDOM) {
+             HSD_JObjReqAnimAll(jobj, 50.0F * mnStageSel_803F06D0[var_r3].x9);
+             HSD_JObjAnimAll(jobj);
+             HSD_ForeachAnim(jobj, JOBJ_TYPE, ALL_TYPE_MASK, HSD_AObjStopAnim,
+@@ -391,7 +407,7 @@ void fn_8025A310(HSD_GObj* gobj)
+ 
+     HSD_JObjSetTranslate(jobj, &sp1C);
+     lb_8000B1CC(jobj, NULL, &sp1C);
+-    for (i = 0; i < 0x1E; i++) {
++    for (i = 0; i < MNSS_NONE; i++) {
+         if (mnStageSel_803F06D0[i].x8 != 0) {
+             lb_8000B1CC(mnStageSel_803F06D0[i].x0, NULL, &sp10);
+             temp_f2 = sp10.x;
+@@ -421,7 +437,7 @@ void fn_8025A560(HSD_GObj* gobj)
+         mnStageSel_803F06D0[mnStageSel_804D6CAE].x8 == 0)
+     {
+         HSD_JObjSetTranslateX(jobj, 100.0F);
+-    } else if (mnStageSel_804D6CAE < 0x1E) {
++    } else if (mnStageSel_804D6CAE < MNSS_NONE) {
+         lb_8000B1CC(mnStageSel_803F06D0[mnStageSel_804D6CAE].x0, NULL, &sp10);
+         HSD_JObjSetTranslateX(jobj, sp10.x);
+         HSD_JObjSetTranslateY(jobj, sp10.y);
+@@ -526,7 +542,11 @@ static inline HSD_JObj* get_jobj(HSD_GObj* gobj)
+ 
+ void mnStageSel_Scene_OnEnter(void* arg0)
+ {
++#ifndef MUST_MATCH
++    HSD_JObj* spDC[0x14]; /* animation-pipeline: + the Forest Maze's slot (PositionModel's 20th joint) */
++#else
+     HSD_JObj* spDC[0x13];
++#endif
+     u8 _[0xDC - 0xD8];
+     Vec3 spCC;
+ 
+@@ -551,7 +571,7 @@ void mnStageSel_Scene_OnEnter(void* arg0)
+         mnStageSel_804D6CA0 = 0;
+         mnStageSel_804D6CAC = 0;
+         mnStageSel_804D6CAD = 0;
+-        mnStageSel_804D6CAE = 0x1E;
++        mnStageSel_804D6CAE = MNSS_NONE;
+         mnStageSel_804D50A0 = sss_data->unk_stage - 1;
+         mnStageSel_804D6CA4 = 0x14;
+ 
+@@ -606,13 +626,17 @@ void mnStageSel_Scene_OnEnter(void* arg0)
+ 
+         make_icon_root(spDC);
+ 
++#ifndef MUST_MATCH
++        for (i = 0; i < 0x13; i++) {
++#else
+         for (i = 0; i < 0x12; i++) {
++#endif
+             spDC[i + 1] = spDC[i]->next;
+             HSD_JObjReqAnimAll(spDC[i + 1], 0.0F);
+             HSD_JObjAnimAll(spDC[i + 1]);
+         }
+ 
+-        for (i = 0; i < 0x1D; i++) {
++        for (i = 0; i < NUM_STAGES; i++) {
+             mnStageSel_803F06D0[i].x8 =
+                 gm_80164430(mnStageSel_803F06D0[i].stkind) ? 2 : 1;
+         }
+@@ -702,9 +726,42 @@ void mnStageSel_Scene_OnEnter(void* arg0)
+             temp_r22_8 = gobj->hsd_obj;
+             lb_8000C1C0(temp_r22_8, spDC[0x10]);
+             do_anim(temp_r22_8, 2);
+-            mnStageSel_803F06D0[0x1D].x0 = temp_r22_8;
++            mnStageSel_803F06D0[MNSS_RANDOM].x0 = temp_r22_8;
+         }
+ 
++#ifndef MUST_MATCH
++        if (spDC[0x13] == NULL) {
++            /* a stage select file without the 20th slot (the Japanese MnSlMap.dat isn't built yet): no icon, and the
++             * entry can't be hovered or picked (x8 0; the random picker still reaches it through the random switch) */
++            mnStageSel_803F06D0[NUM_STAGES - 1].x8 = 0;
++            /* a random pick of it still places the hover frame on its icon: RANDOM's stands in */
++            mnStageSel_803F06D0[NUM_STAGES - 1].x0 = mnStageSel_803F06D0[MNSS_RANDOM].x0;
++        } else {
++            /* animation-pipeline: the Forest Maze's icon at slot 19, the bottom row's left end (Michael, 2026-09-30):
++             * a single icon (the bottom row's model and size) showing image 7 of its texture animation (MnSlMap.usd,
++             * datkit menus-stage) */
++            HSD_JObj* jobj;
++            HSD_GObj* gobj = GObj_Create(4, 5, 0x80);
++            HSD_JObj* icon;
++            jobj = HSD_JObjLoadJoint(sss_models->icon_special.joint);
++            HSD_GObjObject_80390A70(gobj, HSD_GObj_JObjKind, jobj);
++            GObj_SetupGXLink(gobj, HSD_GObj_JObjCallback, 4, 0x83);
++            HSD_GObj_SetupProc(gobj, mn_8022EAE0, 3);
++            HSD_JObjAddAnimAll(jobj, sss_models->icon_special.animjoint,
++                               sss_models->icon_special.matanim_joint,
++                               sss_models->icon_special.shapeanim_joint);
++            icon = gobj->hsd_obj;
++            lb_8000C1C0(icon, spDC[0x13]);
++            mnStageSel_803F06D0[NUM_STAGES - 1].x0 = icon;
++            if (mnStageSel_803F06D0[NUM_STAGES - 1].x8 < 2) {
++                mnStageSel_803F06D0[NUM_STAGES - 1].x8 = 0;
++                HSD_JObjSetFlagsAll(icon, JOBJ_HIDDEN);
++            } else {
++                do_anim(icon, 7);
++            }
++        }
++#endif
++
+         for (i = 0x11; i <= 0x12; i++) {
+             HSD_JObj* jobj;
+             HSD_AnimJoint* animjoint;
+@@ -757,6 +814,9 @@ void mnStageSel_Scene_OnEnter(void* arg0)
+                 g = gobj;
+                 jobj2 = jobj;
+                 HSD_GObj_SetupProc(g, fn_8025A310, 2);
++#ifndef MUST_MATCH
++                mnStageSel_cursor_dbg = jobj2;
++#endif
+                 do_anim(jobj2, mnStageSel_804D50A0 + 1);
+                 HSD_JObjSetTranslate(jobj2, &spCC);
+             }
+@@ -779,7 +839,7 @@ void mnStageSel_Scene_OnEnter(void* arg0)
+                 userdata = HSD_MemAlloc(sizeof(struct StageSelUserData));
+                 GObj_InitUserData(gobj, 4, HSD_Free, userdata);
+                 HSD_GObj_SetupProc(gobj, fn_80259D84, 1);
+-                userdata->x0 = 0x1E;
++                userdata->x0 = MNSS_NONE;
+                 userdata->x4 = 0;
+                 userdata->x2 = 0;
+             }
+@@ -812,7 +872,7 @@ void mnStageSel_Scene_OnEnter(void* arg0)
+                 HSD_ForeachAnim(jobj, JOBJ_TYPE, ALL_TYPE_MASK,
+                                 HSD_AObjStopAnim, AOBJ_ARG_AOV, 0, 0);
+                 HSD_JObjSetTranslateX(jobj, 100.0F);
+-                temp_r3_14->x0 = 0x1E;
++                temp_r3_14->x0 = MNSS_NONE;
+                 temp_r3_14->x4 = 0;
+             }
+         }
+@@ -920,6 +980,9 @@ void mnStageSel_Scene_OnFrame(void)
+ 
+ void mnStageSel_Scene_OnExit(UNUSED void* exit_data)
+ {
++#ifndef MUST_MATCH
++    mnStageSel_cursor_dbg = NULL;
++#endif
+     if (mnStageSel_804D6C94 != NULL) {
+         lbArchive_80016EFC(mnStageSel_804D6C94);
+         mnStageSel_804D6C94 = NULL;
+@@ -944,3 +1007,20 @@ int mnStageSel_8025BC08(int idx)
+ {
+     return mnStageSel_803F06D0[idx].stkind;
+ }
++
++#ifndef MUST_MATCH
++/* animation-pipeline: the director's menu tests read the stage select: the hovered entry (MNSS_RANDOM for Random,
++ * MNSS_NONE for nothing), the cursor's world position, and the entry count. Returns -1 off the stage select. */
++int mnStageSel_DebugState(float* xy, int* count)
++{
++    Vec3 p;
++    if (mnStageSel_cursor_dbg == NULL || sss_models == NULL) {
++        return -1;
++    }
++    lb_8000B1CC(mnStageSel_cursor_dbg, NULL, &p);
++    xy[0] = p.x;
++    xy[1] = p.y;
++    *count = NUM_STAGES;
++    return mnStageSel_804D6CAE;
++}
++#endif
+diff --git a/src/melee/mn/mnstagesel.h b/src/melee/mn/mnstagesel.h
+index 0ed64fc..afc2f00 100644
+--- a/src/melee/mn/mnstagesel.h
++++ b/src/melee/mn/mnstagesel.h
+@@ -20,4 +20,8 @@
+ /* 25BBD4 */ int mnSelStageRandom(void);
+ /* 25BC08 */ int mnStageSel_8025BC08(int);
+ 
++#ifndef MUST_MATCH
++int mnStageSel_DebugState(float* xy, int* count);
++#endif
++
+ #endif
+diff --git a/src/melee/mn/mnstagesw.c b/src/melee/mn/mnstagesw.c
+index 57575f5..084225c 100644
+--- a/src/melee/mn/mnstagesw.c
++++ b/src/melee/mn/mnstagesw.c
+@@ -20,7 +20,12 @@
+ #include <sysdolphin/baselib/memory.h>
+ #include <sysdolphin/baselib/sislib.h>
+ 
++#ifndef MUST_MATCH
++#define NUM_STAGES 30 /* animation-pipeline: + the Forest Maze (random-switch index 29, StKind 0x15) */
++#else
+ #define NUM_STAGES 29
++#endif
++#define MNSW_LAST (NUM_STAGES - 1) /* column 2's last row (vanilla 28) */
+ 
+ typedef struct MnStageSwData {
+     u8 x0;
+@@ -47,6 +52,9 @@ static u8 mnStageSw_803ED4C4[NUM_STAGES] = {
+     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+     0x0B, 0x0A, 0x18, 0x1A, 0x1C, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+     0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x19, 0x1B,
++#ifndef MUST_MATCH
++    0x1D, /* animation-pipeline: the Forest Maze (random-switch index 29) */
++#endif
+ };
+ 
+ /// Stage switch icon indices
+@@ -54,6 +62,9 @@ static u8 mnStageSw_stageIcons[NUM_STAGES] = {
+     0x08, 0x09, 0x11, 0x0A, 0x0C, 0x06, 0x0B, 0x07, 0x0E, 0x0D,
+     0x1D, 0x17, 0x0F, 0x10, 0x12, 0x13, 0x14, 0x15, 0x1A, 0x1B,
+     0x1C, 0x16, 0x18, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24,
++#ifndef MUST_MATCH
++    0x19, /* animation-pipeline: menu text 0x19, the Akaneia slot's name, reads "Forest Maze" (SdMenu.usd) */
++#endif
+ };
+ 
+ static f32 mnStageSw_804D4BB8[2] = { 0.0F, 1.0F };
+@@ -163,14 +174,14 @@ static s32 mnStageSw_80235C58(u8 arg0)
+         high = 14;
+     } else {
+         low = 15;
+-        high = 28;
++        high = MNSW_LAST;
+     }
+     if (arg0 < 15) {
+         start = 0;
+         end = 14;
+     } else {
+         start = 15;
+-        end = 28;
++        end = MNSW_LAST;
+     }
+ 
+     curr = start;
+@@ -230,7 +241,7 @@ static void mnStageSw_80235DC8(const u8* user_data, s32 buttons)
+                 mn_804A04F0.hovered_selection = 14;
+                 break;
+             case 15:
+-                mn_804A04F0.hovered_selection = 28;
++                mn_804A04F0.hovered_selection = MNSW_LAST;
+                 break;
+             default:
+                 mn_804A04F0.hovered_selection = idx - 1;
+@@ -248,7 +259,7 @@ static void mnStageSw_80235DC8(const u8* user_data, s32 buttons)
+             case 14:
+                 mn_804A04F0.hovered_selection = 0;
+                 break;
+-            case 28:
++            case MNSW_LAST:
+                 mn_804A04F0.hovered_selection = 15;
+                 break;
+             default:
 diff --git a/src/melee/mn/types.h b/src/melee/mn/types.h
 index 80a80d3..374f18c 100644
 --- a/src/melee/mn/types.h

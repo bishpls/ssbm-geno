@@ -26,5 +26,5 @@ at which it connects. Targets are measured bodies (Fox standing 15.6 tall, crouc
 | Samus | FH (32, 34.5) | k1 r2 c37 14u | k32 r0 c32 16u | k23 r0 c41 20u | k26 r0 c35 21u | k47 r0 c13 20u | k51 r0 c9 21u | k40 r0 c24 11u | k43 r0 c21 12u | k31 r0 c20 9u | k34 r0 c17 10u |
 | Mario | SH (15, 11.0) | k1 r11 c28 12u | k1 r7 c28 14u | k1 r0 c13 19u | k1 r0 c13 20u | k1 r8 c25 16u | k1 r2 c23 17u | k1 r10 c27 18u | k1 r5 c16 20u | k1 r4 c21 13u | k1 r4 c21 15u |
 | Mario | FH (25, 29.0) | k1 r4 c42 12u | k1 r1 c36 14u | k18 r0 c16 19u | k21 r0 c13 20u | k26 r0 c20 16u | k29 r0 c17 17u | k1 r3 c15 18u | k39 r0 c9 20u | k1 r2 c35 14u | k13 r0 c29 16u |
-| GENO | SH (13, 11.3) | k1 r9 c24 14u | k1 r5 c24 15u | k1 r3 c18 25u | k10 r0 c9 26u | k1 r2 c17 25u | k9 r0 c9 26u | k14 r0 c9 14u | k17 r0 c6 9u | k1 r3 c18 11u | k1 r3 c18 13u |
-| GENO | FH (22, 30.5) | k1 r2 c27 14u | k19 r0 c23 15u | k28 r0 c8 25u | k30 r0 c6 26u | k27 r0 c8 25u | k29 r0 c6 26u | k33 r0 c7 14u | k35 r0 c5 9u | k1 r4 c25 11u | k19 r0 c17 13u |
+| GENO | SH (13, 11.3) | k1 r9 c24 14u | k1 r5 c24 15u | k1 r3 c18 25u | k10 r0 c9 26u | k1 r2 c17 25u | k9 r0 c9 26u | k14 r0 c9 14u | k17 r0 c6 9u | k1 r0 c14 11u | k1 r0 c14 13u |
+| GENO | FH (22, 30.5) | k1 r2 c27 14u | k19 r0 c23 15u | k28 r0 c8 25u | k30 r0 c6 26u | k27 r0 c8 25u | k29 r0 c6 26u | k33 r0 c7 14u | k35 r0 c5 9u | k11 r0 c21 11u | k15 r0 c17 13u |

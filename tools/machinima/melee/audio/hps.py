@@ -76,8 +76,12 @@ def read(path_or_bytes):
     return dict(rate=rate, channels=nch, chans=chans, blocks=blocks, pcm=pcm, loop_block=loop_block)
 
 
-def write(path, pcm, rate=32000, loop_start=None, coefs=None):
-    """pcm: int16 (n, ch). loop_start: sample index to loop to (rounded down to a block start), None = play once.
+def write(path, pcm, rate=32000, loop_start=None, coefs=None, exact_loop=False):
+    """pcm: int16 (n, ch). loop_start: sample index to loop to, None = play once. By default the loop rounds down to a
+    full-block start (1.792 s at 32 kHz). exact_loop: the loop starts at loop_start itself, as HAL's own stage streams
+    do (their blocks aren't all 0x8000 per channel: Dream Land's old_kb.hps has 0x7F80 and 0x7F60 blocks): the block
+    before the loop is cut short to end there. loop_start must then be a multiple of 56 samples (4 ADPCM frames, so every
+    block stays a multiple of 0x20 bytes, as the vanilla ones are).
     Returns the bytes written and a report (per-channel SNR of the decoded stream against the input)."""
     pcm = np.asarray(pcm)
     assert pcm.dtype == np.int16 and pcm.ndim == 2, 'int16 (n, channels) expected'
@@ -89,17 +93,31 @@ def write(path, pcm, rate=32000, loop_start=None, coefs=None):
         data, info = dspadpcm.encode(pcm[:, c], cf)
         enc.append(data); cfs.append(cf)
         dec.append(dspadpcm.decode(data, cf, n))
-    nblocks = -(-n // spb)
-    loop_block = None if loop_start is None else min(int(loop_start) // spb, nblocks - 1)
+    # block start samples: full blocks, and with an exact loop a short block ending at the loop start
+    if exact_loop and loop_start is not None:
+        ls = int(loop_start)
+        assert ls % 56 == 0 and 0 < ls < n, 'an exact loop start must be a multiple of 56 samples inside the stream'
+        starts = list(range(0, ls, spb)) + list(range(ls, n, spb))
+    else:
+        starts = list(range(0, n, spb))
+    nblocks = len(starts)
+    bounds = starts + [n]
+    if loop_start is None:
+        loop_block = None
+    elif exact_loop:
+        loop_block = starts.index(int(loop_start))
+    else:
+        loop_block = min(int(loop_start) // spb, nblocks - 1)
     out = bytearray(HDR)
     offs = []
     body = bytearray()
     end_nib = 0
+    nib0 = 0                                               # the block's first nibble in the channel's stream
     for b in range(nblocks):
-        s0, s1 = b * spb, min(n, (b + 1) * spb)
+        s0, s1 = bounds[b], bounds[b + 1]
         ns = s1 - s0
         fr = -(-ns // 14)
-        per = BLOCK_CH if b < nblocks - 1 else _align(fr * 8, 0x20)
+        per = fr * 8 if b < nblocks - 1 else _align(fr * 8, 0x20)
         last_in_frame = ns - (fr - 1) * 14                 # samples used in the final frame (1..14)
         lastnib = (fr - 1) * 16 + 1 + last_in_frame
         offs.append(HDR + len(body))
@@ -115,7 +133,8 @@ def write(path, pcm, rate=32000, loop_start=None, coefs=None):
             chunk = enc[c][s0 // 14 * 8:(s0 // 14 + fr) * 8]
             blk += chunk + b'\0' * (per - len(chunk))
         body += blk
-        end_nib = b * (BLOCK_CH * 2) + lastnib
+        end_nib = nib0 + lastnib
+        nib0 += per * 2
     for b in range(nblocks):                               # next pointers
         o = offs[b] - HDR
         nxt = offs[b + 1] if b + 1 < nblocks else (offs[loop_block] if loop_block is not None else 0xFFFFFFFF)
@@ -130,7 +149,8 @@ def write(path, pcm, rate=32000, loop_start=None, coefs=None):
     data = bytes(out + body)
     if path:
         open(path, 'wb').write(data)
-    rep = dict(samples=n, seconds=n / rate, blocks=nblocks, bytes=len(data),
+    rep = dict(samples=n, seconds=n / rate, blocks=nblocks, bytes=len(data), loop_block=loop_block,
+               loop_sample=None if loop_block is None else starts[loop_block],
                snr_db=[round(float(dspadpcm.snr_db(pcm[:, c], dec[c])), 2) for c in range(nch)])
     return data, rep
 

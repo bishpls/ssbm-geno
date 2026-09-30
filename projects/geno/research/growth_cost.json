@@ -46,8 +46,8 @@
    "move": "dash_attack",
    "dir": "fwd",
    "hurt": 0.0,
-   "before": -0.02,
-   "now": -0.02,
+   "before": 3.88,
+   "now": 3.88,
    "change": 0.0,
    "analogs": {
     "Lg:dash_attack": -0.52
@@ -142,9 +142,9 @@
   {
    "move": "dash_grab",
    "dir": "fwd",
-   "hurt": 0.8,
-   "before": 2.87,
-   "now": 2.07,
+   "hurt": 0.81,
+   "before": 2.86,
+   "now": 2.06,
    "change": -0.8,
    "analogs": {
     "Mr:dash_grab": -0.8,

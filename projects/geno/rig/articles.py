@@ -36,18 +36,17 @@ def beam_script(dmg, size, kbg, bkb, angle=361):
     return s.bytes().hex()
 
 
-# ---- Geno Whirl (DESIGN v1.2 §5): the outbound hit, the shield grind, the hover, the recall; each opens its hitbox in a
-# new hit group, so each can hit a given opponent once per throw (§8 rule 3)
-WHIRL_EXT = {0x00: 1.35,   # starting speed (units a frame); v1.3 x0.84 with his run (1.9 -> 1.6), so he still runs behind it
-             0x04: 0.93,   # speed at the end of the travel
-             0x08: 47.0,   # travel frames (~54 units, as before), then the hover
+# ---- Geno Whirl (DESIGN v1.2 §5): the outbound hit, the shield grind, the hover; each hits a given opponent once per
+# throw (§8 rule 3). No recall (v1.5, Michael, 2026-09-30: removed completely, its state, hit and numbers with it)
+WHIRL_EXT = {0x00: 1.5,    # starting speed (units a frame), under his run (1.6), so he still runs in behind it
+             0x04: 1.3,    # speed at the end of the travel
+             0x08: 78.0,   # travel frames: ~109 units (v1.5, Michael 2026-09-30: "similar to a smash-side-b link boomerang",
+                           # measured 120; was 47 frames easing 1.35 -> 0.93, ~52), then the hover
              0x0C: 45.0,   # hover frames
-             0x10: 4.0,    # recall speed
-             0x14: 43.0,   # grind frames (hits at 15, 28, 41), then the hover
-             0x18: 5.0,    # catch radius: recalled into his hands
-             0x1C: 0.349,  # the stick bends the throw up to 20 degrees (radians)
-             0x20: 4.0,    # the hover's damage: the travel's hitbox stays live into the hover (its victims can't be
-             0x24: 60.0}   # hit again) and drops to these numbers (damage, angle)
+             0x10: 43.0,   # grind frames (hits at 15, 28, 41), then the hover
+             0x14: 0.349,  # the stick bends the throw up to 20 degrees (radians)
+             0x18: 4.0,    # the hover's damage: the travel's hitbox stays live into the hover (its victims can't be
+             0x1C: 60.0}   # hit again) and drops to these numbers (damage, angle)
 WHIRL_R = 3.6              # the disc's hit radius
 
 
@@ -79,13 +78,6 @@ def whirl_hover():
     return s.bytes().hex()
 
 
-def whirl_recall():
-    s = ItemScript()
-    s.hitbox(0, 6, WHIRL_R, angle=80, kbg=70, bkb=30, group=5)
-    s.end()
-    return s.bytes().hex()
-
-
 # ---- Geno Blast (down B, DESIGN v1.2 §5): a mark on the floor, then ~32 frames later a column sweeps down through it. It
 # meteors airborne targets (cancellable) and pops grounded ones up at ~83 degrees, 9% each; one hit group for the
 # column, so a target is hit once. Aerial-only and grounded-only spheres are word 4's last two bits (hit grounded, hit
@@ -98,6 +90,10 @@ BLAST_EXT = {0x00: 32.0,   # mark frames (the tell)
              0x08: 50.0,   # drop height
              0x0C: BLAST_LIFT}
 BLAST_R = 6.0
+# v1.5 (Michael, 2026-09-30: "probably oppressively strong for edgeguarding"): the airborne meteor keeps its angle (still
+# meteor-cancellable) at about 60% of its knockback: kbg 80 -> 50, bkb 20 -> 10 (research in the review page: how deep an
+# offstage column leaves Fox, Falco and Marth at 30/60/90%)
+BLAST_METEOR_KBG, BLAST_METEOR_BKB = 50, 10
 
 
 def blast_mark():
@@ -108,7 +104,7 @@ def blast_mark():
 def blast_strike():
     s = ItemScript()
     for i, y in enumerate((BLAST_R - BLAST_LIFT, BLAST_R * 3 - BLAST_LIFT)):     # the lowest 24 of the bolt, as before
-        s.hitbox(i, 9, BLAST_R, (0, y, 0), angle=270, kbg=80, bkb=20, tail=0x045)      # airborne: meteor
+        s.hitbox(i, 9, BLAST_R, (0, y, 0), angle=270, kbg=BLAST_METEOR_KBG, bkb=BLAST_METEOR_BKB, tail=0x045)   # airborne: meteor
         s.hitbox(2 + i, 9, BLAST_R, (0, y, 0), angle=83, kbg=70, bkb=40, tail=0x046)   # grounded: popped up
     s.end()
     return s.bytes().hex()
@@ -142,7 +138,10 @@ def flash_sun():
     # burst: 1.52q + 99.5 at Fox q% (measured: 75%); the late sun (FLASH_LATE, set by the item code at the burst's end):
     # 0.95q + 72 (150%), weaker than the burst at every percent
     b = FLASH_BURST
-    s.hitbox(0, b['dmg'], FLASH_EXT[0x08], angle=b['angle'], kbg=b['kbg'], bkb=b['bkb'], element=0)
+    # not reflectable (Michael, 2026-09-30: "Flash almost certainly should not be"): a shine, cape or powershield took
+    # the sun over and grew it onto Geno; still absorbable (energy), so LASER_FLAGS less REFLECT: 0xEDD000
+    s.hitbox(0, b['dmg'], FLASH_EXT[0x08], angle=b['angle'], kbg=b['kbg'], bkb=b['bkb'], element=0,
+             flags=LASER_FLAGS & ~REFLECT)
     s.end()
     return s.bytes().hex()
 
@@ -158,19 +157,45 @@ THROW_SHOT = dict(dmg=2, r=2.6)        # the down throw's Finger Shots (the Fing
                                        # a held opponent takes half (ftcoll.c: p_ftCommonData->x128), as Fox's are 2 for 1%
 
 
-def throw_shot(dmg, r):
-    """A throw projectile: two spheres along its trail, no knockback, Fox's throw-laser flags (rehit 16)."""
+# What absorbs and reflects a projectile: word 5 of an item hitbox command, its second byte (itanimlist.c copies it to the
+# HitCapsule). REFLECT is x1_b3 -> HitCapsule.x41_b7, the reflect check's bit (ftcoll.c: fp->reflecting && x41_b7);
+# ABSORB is x1_b4 -> HitCapsule.x42_b0, the absorb check's (ftcoll.c: fp->x2218_b6 && (x42_b0 || (x2218_b7 && x41_b7));
+# Ness's PSI Magnet, ftColl_CreateAbsorbHit, sets x2218_b6 and clears x2218_b7, so it takes only what carries x42_b0).
+# Michael, 2026-09-30: "All projectiles except finger bullets should be absorbable by Ness, I would say. Bullets are
+# physical, the rest are energy-based." The Finger Shot and the down throw's shots drop ABSORB and keep REFLECT (bullets
+# reflect, as Fox's and Falco's lasers do); the Beam, the Star Gun stars, the Whirl and the Blast keep both; the Flash
+# keeps ABSORB and drops REFLECT (flash_sun).
+REFLECT = 0x100000
+ABSORB = 0x080000
+LASER_FLAGS = 0xFDD000                 # Falco's laser's word 5 (low 24 bits): hits everything, reflects, absorbs
+BULLET = ~ABSORB & 0xFFFFFF            # a bullet: the same, less ABSORB
+
+
+def finger_shot():
+    """The Finger Shot (the article's state 0): Falco's laser's four spheres (3%, radius 1.17 along its trail, kbg 100 at
+    a set 5, rehit 16), as physical bullets: reflectable, not absorbable (Michael, 2026-09-30)."""
+    s = ItemScript()
+    for i, z in enumerate((-0.78125, -3.64453125, -6.5078125, -9.375)):
+        s.hitbox(i, 3, 300 / 256, (0, 0, z), angle=361, kbg=100, wdsk=5, bkb=0, flags=LASER_FLAGS & BULLET, rehit=16)
+    s.end()
+    return s.bytes().hex()
+
+
+def throw_shot(dmg, r, bullet=False):
+    """A throw projectile: two spheres along its trail, no knockback, Fox's throw-laser flags (rehit 16); a bullet (the
+    down throw's Finger Shots) drops ABSORB."""
     s = ItemScript()
     for i, z in enumerate((0.0, -r)):
-        s.hitbox(i, dmg, r, (0, 0, z), angle=361, kbg=0, bkb=0, flags=0x00FDC000, rehit=16)
+        s.hitbox(i, dmg, r, (0, 0, z), angle=361, kbg=0, bkb=0, flags=0x00FDC000 & (BULLET if bullet else 0xFFFFFF), rehit=16)
     s.end()
     return s.bytes().hex()
 
 
 ARTICLES = [
-    # Finger Shot (neutral B tap): Falco's laser (3%, hitstun). Lifetime 19 frames at 4 units a frame: ~75 units
+    # Finger Shot (neutral B tap): Falco's laser (3%, hitstun), as a bullet (not absorbable). Lifetime 19 frames at 4
+    # units a frame: ~75 units
     dict(name='finger', frm='PlFc.dat', index=0, ext={0x00: 19.0},
-         scripts=[None, throw_shot(**THROW_SHOT)],           # state 1: the down throw's shots
+         scripts=[finger_shot(), throw_shot(**THROW_SHOT, bullet=True)],   # state 1: the down throw's shots
          # geno-fx: our own model, a volley of golden slugs (projects/geno/fx/finger_model.py; GENO_FINGER_MODEL=0: the donor's)
          **({'model': finger_model.spec(os.path.join(os.environ.get('MELEE_WORK', os.path.expanduser('~/games/melee/work')), 'fx', 'finger'))}
             if os.environ.get('GENO_FINGER_MODEL', '1') != '0' else {})),
@@ -183,9 +208,9 @@ ARTICLES = [
          **({'model': beam_model.spec(os.path.join(os.environ.get('MELEE_WORK', os.path.expanduser('~/games/melee/work')), 'fx', 'beam'))}
             if BEAM_MODEL else {})),
     # Geno Whirl (side B): its own item code (itgeno.c). Samus's charge-shot ball stands in for the disc (donor state 4,
-    # a mid-sized ball, for all four states). ext is itGe_WhirlAttr: speeds, frames and the recall/catch numbers
-    dict(name='whirl', frm='PlSs.dat', index=1, state_from=[4, 4, 4, 4], ext_size=0x28, ext=WHIRL_EXT, hurt_r=WHIRL_R,
-         scripts=[whirl_travel(), whirl_grind(), whirl_hover(), whirl_recall()],
+    # a mid-sized ball, for all three states). ext is itGe_WhirlAttr: speeds, frames, the bend and the hover's numbers
+    dict(name='whirl', frm='PlSs.dat', index=1, state_from=[4, 4, 4], ext_size=0x20, ext=WHIRL_EXT, hurt_r=WHIRL_R,
+         scripts=[whirl_travel(), whirl_grind(), whirl_hover()],
          # geno-fx: our own disc (projects/geno/fx/whirl_model.py; GENO_WHIRL_MODEL=0: the donor's ball)
          **({'model': whirl_model.spec(os.path.join(os.environ.get('MELEE_WORK', os.path.expanduser('~/games/melee/work')), 'fx', 'whirl'))}
             if os.environ.get('GENO_WHIRL_MODEL', '1') != '0' else {})),

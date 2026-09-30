@@ -37,9 +37,10 @@ static partial class MenusGeno
                     {
                         var stem = p.Name[..^5];
                         var jo = p.GetValue(r.Data) as HSD_JOBJ; if (jo == null) continue;
-                        yield return new Model($"{r.Name}:{p.Name}", jo,
-                            r.Data.GetType().GetProperty(stem + "Animation")?.GetValue(r.Data) as HSD_AnimJoint,
-                            r.Data.GetType().GetProperty(stem + "MaterialAnimation")?.GetValue(r.Data) as HSD_MatAnimJoint);
+                        // the tables name their animations stem+Animation/MaterialAnimation or stem+AnimJoint/MatAnimJoint (the SSS)
+                        object Get(params string[] ns) => ns.Select(n => r.Data.GetType().GetProperty(stem + n)?.GetValue(r.Data)).FirstOrDefault(v => v != null);
+                        yield return new Model($"{r.Name}:{p.Name}", jo, Get("Animation", "AnimJoint") as HSD_AnimJoint,
+                            Get("MaterialAnimation", "MatAnimJoint") as HSD_MatAnimJoint);
                     }
                     break;
             }

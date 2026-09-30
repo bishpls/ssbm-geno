@@ -101,7 +101,23 @@ SOUND = [
     ('getup_d', 'geno', 130, [], 'x', ('getup', DOWN_BOUND_D)),
     ('bthrow', 'geno', 150, [S(0, 2, btn='Z'), S(40, 3, (-80, 0))], '-x', 'pummel'),     # Fox grabbed, thrown back
 ]
-SEGS = {'geno': GENO, 'cast': CAST, 'cast2': CAST2, 'sound': SOUND}[SET]
+# round 6 (Michael's playtest): the grabs' rocket fists, the up tilt's stars, the neutral air's spinning stars
+ROUND6 = [
+    ('grab', 'geno', 50, [S(0, 2, btn='Z')], '+x', 'ground'),
+    ('dashgrab', 'geno', 70, [S(0, 10, (80, 0)), S(10, 2, (80, 0), btn='Z')], '+x', 'ground'),
+    ('grab_left', 'geno', 50, [S(0, 2, btn='Z')], '-x', 'left'),
+    ('dashgrab_left', 'geno', 70, [S(0, 10, (80, 0)), S(10, 2, (80, 0), btn='Z')], '-x', 'left'),
+    ('utilt', 'geno', 50, [S(0, 4, (0, 50)), S(2, 2, (0, 50), btn='A')], '+y', 'ground'),
+    ('nair', 'geno', 70, SH + [S(7, 2, btn='A')], 'x', 'ground'),
+]
+# round 7 (the moves round): up smash's taller column, the Cannon Charge dash attack, down smash re-paced, the longer grabs
+ROUND7 = [
+    ('usmash', 'geno', 55, [S(0, 3, c=(0, 80))], '+y', 'ground'),
+    ('dsmash', 'geno', 60, [S(0, 3, c=(0, -80))], 'x', 'ground'),
+    ('dashattack', 'geno', 70, [S(0, 12, (80, 0)), S(12, 2, (80, 0), btn='A')], '+x', 'ground'),
+    ('dashattack_left', 'geno', 70, [S(0, 12, (80, 0)), S(12, 2, (80, 0), btn='A')], '-x', 'left'),
+] + ROUND6[:4]
+SEGS = {'geno': GENO, 'cast': CAST, 'cast2': CAST2, 'sound': SOUND, 'round6': ROUND6, 'round7': ROUND7}[SET]
 if ONLY:
     SEGS = [s for s in SEGS if s[0] in ONLY]
 chars = []
@@ -149,6 +165,9 @@ for label, char, n, steps, axis, kind in SEGS:
         camera(t - LEAD, X0 + (4 if axis in ('+x',) else -4 if axis == '-x' else 0), 12 if axis != '+y' else 16)
         for at, k, stick, c, btn in steps:
             who.hold(t + at, k, stick=stick, c=c, btn=btn, dir=face)
+        if label.startswith('dashattack'):          # the dash carries him out of a fixed frame: follow him
+            d = {'close': 58, 'mid': 80}.get(CAM, 137)
+            f.cam(t + 2, eye=(4 * face, 10, d), at=(4 * face, 10, 0), fov=30, ease='cut', track='p0')
     elif kind[0] == 'ledge':
         # the pummel/ledge lab's staging: airborne first, set beside the left ledge falling, catch it, attack at +40
         f.reset(t - LEAD, port, LEDGE_X + 10, -1)

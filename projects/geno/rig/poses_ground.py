@@ -126,6 +126,7 @@ VEC = {'pel', 'R', 'L', 'Rpole', 'Lpole', 'Rwrist', 'Lwrist', 'LF', 'RF', 'Lkpol
 #                  holds until the action changes and then snaps back
 FIST, OPEN, POINT, GRIP, REST = (1.0, 0, 0, 0), (0, 1.0, 0, 0), (0, 0, 1.0, 0), (0, 0, 0, 1.0), (0.0, 0, 0, 0)
 RELAXED = (0.0, 0, 0, 0, 1.0)
+REACH = (0.0, 0.75, 0, 0.25)          # open and reaching, the fingers a little cupped (the grabs' flying hands)
 HANDS = list(rig.HAND_POSES) + [rig.RELAXED_HAND]          # the weights' poses, left-hand form
 
 
@@ -507,6 +508,15 @@ HIT = dict(
     ftiltHi=(-2.326, 10.828, 4.556), ftiltS=(-2.363, 9.07, 4.929), ftiltLw=(-2.326, 7.313, 4.556),
     dtilt=(-2.291, 5.043, 5.491), dsmashF=(-2.698, 5.405, 5.574), dsmashB=(2.698, 5.405, -2.402),
     grabR=(-3.075, 8.007, 7.904), grabL=(2.27, 8.007, 9.523), dgrabR=(-2.532, 8.55, 2.785), dgrabL=(1.727, 8.55, 4.403))
+# The grabs' reach: the grab boxes' far edge from his position (the table's reach: the far fist's point plus its 4.0
+# radius). Michael, 2026-09-30: "I'm fine extending their range to make them visually read better as rocket fists ...
+# Keep the range under all of the grapple grabs, and under Marth's but on the long end of the cast". The fists fly out
+# to it (their flight longer, the timing the same) and the boxes ride them.
+GRAB_REACH = {False: 16.0, True: 18.5}            # the standing grab, the dash grab (13.53, 16.37 until 2026-09-30)
+_GRAB_BASE = {False: 13.53, True: 16.37}
+for _dash, _names in ((False, ('grabR', 'grabL')), (True, ('dgrabR', 'dgrabL'))):
+    for _n in _names:
+        HIT[_n] = (HIT[_n][0], HIT[_n][1], round(HIT[_n][2] + GRAB_REACH[_dash] - _GRAB_BASE[_dash], 3))
 GUN_TIP = 0.6                   # the gun-arm hitboxes sit FA + 0.6 down ArmJ
 
 
@@ -712,9 +722,20 @@ def dtilt():
     return c.keys()
 
 
-# The dash attack's root motion: the blockout's TransN path (its reach and slide are measured and designed), on a curve
-DASH_PATH = [(0, 0.0), (3, 4.0), (6, 10.5), (10, 18.0), (15, 23.0), (24, 27.0), (40, 28.0)]
-DASH_HIT = (-1.075, 5.237, 2.374)            # the WaistN hitbox, relative to TransN, on every active frame (6-15)
+# The dash attack's root motion (TransN along his facing): the charge drives him in to the shot (6), the recoil brakes
+# him hard, and he skids to a stop
+DASH_PATH = [(0, 0.0), (3, 4.5), (6, 11.0), (8, 14.0), (10, 16.0), (15, 19.5), (24, 21.5), (40, 22.0)]
+
+
+def aim_from(q, side, d, reach):
+    """a wrist target `reach` from that side's shoulder along direction d (the arm straight, aimed), on parameters q"""
+    return add(shoulder(q, side), mul(norm(d), reach))
+
+
+def on_arm(q, side, x):
+    """the point x down that side's forearm (ArmJ), in the body frame, on parameters q"""
+    W = world(assemble(q))
+    return sub(tuple(rig.xform((x, 0.0, 0.0), W[f'{side}ArmJ'])), q.get('trans', (0.0, 0.0, 0.0)))
 
 
 def run_pose():
@@ -723,10 +744,12 @@ def run_pose():
 
 
 def dash_attack():
-    """The doll-stiff shoulder dive, from the run: he plants the lead boot and gathers (1-3), throws himself forward
-    gun-shoulder first (4-5) and slides along the floor stiff as a plank, arms pinned to his sides, the rear leg trailing
-    on its toe (6-15), then rights himself with a stumble (the rear boot steps up, the arms fling out for balance) and
-    settles into the idle. TransN carries the blockout's path, so the slide and the hits land where they were designed."""
+    """Cannon Charge (Michael, 2026-09-30: the old shoulder dive was "visually unclear what action it's supposed to be ...
+    puny / unfinished"): out of the run he plants the lead boot and draws the right arm back to his hip as it folds into
+    the Hand Cannon (1-3, the ka-chunk); he lunges low and thrusts the cannon out level in front of him, the left hand
+    clamping under the barrel (4-5); BOOM at point-blank (6): the recoil kicks the barrel up and throws his weight back,
+    braking the charge, and he skids on his heels with the barrel smoking (7-15); the skid ends (18), the barrel comes
+    down, the cannon folds back into the hand (24) and he rises into the idle. TransN carries the charge and the skid."""
     n = 40
     end = A.base().move('TransN', (0.0, 0.0, DASH_PATH[-1][1]))
     c = Clip(n, start=run_pose(), end=end, heel_auto=False)
@@ -735,48 +758,55 @@ def dash_attack():
     for f in range(1, n):
         c.key(f, trans=(0.0, 0.0, zf(f)))
     c.key(0, trans=(0.0, 0.0, 0.0))
-    c.key(2, pel=(0.0, -1.1, 0.1), pyaw=D(10), ppitch=0.3, proll=0.0, cyaw=D(24), cpitch=0.55, croll=0.0, hyaw=D(-4),
-          hpitch=0.05, R=(-1.6, 8.1, 0.9), Rpole=(-0.6, -0.4, -0.7), L=(1.5, 7.8, 0.3), Lpole=(0.6, -0.4, -0.7),
-          LF=(1.05, 0.0, 0.9), Ltoe=D(6), Lheel=0.0, RF=(-1.1, 0.0, -1.2), Rheel=0.35)
-    c.key(4, pel=(0.0, -1.35, 0.9), pyaw=D(14), ppitch=0.5, cyaw=D(40), cpitch=0.85, hpitch=0.12,
-          R=(-1.3, 7.3, 1.6), L=(1.5, 6.6, -0.4), LF=(1.05, 0.0, 1.2), RF=(-1.1, 0.15, -2.4), Rheel=0.8)
-    for f in (6, 8, 10, 12, 14, 15):
-        k = min(1.0, (f - 6) / 8.0)
-        c.key(f, pel=(0.0, -1.55 + 0.05 * k, 1.35 - 0.1 * k), pyaw=D(16), ppitch=0.62, proll=D(-4), cyaw=D(46),
-              cpitch=1.02 - 0.04 * k, croll=D(-6), hyaw=D(-2), hpitch=0.18,
-              R=(-1.9, 6.5 + 0.1 * k, 0.3), Rpole=(-0.5, 0.2, -0.9), L=(1.7, 5.9, -1.3), Lpole=(0.4, 0.2, -0.9),
-              LF=(1.05, 0.0, 1.35), RF=(-1.1, 0.35, -3.1), Rheel=0.95)
-    c.key(17, pel=(0.0, -1.0, 0.8), pyaw=D(4), ppitch=0.3, proll=0.0, cyaw=D(10), cpitch=0.5, croll=0.0, hyaw=D(-6),
-          hpitch=0.0, R=(-3.0, 8.8, 0.6), Rpole=(-0.6, -0.6, -0.4), L=(3.0, 8.2, 1.0), Lpole=(0.6, -0.6, -0.4),
-          RF=(-1.2, 0.9, -2.4), Rheel=0.3)
-    c.hold(2, 15, Rhand=FIST, Lhand=FIST)
-    c.key(18, Rhand=OPEN, Lhand=OPEN)
-    c.key(26, Rhand=(0, 0.2, 0, 0), Lhand=(0, 0.2, 0, 0))
-    c.key(20, pel=(0.0, -0.9, 0.35), pyaw=D(-12), ppitch=0.1, cyaw=D(-16), cpitch=0.3, R=(-2.9, 8.0, -0.2),
-          L=(2.8, 7.2, 1.8), LF=(1.2, 0.0, 1.5), Ltoe=D(12), RF=(-1.3, 0.0, -2.0), Rtoe=D(-15), Rheel=0.0)
-    c.key(26, pel=(0.0, -0.35, 0.05), pyaw=D(-23), ppitch=0.0, cyaw=D(-27), cpitch=0.14, hyaw=D(-10), hpitch=0.0,
-          R=add(WAIT['R'], (-0.1, 0.4, 0.2)), Rpole=WAIT['Rpole'], L=add(WAIT['L'], (0.1, 0.3, -0.1)), Lpole=WAIT['Lpole'],
+    fwd = (0.06, -0.08, 1.0)                              # the barrel: level in front, a touch down
+    # the plant and the draw: the right arm back to the hip as it folds into the cannon
+    c.key(2, pel=(0.0, -0.9, -0.1), pyaw=D(-6), ppitch=0.15, proll=0.0, cyaw=D(-20), cpitch=0.25, croll=0.0, hyaw=D(-8),
+          hpitch=0.05, R=(-2.3, 7.4, -1.4), Rpole=(-0.6, -0.4, -0.7), L=(1.6, 8.3, 1.2), Lpole=(0.6, -0.4, -0.7),
+          LF=(1.05, 0.0, 1.1), Ltoe=D(6), Lheel=0.0, RF=(-1.1, 0.0, -1.4), Rheel=0.3)
+    c.key(3, pel=(0.0, -1.0, -0.15), cyaw=D(-24), cpitch=0.28, R=(-2.35, 7.3, -1.6))
+    # the lunge: low, the cannon thrust out level, the left hand under the barrel
+    lunge = dict(pel=(0.0, -1.35, 0.6), pyaw=D(8), ppitch=0.3, cyaw=D(16), cpitch=0.42, hyaw=D(-2), hpitch=0.1,
+                 LF=(1.05, 0.0, 1.6), RF=(-1.1, 0.25, -2.6), Rheel=0.7)
+    c.key(5, **lunge)
+    c.key(5, R=aim_from(c.at(5), 'R', fwd, UA + FA - 0.1), Rpole=(-0.8, -0.5, -0.2))
+    c.key(4, pel=(0.0, -1.25, 0.35), cyaw=D(4), cpitch=0.36, R=add(aim_from(c.at(5), 'R', fwd, UA + FA - 0.1), (0.0, -0.3, -1.6)))
+    # BOOM (6): the recoil kicks the barrel up and back and throws his weight onto his heels; held a beat (7-9)
+    kick = dict(pel=(0.0, -1.2, -0.5), pyaw=D(4), ppitch=0.05, cyaw=D(10), cpitch=-0.12, hpitch=-0.14,
+                LF=(1.05, 0.0, 1.9), RF=(-1.1, 0.0, -2.2), Rheel=0.2, Lheel=0.0)
+    c.key(6, **lunge)
+    c.key(6, R=aim_from(c.at(6), 'R', fwd, UA + FA - 0.05))
+    c.key(8, **kick)
+    c.key(8, R=aim_from(c.at(8), 'R', norm((0.05, 0.45, 0.9)), UA + FA - 0.35))
+    c.key(10, **dict(kick, pel=(0.0, -1.25, -0.4), cpitch=-0.08))
+    c.key(10, R=aim_from(c.at(10), 'R', norm((0.05, 0.38, 0.92)), UA + FA - 0.3))
+    # the skid: on his heels, the smoking barrel sinking back to level
+    c.key(15, pel=(0.0, -1.2, -0.2), pyaw=D(0), ppitch=0.08, cyaw=D(6), cpitch=0.02, hpitch=-0.04, Rheel=0.1)
+    c.key(15, R=aim_from(c.at(15), 'R', norm((0.05, 0.12, 1.0)), UA + FA - 0.3))
+    c.key(18, pel=(0.0, -1.05, -0.05), pyaw=D(-8), ppitch=0.05, cyaw=D(-6), cpitch=0.12, hyaw=D(-6), hpitch=0.02,
+          RF=(-1.2, 0.0, -2.0), Rheel=0.0, Rtoe=D(-10))
+    c.key(18, R=aim_from(c.at(18), 'R', norm((0.1, -0.25, 0.95)), UA + FA - 0.6))
+    # the left hand under the barrel through the shot, flung off by the recoil, then down
+    for f in (5, 6):
+        q = c.at(f)
+        c.key(f, L=add(on_arm(q, 'R', 1.2), (0.3, -0.6, 0.0)), Lpole=(0.6, -0.6, -0.4))
+    c.key(8, L=(2.1, 8.9, 0.8), Lpole=(0.6, -0.4, -0.6))
+    c.key(15, L=(2.0, 8.0, 1.2))
+    c.key(24, pel=(0.0, -0.75, 0.05), pyaw=D(-18), ppitch=0.02, cyaw=D(-20), cpitch=0.2, hyaw=D(-9), hpitch=0.0,
+          R=(-2.2, 7.8, 1.2), Rpole=(-0.6, -0.6, -0.4), L=add(WAIT['L'], (0.1, 0.5, 0.2)), Lpole=WAIT['Lpole'],
           LF=WAIT['LF'], Ltoe=WAIT['Ltoe'], RF=WAIT['RF'], Rtoe=WAIT['Rtoe'])
-    c.key(32, pel=(0.0, -0.1, 0.0), cyaw=D(-24.5), cpitch=0.12, R=add(WAIT['R'], (0.0, 0.1, 0.05)), L=add(WAIT['L'], (0.0, 0.08, 0.0)))
-    grow_keys(c, DASH_GROW, sides='R', what='arm')
+    c.key(30, pel=(0.0, -0.3, 0.02), pyaw=D(-23), cyaw=D(-25), cpitch=0.13, hyaw=D(-10),
+          R=add(WAIT['R'], (-0.1, 0.4, 0.3)), Rpole=WAIT['Rpole'], L=add(WAIT['L'], (0.0, 0.15, 0.05)))
+    c.key(35, pel=(0.0, -0.08, 0.0), cyaw=D(-25), cpitch=0.12, R=add(WAIT['R'], (0.0, 0.08, 0.05)), L=add(WAIT['L'], (0.0, 0.05, 0.0)))
+    c.hold(2, 22, Rhand=FIST)
+    c.hold(4, 7, Lhand=GRIP)
+    c.key(10, Lhand=OPEN)
+    c.key(26, Rhand=OPEN)
+    c.key(32, Rhand=(0, 0.2, 0, 0), Lhand=(0, 0.2, 0, 0))
     return c
 
 
 def dash_keys():
     return dash_attack().keys()
-
-
-def dash_hit_offset():
-    """The WaistN hitbox offset that puts it at DASH_HIT on the middle of the dive (the pose holds through 6-15)."""
-    c = dash_attack()
-    p = dict(c.keys())[9]
-    W = world(p)
-    import numpy as np
-    m = np.array(W['WaistN'])
-    tr = np.array(W['TransN'][3][:3])
-    tgt = np.array([*add(DASH_HIT, tuple(tr)), 1.0])
-    loc = tgt @ np.linalg.inv(m)
-    return tuple(round(float(x), 2) for x in loc[:3])
 
 
 # The rocket fists' growth (anims.apply_grow, frame -> HandN's scale). The cast grow the striking limb on its first active
@@ -814,7 +844,6 @@ JAB_EASE = {2: 0.0, 3: 1.0, 4: 0.65, 5: 0.25, 6: 0.0}    # frame -> the share of
 JAB3_GROW = {4: 1.0, 5: 2.2, 6: 2.1, 7: 1.8, 9: 1.2, 10: 1.0}
 UTILT_GROW = {5: 1.0, 6: 2.1, 9: 2.0, 11: 1.4, 13: 1.0}
 PUMMEL_GROW = {8: 1.0, 9: 1.25, 11: 1.2, 14: 1.0}
-DASH_GROW = {5: 1.0, 6: 1.3, 8: 1.2, 10: 1.0}              # the right (gun) arm, whole, from the shoulder
 
 
 def grow_keys(c, profile, at=0, sides='RL', what='grow'):
@@ -984,20 +1013,22 @@ DS_FORE_F, DS_FORE_B = (0.0, -0.32, 1.0), (0.0, -0.32, -1.0)
 
 
 def dsmash():
-    """Twin Hand Cannons, both sides at once: he drops into a wide, braced squat turning square to the camera as both
-    forearms fold open into cannons (2); the held pose (4, frozen while A is held) has both cannons cocked low to either
-    side, symmetrical; they swing up level (5-6) and fire together (7-9), the recoil kicking both muzzles up and in and
-    bouncing him up off his heels (10-12); he settles back into the squat, the cannons fold back into hands (24) and he
-    rises into the idle."""
+    """Twin Hand Cannons, both sides at once, the motion spread over the whole move (Michael, 2026-09-30: "extend the
+    animation ... so it's not purely frontloaded"; the frame data stays). The wind-up reads within the startup: he rises
+    a touch and gathers both arms in (1), then drops hard into a wide, braced squat turning square to the camera as both
+    forearms fold open into cannons (2); the held pose (3-5, frozen while A is held) has both cannons cocked low to either
+    side; they swing up level (6) and fire together (7-9). The recoil kicks both muzzles up and in and bounces him up off
+    his heels (10-12); he comes down with a thud (14), bounces once (16), and holds the smoking cannons out while they
+    shudder and sink (17-24); the cannons fold back into hands (28) and he rises slowly into the idle (28-43)."""
     n = 44
     c = Clip(n)
     feet = dict(LF=(1.6, 0.0, 2.35), RF=(-1.6, 0.0, -2.55), Ltoe=D(2), Rtoe=D(-38))
     sq = dict(pyaw=D(-62), cyaw=D(-80), hyaw=D(-22))
-    c.key(1, pel=(0.0, -1.0, 0.0), pyaw=D(-40), cyaw=D(-50), cpitch=0.2, hyaw=D(-14), hpitch=0.05,
-          L=(0.4, 7.4, 2.2), Lpole=(0.2, 0.3, 1.0), R=(-1.6, 7.4, -1.0), Rpole=(-0.2, 0.3, -1.0))
-    c.key(2, pel=(0.0, -2.0, 0.0), cpitch=0.3, hpitch=0.1, **dict(sq, pyaw=D(-55), cyaw=D(-72)), **feet)
+    c.key(1, pel=(0.0, -0.25, 0.0), pyaw=D(-36), cyaw=D(-46), cpitch=0.04, hyaw=D(-12), hpitch=-0.04,
+          L=(0.7, 8.4, 1.3), Lpole=(0.2, -0.2, 1.0), R=(-1.3, 8.4, -0.4), Rpole=(-0.2, -0.2, -1.0))      # the gather
+    c.key(2, pel=(0.0, -2.2, 0.0), cpitch=0.32, hpitch=0.1, **dict(sq, pyaw=D(-55), cyaw=D(-72)), **feet)
     for f, k in ((3, 0.0), (4, 0.35), (5, 0.6)):          # the held pose: braced low, both cannons cocked down and out
-        c.key(f, pel=(0.0, -2.7 - 0.08 * k, 0.0), cpitch=0.36, hpitch=0.12, **sq, **feet,
+        c.key(f, pel=(0.0, -2.75 - 0.08 * k, 0.0), cpitch=0.36, hpitch=0.12, **sq, **feet,
               L=(-0.9, 4.7 - 0.1 * k, 4.1), Lpole=(-0.2, 0.6, 1.0), R=(-0.9, 4.7 - 0.1 * k, -4.1), Rpole=(-0.2, 0.6, -1.0))
     c.key(6, pel=(0.0, -2.55, 0.0), cpitch=0.3, hpitch=0.08, **sq,
           L=(0.2, 5.9, 4.3), R=(0.2, 5.9, -4.3), Lpole=(0.1, 0.3, 1.0), Rpole=(0.1, 0.3, -1.0))
@@ -1005,21 +1036,28 @@ def dsmash():
         c.key(f, pel=(0.0, -2.45, 0.0), cpitch=0.26, hpitch=0.05, **sq)
         c.reach(f, 'L', DS_FRONT, GUN_TIP, pole=(0.0, 0.4, 1.0))
         c.reach(f, 'R', DS_BACK, GUN_TIP, pole=(0.0, 0.4, -1.0))
-    # the recoil: both muzzles kick up and in, the doll bounces up off his heels
-    c.key(10, pel=(0.0, -2.05, 0.0), cpitch=0.16, hpitch=-0.08, **sq,
-          L=add(DS_FRONT, (0.0, 1.1, -1.0)), R=add(DS_BACK, (0.0, 1.1, 1.0)), Lpole=(0.0, 0.3, 1.0), Rpole=(0.0, 0.3, -1.0))
-    c.key(12, pel=(0.0, -2.2, 0.0), cpitch=0.2, hpitch=0.0, L=add(DS_FRONT, (0.0, 0.7, -1.2)), R=add(DS_BACK, (0.0, 0.7, 1.2)))
-    c.key(15, pel=(0.0, -2.5, 0.0), cpitch=0.3, hpitch=0.08, L=add(DS_FRONT, (0.0, 0.1, -1.4)), R=add(DS_BACK, (0.0, 0.1, 1.4)))
-    c.key(21, pel=(0.0, -2.35, 0.0), cpitch=0.28, **sq, L=(-0.6, 5.0, 3.9), R=(-0.6, 5.0, -3.9), **feet)
-    c.key(26, pel=(0.0, -1.6, 0.0), pyaw=D(-45), cyaw=D(-52), cpitch=0.22, hyaw=D(-14), hpitch=0.04,
-          L=add(WAIT['L'], (0.1, 0.9, 0.4)), R=add(WAIT['R'], (-0.2, 0.9, -0.2)), Lpole=WAIT['Lpole'], Rpole=WAIT['Rpole'],
+    # the recoil: both muzzles kick up and in, the doll bounces up off his heels and comes down with a thud
+    c.key(10, pel=(0.0, -1.95, 0.0), cpitch=0.14, hpitch=-0.1, **sq,
+          L=add(DS_FRONT, (0.0, 1.5, -1.1)), R=add(DS_BACK, (0.0, 1.5, 1.1)), Lpole=(0.0, 0.3, 1.0), Rpole=(0.0, 0.3, -1.0))
+    c.key(12, pel=(0.0, -1.75, 0.0), cpitch=0.1, hpitch=-0.12, L=add(DS_FRONT, (0.0, 1.8, -1.4)), R=add(DS_BACK, (0.0, 1.8, 1.4)))
+    c.key(14, pel=(0.0, -2.85, 0.0), cpitch=0.36, hpitch=0.12, L=add(DS_FRONT, (0.0, 0.5, -1.3)), R=add(DS_BACK, (0.0, 0.5, 1.3)))
+    c.key(16, pel=(0.0, -2.55, 0.0), cpitch=0.3, hpitch=0.06, L=add(DS_FRONT, (0.0, 0.8, -1.4)), R=add(DS_BACK, (0.0, 0.8, 1.4)))
+    # the smoking cannons held out, shuddering as they sink
+    for f, dy in ((18, 0.45), (19, 0.62), (20, 0.4), (21, 0.52), (22, 0.3)):
+        c.key(f, L=add(DS_FRONT, (0.0, dy, -1.5)), R=add(DS_BACK, (0.0, dy, 1.5)))
+    c.key(18, pel=(0.0, -2.6, 0.0), cpitch=0.3)
+    c.key(24, pel=(0.0, -2.5, 0.0), cpitch=0.3, **sq, L=(-0.5, 4.9, 4.0), R=(-0.5, 4.9, -4.0), **feet)
+    c.key(28, pel=(0.0, -2.1, 0.0), pyaw=D(-54), cyaw=D(-66), cpitch=0.26, hyaw=D(-18), hpitch=0.06,
+          L=(0.3, 6.6, 2.4), R=(-1.0, 6.6, -1.6), Lpole=(0.2, -0.2, 1.0), Rpole=(-0.2, -0.2, -1.0))
+    c.key(33, pel=(0.0, -1.3, 0.0), pyaw=D(-42), cyaw=D(-48), cpitch=0.2, hyaw=D(-13), hpitch=0.03,
+          L=add(WAIT['L'], (0.1, 0.8, 0.4)), R=add(WAIT['R'], (-0.2, 0.8, -0.2)), Lpole=WAIT['Lpole'], Rpole=WAIT['Rpole'],
           LF=WAIT['LF'], RF=WAIT['RF'], Ltoe=WAIT['Ltoe'], Rtoe=WAIT['Rtoe'])
-    c.key(32, pel=(0.0, -0.55, 0.0), pyaw=D(-28), cyaw=D(-30), cpitch=0.14, hyaw=D(-10), hpitch=0.0,
+    c.key(38, pel=(0.0, -0.5, 0.0), pyaw=D(-28), cyaw=D(-30), cpitch=0.14, hyaw=D(-10), hpitch=0.0,
           R=add(WAIT['R'], (0.0, 0.3, 0.1)), L=add(WAIT['L'], (0.0, 0.3, 0.1)))
-    c.key(38, pel=(0.0, -0.12, 0.0), cyaw=D(-25), cpitch=0.12, R=add(WAIT['R'], (0.0, 0.06, 0.02)), L=add(WAIT['L'], (0.0, 0.05, 0.02)))
-    c.hold(2, 24, Rhand=FIST, Lhand=FIST)
-    c.key(27, Rhand=(0, 0.6, 0, 0), Lhand=(0, 0.6, 0, 0))
-    c.key(34, Rhand=(0, 0.15, 0, 0), Lhand=(0, 0.15, 0, 0))
+    c.key(42, pel=(0.0, -0.1, 0.0), cyaw=D(-25), cpitch=0.12, R=add(WAIT['R'], (0.0, 0.05, 0.02)), L=add(WAIT['L'], (0.0, 0.04, 0.02)))
+    c.hold(2, 28, Rhand=FIST, Lhand=FIST)
+    c.key(31, Rhand=(0, 0.6, 0, 0), Lhand=(0, 0.6, 0, 0))
+    c.key(38, Rhand=(0, 0.15, 0, 0), Lhand=(0, 0.15, 0, 0))
     return c.keys()
 
 
@@ -1060,7 +1098,7 @@ def catch_wait():
 
 def grab(frame, total, dash=False):
     """Catch (frame 7) and CatchDash (frame 9): the hands draw in and snap into the rocket fists, the arms punch out and
-    the fists fly to the grab point (their boxes ride them), and on a whiff reel back in; the hands return and he
+    the hands fly open to the grab point (their boxes ride them), and on a whiff reel back in, still open; the hands return and he
     recovers from the overreach. ThrowN sits at the hold point in the world from before the grab frame, so a catch
     latches there. The dash grab starts from the run and sits back into the slide (the template's root motion carries
     him) as the fists fire off his arms a short way, since its boxes sit close to him."""
@@ -1139,13 +1177,13 @@ def grab(frame, total, dash=False):
         c.key(27, pel=(0.0, -0.1, 0.03), cyaw=D(-25), cpitch=0.12, R=add(WAIT['R'], (0.0, 0.08, 0.08)), L=add(WAIT['L'], (0.0, 0.06, 0.05)))
     for f in range(g0 - 2, n):
         c.key(f, throw=HOLD_W, throwry=FACE)
-    if dash:
-        c.hold(2, 13, Rhand=FIST, Lhand=FIST)
-        c.key(16, Rhand=OPEN, Lhand=OPEN)
-    else:
-        c.hold(2, 11, Rhand=FIST, Lhand=FIST)
-        c.key(14, Rhand=OPEN, Lhand=OPEN)
-    c.key(g0 + 15, Rhand=(0, 0.2, 0, 0), Lhand=(0, 0.2, 0, 0))
+    # the hands (Michael, 2026-09-30: "The grabs read as rocket PUNCHES, not grabs. They should probably be mostly-open-
+    # palm"): chambered as fists, they open as they launch and fly out open and reaching, the fingers a little cupped,
+    # and stay open on a whiff and on the return (a catch cuts to CatchWait's grip)
+    launch = g0 - 1 if dash else g0 - 2
+    c.hold(2, launch - 2, Rhand=FIST, Lhand=FIST)
+    c.hold(launch, n - 12, Rhand=REACH, Lhand=REACH)
+    c.key(n - 4, Rhand=(0, 0.2, 0, 0), Lhand=(0, 0.2, 0, 0))
     grow_keys(c, {f: 1.0 + (GRAB_PEAK[dash] - 1.0) * k for f, k in GRAB_EASE.items()}, at=g0)
     return c.keys()
 

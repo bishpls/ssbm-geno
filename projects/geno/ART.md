@@ -31,6 +31,13 @@ grabs and grab holds all hang off his bones). Style targets and research boards 
     is good." The size, the swap timing under the glows, the wheeled carriage and the costume rule stay as built.
 - **The Geno Blast (2026-09-29):**
   - SMRPG's flat columns of colour dropping from the sky, a new colour each column, landing in white clouds.
+  - Richer (2026-09-30): each column a glow, a banded band with bright edges and a hot core, shimmering, with a flare at
+    its foot; SMRPG's shaded cartoon cloud and a floor ring on landing. Over the void the column fades into the depths
+    and nothing lands. The tell breathes over a long hold and vanishes cleanly when the mark is cancelled.
+- **The Whirl (2026-09-30):** a stylized sun, a white-gold core with a rim of small straight spikes, facing the camera
+  and rotating; its trail's rings spiked the same way (after the remake's, Michael's reference).
+- **Star Road (2026-09-30):** a burst of small cream-white stars from both hands at the launch and a light trail of them
+  in flight; no damage, and not the gold of the stars that hit.
   - The cast's blue sparkles at his hand.
   - Our own tell: a floor oval and a thin rising beam that widens toward the strike.
 - **The Geno Whirl (2026-09-29):**
@@ -59,7 +66,10 @@ grabs and grab holds all hang off his bones). Style targets and research boards 
     later, the star at the far tip), and the slow ledge attack the Hand Cannon's. Their hands show the weapon forms
     while they fire: the Hand Gun a few frames round each shot, the Hand Cannons on both arms from the draw-back to
     after the recoil.
-  - **Double Punch's rocket fists** leave an unbroken trail of soft grey exhaust puffs along their flight.
+  - **Double Punch's rocket fists** leave an unbroken trail of soft grey exhaust puffs along their flight; **the grabs'**
+    fists launch with the forward throw's rocket star and trail the same exhaust (2026-09-30).
+  - **Up tilt:** his own stars on the arc (a gold star over a glow on each sphere, a star ring at the top, twinkles from
+    the hands), no engine flash. **Neutral air:** a pair of gold stars wheeling round the star core with the spin (2026-09-30).
   - **Their sounds end with the moves** (2026-09-29): the Hand Gun a four-shot burst of SMRPG's rattle, the Hand Cannon
     and Star Gun faded out after the boom and the cascade's first two groups (DESIGN changelog).
   - **And land on the shots:** each key transient is within 0.3 frames of the first active frame. The Hand Cannon's

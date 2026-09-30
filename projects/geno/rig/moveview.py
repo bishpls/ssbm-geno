@@ -63,6 +63,8 @@ def script_timeline(data, n):
 
 def visible(name, groups):
     """Is glTF mesh `name` shown under these visibility groups (rig.FORM_GROUPS; every group defaults to option 0)?"""
+    if name.startswith('fc_'):                          # Geno Flash's cannon: group 0's option 1, off in every move
+        return False
     for s, (ag, fg) in rig.FORM_GROUPS.items():
         lvl = ARM_LEVEL[groups.get(ag, 0)]
         base = [x.format(s=s) if '{' in x else f'{x}_{s}' for x in lvl]

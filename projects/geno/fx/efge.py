@@ -249,6 +249,64 @@ def tex_sunring(n=64):
     return _ia(np.clip(0.5 + 0.5 * band, 0, 1), np.clip(band + inner, 0, 1))
 
 
+def tex_cloud(n=64):
+    """SMRPG's landing cloud: a cluster of round puffs, lit from the top left, a greyer underside and a soft darker rim."""
+    ss = 4
+    m = n * ss
+    yy, xx = np.mgrid[0:m, 0:m].astype(np.float32) / m
+    cover = np.zeros((m, m), np.float32)
+    shade = np.ones((m, m), np.float32)
+    for cx, cy, r in ((0.5, 0.52, 0.26), (0.3, 0.58, 0.19), (0.7, 0.58, 0.19), (0.38, 0.38, 0.17), (0.62, 0.36, 0.18),
+                      (0.18, 0.66, 0.12), (0.82, 0.66, 0.12), (0.5, 0.7, 0.2)):
+        d = np.hypot(xx - cx, yy - cy) / r
+        inside = d < 1
+        cover = np.maximum(cover, inside.astype(np.float32))
+        lit = 1.0 - 0.35 * np.clip((xx - cx + yy - cy) / (2 * r) + 0.5, 0, 1)    # lighter to the top left
+        shade = np.where(inside & (d < 0.92), np.minimum(shade, lit), shade)
+    rim = cover - (np.asarray(Image.fromarray((cover * 255).astype(np.uint8)).resize((m, m)), np.float32) / 255)
+    under = np.clip((yy - 0.55) / 0.3, 0, 1) * 0.25
+    inten = np.clip(shade - under, 0.45, 1.0)
+    big = Image.fromarray(np.dstack([(inten * 255).astype(np.uint8)] * 3 + [(cover * 255).astype(np.uint8)]), 'RGBA')
+    edge = np.asarray(big.split()[3].resize((n, n), Image.LANCZOS), np.float32) / 255
+    small = np.asarray(big.resize((n, n), Image.LANCZOS), np.float32) / 255
+    inner = np.asarray(Image.fromarray((edge * 255).astype(np.uint8)).filter(__import__('PIL.ImageFilter', fromlist=['x']).MinFilter(3)), np.float32) / 255
+    i = small[..., 0] * (1 - 0.35 * np.clip(edge - inner, 0, 1))          # the soft darker outline
+    return _ia(i, edge)
+
+
+def tex_floorring(n=64, squash=0.28):
+    """A shock ring lying on the floor (seen from the side): a bright thin band, squashed."""
+    c = (n - 1) / 2
+    yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
+    r = np.hypot((xx - c) / c, (yy - c) / (c * squash))
+    band = np.clip(1.0 - np.abs(r - 0.82) / 0.12, 0, 1) ** 1.2
+    return _ia(np.clip(0.55 + 0.45 * band, 0, 1), band * (r < 1.0))
+
+
+def tex_spikering(n=64):
+    """The Whirl's trail ring (Michael, 2026-09-30, after the remake's): a ring edged with small straight spikes round its
+    rim, a hollow, darker, translucent centre; squashed to the disc's own oval (whirl_model.LOOK)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import whirl_model
+    squash = {'tilt': 0.67, 'face': 1.0}[whirl_model.LOOK]
+    ss = 4
+    m = n * ss
+    c = m / 2
+    yy, xx = np.mgrid[0:m, 0:m].astype(np.float32)
+    x, y = (xx - c) / c, (yy - c) / (c * squash)
+    r, th = np.hypot(x, y), np.arctan2(y, x)
+    k = whirl_model.SPIKES
+    spike = np.clip(1 - np.abs(((th / (2 * math.pi) * k) % 1.0) - 0.5) * 2 / 0.55, 0, 1)   # 1 on a spike's axis
+    outer = 0.8 + 0.17 * spike                                              # the rim, reaching out in straight points
+    band = (r > 0.62) & (r < outer)
+    inten = np.where(band, 0.85 + 0.15 * spike, 0.3)
+    alpha = np.where(band, 1.0, np.where(r <= 0.62, 0.22, 0.0))
+    img = Image.fromarray(np.dstack([(inten * 255).astype(np.uint8)] * 3 + [(alpha * 255).astype(np.uint8)]), 'RGBA')
+    img = img.resize((n, n), Image.LANCZOS)
+    a = np.asarray(img, np.float32) / 255
+    return _ia(a[..., 0], a[..., 3])
+
+
 _SUNBALL = []
 
 
@@ -271,6 +329,9 @@ TEXTURES = [  # the texture groups, in order: (name, GX format, frames); new gro
     ('bloom', 'IA8', [lambda: tex_bloom()]),                              # Geno Flash's red flash: the sun's shape
     ('starflash', 'IA8', [lambda: tex_starflash()]),                      # its finishing flash: a glowing star
     ('sunring', 'IA8', [lambda: tex_sunring()]),                          # and the round ring round it
+    ('cloud', 'IA8', [lambda: tex_cloud()]),                              # the Blast's landing: SMRPG's white cloud
+    ('spikering', 'IA8', [lambda: tex_spikering()]),                      # the Whirl's trail: a spiked ring
+    ('floorring', 'IA8', [lambda: tex_floorring()]),                      # its shock ring on the floor
 ]
 EXTENSIONS = ['efge_normals']      # appended after Geno's specials, in this order
 
@@ -401,9 +462,9 @@ def puff_star():
 
 # ---- the Geno Whirl (SMRPG: a white-yellow disc trailing fading yellow ovals; the hit explodes, SPR0517: a yellow-white
 # ball and scattered orange dots; the timed press flashes the screen blue). The item code drops a trail ring every few
-# frames of the throw and the recall, and spawns the hit bursts
+# frames of the throw, and spawns the hit bursts
 def whirl_ring():
-    c = Cmd().tex(0).primenv().prim(255, 240, 150, 230).env(200, 140, 20, 0).size(4.2)
+    c = Cmd().tex(0).primenv().prim(255, 240, 150, 230).env(200, 140, 20, 0).size(4.4)
     c.size(3.6, 12).wait(3).prim(255, 200, 60, frames=6).wait(4).prim(a=0, frames=6).wait(6)
     return c.end()
 
@@ -444,9 +505,31 @@ def blast_sparkle(size, life):
 
 
 def blast_cloud(size):
-    """A white cloud puff: pops, billows and fades (SMRPG's landing clouds)."""
-    c = Cmd().tex(0).primenv().prim(255, 255, 255, 255).env(190, 200, 225, 0).size(size * 0.4)
-    c.size(size, 5).rot_rand(0.0, 6.28).wait(8).size(size * 1.2, 10).prim(a=0, frames=10).wait(10)
+    """SMRPG's white landing cloud (texture group cloud): pops, billows out and fades, shaded grey-blue underneath."""
+    c = Cmd().tex(0).primenv().prim(255, 255, 255, 255).env(150, 165, 205, 0).size(size * 0.35)
+    c.size(size, 4).rot_rand(-0.25, 0.5).wait(9).size(size * 1.25, 12).prim(a=0, frames=12).wait(12)
+    return c.end()
+
+
+def blast_ring():
+    """The landing's shock ring on the floor: runs out from under the column and fades."""
+    c = Cmd().tex(0).primenv().prim(255, 255, 245, 255).env(150, 200, 255, 0).size(5.0)
+    c.size(22.0, 11).wait(4).prim(a=0, frames=7).wait(7)
+    return c.end()
+
+
+def blast_vanish_ring():
+    """A cancelled mark (the cannon committed, a ledge grab): the floor ring closes in and is gone."""
+    c = Cmd().tex(0).primenv().prim(220, 235, 255, 230).env(90, 130, 255, 0).size(11.0)
+    c.size(2.0, 7).prim(a=0, frames=7).wait(7)
+    return c.end()
+
+
+def sr_star(size, life):
+    """Star Road's no-damage stars: small, cream-white with a blue rim (the hitting moves' stars are gold), spinning as
+    they shrink and fade (after the Flash's finishing stars)."""
+    c = Cmd().tex(0).primenv().prim(255, 250, 228, 255).env(110, 160, 255, 0).size(size * 0.3).rot_rand(0.0, 6.28)
+    c.size(size, 3).rotate(4.5, life).wait(3).size(size * 0.3, life - 3).wait(life - 9).prim(a=0, frames=6).wait(6)
     return c.end()
 
 
@@ -595,9 +678,10 @@ def generators():
                          draw_star(size)))
         gens.append((f'DRAW{lv}_FLARE', dict(type=DISC, texg=TEX['flash'], genlife=1, life=DRAW_T + 9, kind=BLEND_ONE,
                                              random=-1, size=0.1), draw_flare(flare)))
-    # the Whirl: the trail ring (the item code drops one every few frames of the throw and the recall), the hit burst,
+    # the Whirl: the trail ring (the item code drops one every few frames of the throw), the hit burst,
     # the shield grind's sparks, the crit's blue flash
-    gens.append(('WHIRL_RING', dict(type=DISC, texg=TEX['ring'], genlife=1, life=16, random=-1, size=4.2), whirl_ring()))
+    gens.append(('WHIRL_RING', dict(type=DISC, texg=TEX['spikering'], genlife=1, life=16, random=-1, size=4.4),
+                 whirl_ring()))
     ball, sparks = FIRST + len(gens), FIRST + len(gens) + 1
     gens.append(('WHIRL_HIT_BALL', dict(type=DISC, texg=TEX['puff'], genlife=1, life=15, kind=BLEND_ONE, random=-1, size=1),
                  whirl_ball(5.5, ((255, 255, 235), (255, 200, 60), (255, 150, 40)))))
@@ -620,7 +704,7 @@ def generators():
     gens.append(('BLAST_TELL', dict(type=DISC, texg=TEX['flash'], genlife=1, life=20, kind=FRICTION, fric=0.95,
                                     v=[0, 0.7, 0], radius=5.0, angle=0.25, random=-2, size=0.3), blast_sparkle(1.0, 20)))
     cloud, lspark = FIRST + len(gens), FIRST + len(gens) + 1
-    gens.append(('BLAST_LAND_CLOUD', dict(type=DISC, texg=TEX['puff'], genlife=1, life=23, kind=FRICTION, fric=0.88,
+    gens.append(('BLAST_LAND_CLOUD', dict(type=DISC, texg=TEX['cloud'], genlife=1, life=23, kind=FRICTION, fric=0.88,
                                           v=[0, 0.5, 0], radius=5.0, angle=math.pi / 2, random=-7, size=1.0),
                  blast_cloud(6.0)))          # as wide as the column, as SMRPG's clouds are
     gens.append(('BLAST_LAND_SPARK', dict(type=DISC, texg=TEX['flash'], genlife=1, life=18, kind=FRICTION | GRAVITY,
@@ -669,6 +753,26 @@ def generators():
                                           v=[0, 0, 3.2], radius=FLASH_FIN_R * 0.7, angle=math.pi / 2, random=-7, size=3.4),
                  flash_fin_spark()))
     gens.append(('FLASH_FINISH', dict(type=DISC, genlife=1, life=1, random=-1, size=1), root([fstar, fring, fsparks])))
+    # the Blast, richer (2026-09-30): the landing's floor ring (added to BLAST_LAND below)
+    bring = FIRST + len(gens)
+    gens.append(('BLAST_LAND_RING', dict(type=DISC, texg=TEX['floorring'], genlife=1, life=11, kind=BLEND_ONE, random=-1,
+                                         size=5.0), blast_ring()))
+    k = next(i for i, g in enumerate(gens) if g[0] == 'BLAST_LAND')
+    kids = [FIRST + i for i, g in enumerate(gens) if g[0] in ('BLAST_LAND_CLOUD', 'BLAST_LAND_SPARK')] + [bring]
+    gens[k] = ('BLAST_LAND', gens[k][1], root(kids))
+    # a cancelled mark's vanish (itgeno.c itGe_BlastVanish): the ring closes in, a few blue sparkles lift away
+    vring = FIRST + len(gens)
+    gens.append(('BLAST_VANISH_RING', dict(type=DISC, texg=TEX['floorring'], genlife=1, life=7, kind=BLEND_ONE, random=-1,
+                                           size=11.0), blast_vanish_ring()))
+    gens.append(('BLAST_VANISH_SPARK', dict(type=DISC, texg=TEX['flash'], genlife=1, life=14, kind=FRICTION, fric=0.9,
+                                            v=[0, 0.9, 0], radius=6.0, angle=0.3, random=-4, size=0.8),
+                 blast_sparkle(0.8, 14)))
+    gens.append(('BLAST_VANISH', dict(type=DISC, genlife=1, life=1, random=-1, size=1), root([vring, vring + 1])))
+    # Star Road (2026-09-30): no-damage stars, a burst at the launch from each hand and a light trail in flight
+    gens.append(('SR_BURST', dict(type=DISC, texg=TEX['star'], genlife=1, life=20, kind=FRICTION, fric=0.87,
+                                  v=[0, 0, 1.5], radius=0.8, angle=math.pi / 2, random=-5, size=1.6), sr_star(1.6, 20)))
+    gens.append(('SR_TRAIL', dict(type=DISC, texg=TEX['star'], genlife=1, life=16, kind=FRICTION, fric=0.9,
+                                  v=[0, 0, 0.25], radius=0.6, angle=math.pi / 2, random=-1, size=1.2), sr_star(1.2, 16)))
     return gens
 
 

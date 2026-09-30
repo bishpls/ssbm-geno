@@ -1,5 +1,5 @@
 """Whirl lab: Geno Whirl's phases in game. The outbound hit, the shield grind (three hits, 13 frames apart), the hover,
-the recall, the bend, and the follow-in (throw, dash after it, short-hop nair into the grinding shield: DESIGN v1.2 §7).
+the bend, and the follow-in (throw, dash after it, short-hop nair into the grinding shield: DESIGN v1.2 §7).
     .venv/bin/python tools/machinima/melee/build.py projects/geno whirl_lab
 """
 import json, os, sys
@@ -26,7 +26,6 @@ SHIELD_GRAB = [(0, 30, (0, 0), (0, 0), 'R')] + [(k, 1, (0, 0), (0, 0), 'R+Z' if 
 TESTS = [
     ('whirl_hit', -30, 15, [(0, 3, (60, 0), (0, 0), 'B')], []),
     ('whirl_shield', -30, 5, [(0, 3, (60, 0), (0, 0), 'B')], [(0, 110, (0, 0), (0, 0), 'R')]),
-    ('whirl_recall', -30, 70, [(0, 3, (60, 0), (0, 0), 'B'), (60, 3, (60, 0), (0, 0), 'B')], []),
     ('whirl_up', -30, 70, [(0, 3, (60, 70), (0, 0), 'B')], []),
     ('follow_in', -40, 5, [(0, 3, (60, 0), (0, 0), 'B'), (26, 20, (80, 0), (0, 0), ''), (46, 2, (0, 0), (0, 0), 'X'),
                            (49, 2, (0, 0), (0, 0), 'A')], [(0, 120, (0, 0), (0, 0), 'R')]),
@@ -51,7 +50,7 @@ TESTS = [
     ('whirl_vs_fsmash', -30, 22, [(0, 3, (60, 0), (0, 0), 'B')], [(18, 3, (0, 0), (-80, 0), '')]),
     # stored stars fade: two stars stored (shield), 170 frames later B fires the one that's left
     ('store_decay', -30, 70, [(0, 34, (0, 0), (0, 0), 'B'), (33, 3, (0, 0), (0, 0), 'R'), (210, 2, (0, 0), (0, 0), 'B')], []),
-    # side B locked: an uncaught Whirl ends ~97 frames in; side B just after is refused, 40 frames later it works
+    # side B locked (30 frames after every Whirl ends): one ends ~97 frames in; side B just after is refused, 40 frames later it works
     ('whirl_lock', -30, 70, [(0, 3, (60, 0), (0, 0), 'B'), (104, 3, (60, 0), (0, 0), 'B'), (140, 3, (60, 0), (0, 0), 'B')], []),
     # no Blast below ledge height: off the right edge, falling, down B is refused
     ('blast_ledge', 60, -60, [(0, 12, (80, 0), (0, 0), ''), (12, 2, (80, 0), (0, 0), 'X'), (14, 8, (80, 0), (0, 0), ''),

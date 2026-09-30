@@ -117,7 +117,8 @@ static class TexKit
                 if (tb.Length != ta.TlutCount) throw new Exception($"palette array holds {tb.Length}, count says {ta.TlutCount}");
                 if (!tlut.TryGetValue((tb._s, t.TlutData._s), out ti))
                 {
-                    var t0 = tb[0].Data;
+                    // the widest existing palette (the stage select's first is a 2-colour "locked" placeholder)
+                    var t0 = tb.Array.OrderByDescending(x => x.Data.ColorCount).First().Data;
                     if (t0.Format != t.TlutData.Format || t0.ColorCount != t.TlutData.ColorCount)
                         throw new Exception($"palette {t.TlutData.Format}/{t.TlutData.ColorCount} into {t0.Format}/{t0.ColorCount}");
                     t.TlutData.GXTlut = t0.GXTlut;

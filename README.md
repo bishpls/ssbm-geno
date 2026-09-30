@@ -5,7 +5,9 @@ wholesale-new fighter. He isn't a costume or a clone over an existing character:
 model, animations, moveset, special moves, effects, sounds, menu art, costumes and Kirby copy ability, all built on the
 [doldecomp Melee decompilation](https://github.com/doldecomp/melee).
 
-A moveset demo reel is attached to this repository's first release.
+A moveset demo reel is attached to this repository's first release. A new stage, the Forest Maze (a competitive
+starter in SMRPG's forest), is in progress: its greybox is playable, in its own stage-select slot, with our own
+arrangement of the Forest Maze theme.
 
 This is a non-commercial fan project. Geno and *Super Mario RPG* belong to Nintendo and Square Enix, and *Super Smash
 Bros. Melee* belongs to Nintendo and HAL Laboratory. **This repository contains no game data**: no disc files, no
@@ -21,10 +23,12 @@ it, and a changelog of each design call.
 - **Neutral B, Geno Beam:** tap for a Finger Shot volley. Hold to charge through three stars; the timed release, as in
   SMRPG, adds power and a burst of rainbow stars. It fires itself after the third star and can be shield-cancelled, but
   not stored.
-- **Side B, Geno Whirl:** a spinning disc of light that grinds shields and can be recalled.
+- **Side B, Geno Whirl:** a spinning, spiked sun that grinds shields. Pressing side B again as it hits is SMRPG's
+  timed hit: more damage and a small launch into a combo.
 - **Up B, Star Road:** a flight in sixteen directions.
-- **Down B, Geno Blast / Geno Flash:** release to mark the floor and call columns of light down from the sky; hold to
-  the third star and he transforms into his cannon and fires a sun.
+- **Down B, Geno Blast / Geno Flash:** the mark appears on the floor as soon as he casts, so the opponent can see it;
+  release to call columns of light down onto it (three at the second star). Hold to the third star and he transforms
+  into his cannon and fires a sun.
 - **Normals:** his weapon forms from SMRPG. Hand Gun, Star Gun and Hand Cannon shots, and rocket fists on the forward
   smash, the grabs and a long, disjointed down air. Each shot draws its reach, measured against the cast's own
   hit effects.
@@ -63,7 +67,9 @@ In outline:
 2. Build Geno's fighter files and install them, as in HANDOFF §4 ("The production model build").
 3. Build the effect file: `projects/geno/fx/efge.py --install`.
 4. Build and install the sound bank, and the menus: HANDOFF §4 and `projects/geno/sound/`.
-5. Play: `projects/geno/play.sh` builds the game and opens it in Dolphin.
+5. The Forest Maze stage (optional): `projects/geno/stage/` (`stage_spec.py`, datkit `stage-build`, `music.py`), then
+   `projects/geno/stage/install.sh`.
+6. Play: `projects/geno/play.sh` builds the game and opens it in Dolphin.
 
 Every build step keeps the original game rebuildable: `tools/machinima/melee/build.py --matching` must still produce
 the retail `main.dol`.

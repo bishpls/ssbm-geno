@@ -27,9 +27,11 @@
 #include <melee/if/ifall.h>
 #include <melee/it/it_26B1.h>
 #include <melee/it/item.h>
+#include <melee/it/kinds/itfoxlaser.h>
 #include <melee/it/types.h>
 #include <melee/lb/lbaudio_ax.h>
 #include <melee/mn/mncharsel.h>
+#include <melee/mn/mnstagesel.h>
 #include <melee/pl/forward.h>
 #include <melee/pl/player.h>
 #include <melee/pl/plstale.h>
@@ -165,7 +167,7 @@ void director_boot_frame(void)
     int port, i;
     u8 mode = gm_GetCurrentGameMode(), scene = gm_GetCurrentSceneIndex();
     if (mode != last_mode || scene != last_scene) {
-        OSReport("SCENE %d mode %d scene %d\n", boot_F, mode, scene);
+        OSReport("SCENE %d mode %d scene %d stkind %d\n", boot_F, mode, scene, (int) Stage_80225194());
         last_mode = mode;
         last_scene = scene;
         if (dir_results_music && F > 0) {
@@ -205,7 +207,20 @@ void director_boot_frame(void)
         ps->nml_subStickY = p->cy / 80.0f;
         ps->nml_analogL = ps->nml_analogR = p->trig / 140.0f;
     }
+    if (dir_boot_mode != GM_DEBUG_VS && boot_F == dir_len) {
+        OSReport("DIRECTOR MENU END %d\n", boot_F); /* a menu test's length: dolphin.py --until stops here */
+    }
     menu_goto();
+    {
+        /* the stage select (menu tests): the hovered entry and the cursor, every 4 frames and on each change */
+        static int last_hover = -2;
+        f32 xy[2];
+        int count, hover = mnStageSel_DebugState(xy, &count);
+        if (hover >= 0 && (hover != last_hover || boot_F % 4 == 0)) {
+            OSReport("SSS %d hover %d cursor %.2f %.2f stages %d\n", boot_F, hover, xy[0], xy[1], count);
+        }
+        last_hover = hover;
+    }
     show_coll();
     boot_F++;
 }
@@ -773,6 +788,27 @@ static void run_cue(const DirCue* c)
         OSReport("SFX %d id %d voice %d\n", F - DIR_SLATE, (int) c->a,
                  lbAudioAx_800237A8((int) c->a, c->b > 0.0f ? (int) c->b : 0x7F, 0x40));
         break;
+    case DIR_SHOOT:
+        if (fp != NULL) {
+            int packed = (int) c->a;
+            int kind = (packed & 4095) >> 4, state = packed & 15;
+            f32 speed = (f32) (packed >> 12) / 10.0f;
+            p = fp->cur_pos;
+            p.x += fp->facing_dir * c->b;
+            p.y += c->c;
+            p.z = 0.0f;
+            it_8029C504(Player_GetEntity(c->port), &p, state, kind, fp->facing_dir < 0.0f ? 3.14159265f : 0.0f, speed);
+            OSReport("SHOOT %d %d kind %d state %d %.2f %.2f %.1f\n", F - DIR_SLATE, c->port, kind, state, p.x, p.y, speed);
+        }
+        break;
+    case DIR_ITEMS: {
+        HSD_GObj* ig;
+        for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL; ig = ig->next) {
+            Item* ip = (Item*) ig->user_data;
+            OSReport("ITEMS %d kind %d %.2f %.2f\n", F - DIR_SLATE, (int) ip->kind, ip->pos.x, ip->pos.y);
+        }
+        break;
+    }
     case DIR_GRDUMP: {
         MapCollData* cd = mpLib_8004D164();
         CollLine* ln = mpGetGroundCollLine();
