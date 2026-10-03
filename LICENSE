@@ -1,0 +1,68 @@
+Geno for Super Smash Bros. Melee: licences
+==========================================
+
+This repository holds two kinds of work, under two licences.
+
+1. Code and tools: the MIT License (below)
+------------------------------------------
+Every program, script and build file: everything under tools/, the source code under projects/ (.py, .sh, .cs, .c, .h,
+.js, .lua and the like), the director, datkit, and our own additions to the decompilation in decomp/geno.patch.
+
+2. Documentation, art, design and audio: CC BY-NC 4.0 (LICENSES/CC-BY-NC-4.0.txt)
+---------------------------------------------------------------------------------
+The documents (README.md, MAKING-OF.md, HOW-TO-PLAY.md, every other .md file, including DESIGN.md, ART.md and the
+research), the design itself (the moveset, its frame data and the character and stage designs as these documents and
+the code describe them), our own art data (for example the ♡ and ♪ glyphs in decomp/geno.patch), and the audio in
+audio/: Creative Commons Attribution-NonCommercial 4.0 International.
+https://creativecommons.org/licenses/by-nc/4.0/
+
+Attribution: "Geno for Super Smash Bros. Melee, directed by Michael Bishop, built with Claude Code"
+(https://github.com/bishpls/ssbm-geno).
+
+What these licences don't cover
+-------------------------------
+This is a non-commercial fan project. Geno, Super Mario RPG and their music belong to Nintendo and Square Enix; Super
+Smash Bros. Melee belongs to Nintendo and HAL Laboratory. We license only our own work:
+- The audio in audio/ is our own arrangement and recording of melodies from Super Mario RPG (music by Yoko Shimomura).
+  CC BY-NC 4.0 covers our arrangement and our recording, not the compositions.
+- Files the build tools produce from your own Melee disc or Super Mario RPG cartridge (fighter, stage, menu and sound
+  files, the game build) contain or derive from that game data. They aren't ours to license and must not be shared.
+- The player patch attached to a release (an xdelta) carries a compiled build and game-derived data. It's offered for
+  use with your own copy of the game only, and isn't covered by either licence.
+
+Third-party software
+--------------------
+None of these is included in this repository except the two fonts.
+- doldecomp/melee (https://github.com/doldecomp/melee), the Melee decompilation the patch applies to. It has no licence
+  file at the base commit (64e41ca). decomp/geno.patch carries the unchanged lines around each change (diff context)
+  and the lines it edits; get the decompilation itself from upstream.
+- HSDLib / HSDRaw (https://github.com/Ploaj/HSDLib), MIT License, Copyright (c) 2021 Ploaj. datkit builds on it; clone it
+  into vendor/HSDLib (HOW-TO-PLAY.md).
+- Archivo (The Archivo Project Authors, Omnibus-Type), SIL Open Font License 1.1: engine/fonts/Archivo.ttf, licence in
+  engine/fonts/OFL-archivo.txt (the review boards).
+- Big Shoulders Display (The Big Shoulders Project Authors), SIL Open Font License 1.1:
+  engine/fonts/BigShouldersDisplay.ttf, licence in engine/fonts/OFL-bigshouldersdisplay.txt (the Forest Maze's
+  stage-select name).
+- The audio in audio/ was played by third-party instruments, credited in audio/README.md. The Forest Maze track's drums
+  require this credit: "Aasimonster2 drumkit by the DrumGizmo team, CC-BY 4.0".
+- Used, not distributed: decomp-toolkit (dtk), wibo, the Metrowerks CodeWarrior compilers (doldecomp's configure.py
+  downloads them), Dolphin, Blender, .NET, Mesen2, blargg's snes_spc (fetched and patched by the sound capture),
+  vgmstream, Praat (parselmouth), xdelta3 and the Python packages in requirements.txt. The music renderer's instruments
+  are listed with their licences in projects/geno/music/README.md.
+
+The MIT License
+---------------
+Copyright (c) 2026 Michael Bishop
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
