@@ -243,7 +243,7 @@ patch was made from.
 | Challenger silhouette | Not run | needs an in-game render; from the release's render, `build.sh` rebuilds `NtAppro.usd` identically |
 | Music from `audio/` | Verified | both streams identical |
 | Menu art | Partly | the in-game renders weren't run; the placeholder path builds and plays; from the release's renders, the four menu files rebuild identically |
-| The play build (`play.sh`, without opening Dolphin) | Verified | compiles and installs in 1 min 19 s. With the playtest's director, a fresh clone rebuilds the release's game byte for byte (SHA-1 `83fbbc1f9a69…`) |
+| The play build (`play.sh`, without opening Dolphin) | Verified | compiles and installs in 1 min 19 s. A fresh doldecomp clone with this repository's patch and director builds the release patch's game byte for byte (`main.dol` SHA-1 `7f9f2dd4faf4fdb9701a54654dcaff0c98c9a8cf`) |
 | Playing the clean build | Verified | Dolphin 2606a: the character select with Geno, the Forest Maze picked and loaded, no errors |
 | Re-rendering the music | Not run | the instruments are about 7 GB; renders aren't bit-repeatable (`projects/geno/music/README.md`) |
 | Linux, Windows | Not tested | |
