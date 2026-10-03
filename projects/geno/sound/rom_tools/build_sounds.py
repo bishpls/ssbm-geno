@@ -5,8 +5,8 @@ import os, sys, json, subprocess, tempfile
 import numpy as np, soundfile as sf, librosa, pyloudnorm as pyln
 from scipy.signal import butter, sosfiltfilt
 
-HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SFX = os.path.expanduser('~/games/melee/work/sfx')
+HERE = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))   # the bank's work folder (game audio: outside the repo)
+SFX = os.path.join(os.path.expanduser(os.environ.get('MELEE_WORK', '~/games/melee/work')), 'sfx')   # rounds 1-2's clips
 CLIPS = os.path.join(SFX, 'clips')
 SR_IN, SR = 48000, 32000
 PY = sys.executable

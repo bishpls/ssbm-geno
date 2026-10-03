@@ -7,8 +7,8 @@ import numpy as np, soundfile as sf, librosa
 sys.path.insert(0, os.path.dirname(__file__))
 from build_sounds import fade_in as _fi, fade_out as _fo, hp as _hp, momentary_max, level, PY, SFX
 
-HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-ROM = os.path.expanduser('~/games/smrpg/sfx/geno')
+HERE = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))   # the bank's work folder (game audio: outside the repo)
+ROM = os.path.join(os.path.expanduser(os.environ.get('SMRPG_SFX', '~/games/smrpg/sfx')), 'geno')   # capture/
 SR = 32000
 T6 = 6 / 60.0988                     # 6 NTSC frames (the driver's frame), the Hand Cannon / Blast retrigger period
 
@@ -38,7 +38,7 @@ def grain_charge(x, target_s):
     with tempfile.TemporaryDirectory() as d:
         i, o = os.path.join(d, 'in.wav'), os.path.join(d, 'out.wav')
         sf.write(i, x, SR, subtype='PCM_16')
-        r = subprocess.run([PY, os.path.join(SFX, 'work/scripts/grain_retime.py'), i, o, str(target_s)],
+        r = subprocess.run([PY, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'grain_retime.py'), i, o, str(target_s)],
                            capture_output=True, text=True, check=True)
         y, _ = sf.read(o)
     return (y.mean(1) if y.ndim > 1 else y), r.stdout.strip()

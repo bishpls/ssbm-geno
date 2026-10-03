@@ -100,6 +100,19 @@ static class MenusStage
         // an outline extrusion (the flat front and back faces left out: head-on they fill the circle as one bright
         // slab; the vanilla holograms read as edges), at two thirds of Battlefield's hologram scale
         const float k0 = 0.045f; float y0 = 1.81f + 40 * 0.068f, z0 = -3.2f, zk = 0.0615f;
+        // a spec with its own "hologram" (low-poly faces, per-material batches of triangles) uses it whole, with a normal
+        // per triangle; otherwise the stage gobj's faces, the flat front and back faces left out
+        if (spec.TryGetProperty("hologram", out var holo) && holo.GetArrayLength() > 0)
+            foreach (var face in holo.EnumerateArray())
+                foreach (var t in face.GetProperty("tris").EnumerateArray())
+                {
+                    var P = t.EnumerateArray().Select(p => new Vector3((float)p[0].GetDouble(), (float)p[1].GetDouble(), (float)p[2].GetDouble())).ToArray();
+                    var n = Vector3.Normalize(Vector3.Cross(P[1] - P[0], P[2] - P[0]));
+                    if (float.IsNaN(n.X)) continue;
+                    foreach (var q in P)
+                        mesh.Add(new GX_Vertex { POS = new GXVector3(q.X * k0, y0 + q.Y * k0, z0 + q.Z * zk), NRM = new GXVector3(n.X, n.Y, n.Z), TEX0 = new GXVector2((q.X + 70) / 140f, (q.Y + 60) / 100f) });
+                }
+        else
         foreach (var go in spec.GetProperty("gobjs").EnumerateArray())
         {
             if (go.GetProperty("kind").GetString() != "stage") continue;

@@ -749,8 +749,10 @@ Everything a vanilla character has that Geno doesn't yet (placeholders count as 
 - **Victory fanfare:** his own since 2026-09-28: `ff_geno.hps` (7.99 s, -15.0 LUFS like Mario's), our orchestral
   arrangement of Super Mario RPG's post-battle level-up music (ROM track 9, "Victory"), transcribed from the cartridge's
   sequence data and checked against its sound driver. The decomp plays it as HPS id 0x63 (`LBAX_HPS_GENO_FANFARE`, past the
-  vanilla table, so 0x62 stays "no music"); a disc without the file plays Mario's. The file and its sources are game-derived
-  and stay in `~/games/melee/work/music/fanfare/` (NOTES.md there); `tools/machinima/melee/audio/hps.py` builds the stream.
+  vanilla table, so 0x62 stays "no music"); a disc without the file plays Mario's. Its sources are in
+  `projects/geno/music/fanfare/` (since 2026-10-02; the cartridge is read only for the notes, and the render uses only CC0
+  instruments), and the rendered stream ships in the public repo's `audio/` (Michael, 2026-10-02);
+  `tools/machinima/melee/audio/hps.py` builds the stream.
   `victory_lab.py` hears it (the director turns the music back on for the results).
 - **Voice and character sounds:** he's silent, as in Super Mario RPG. Mario's voice (jumps, dodges, taunt, ledge, damage and
   KO cries, his victory poses, the crowd's "Ma-ri-o!") was still in the template's voice table and scripts until 2026-09-27;

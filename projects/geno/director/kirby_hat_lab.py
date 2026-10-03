@@ -82,7 +82,7 @@ if MODE == 'costumes':
     seg('crouch', 70)(lambda t0: (solo(t0), f.port(0).crouch(t0 + 5, 45)))
     seg('jumps', 150)(lambda t0: (solo(t0), [f.port(0).hold(t0 + k, 3, btn='X') for k in (5, 30, 50, 70, 90)]))
     seg('tap', 90)(lambda t0: (solo(t0), f.port(0).hold(t0 + 5, 3, btn='B')))
-    seg('charge', 150)(lambda t0: (solo(t0), f.port(0).hold(t0 + 5, 70, btn='B')))
+    seg('charge', 150)(lambda t0: (solo(t0), f.port(0).hold(t0 + 5, 79, btn='B')))      # v1.5: the third star's timed release
     seg('air_charge', 140)(lambda t0: (solo(t0), f.port(0).hold(t0 + 3, 6, btn='X'), f.port(0).hold(t0 + 13, 26, btn='B')))
     seg('taunt', 200)(lambda t0: (solo(t0), f.port(0).taunt(t0 + 5), f.status(t0 + 60, 0), f.status(t0 + 190, 0)))
 

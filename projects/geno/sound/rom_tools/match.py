@@ -6,9 +6,9 @@ import os, sys, glob, json
 import numpy as np, soundfile as sf, librosa
 from scipy.signal import fftconvolve
 
-HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+HERE = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))
 CLEAN = os.path.join(HERE, 'src_clean')
-CLIPS = os.path.expanduser('~/games/melee/work/sfx/clips')
+CLIPS = os.path.join(os.path.expanduser(os.environ.get('MELEE_WORK', '~/games/melee/work')), 'sfx', 'clips')
 SR = 32000; HOP = 320        # 10 ms frames
 
 def load(path):

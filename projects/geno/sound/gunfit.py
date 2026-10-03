@@ -35,8 +35,9 @@ import json, os, sys
 import numpy as np
 import soundfile as sf
 
-SRC = os.path.expanduser('~/games/melee/work/sfxbank/build')
-TIMED = os.path.expanduser('~/games/melee/work/sfxbank/timed/timed.json')
+SFXBANK = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))
+SRC = os.path.join(SFXBANK, 'build')
+TIMED = os.path.join(SFXBANK, 'timed', 'timed.json')
 FPS = 60.0
 
 # (sound id, name, source, keep seconds, fade start seconds, the source's id, why[, start seconds])
@@ -66,7 +67,7 @@ def cut(x, sr, keep, fade0, start=0.0):
 
 
 # ---- 550061: one chunky single-shot blast (the back throw)
-SINGLE = os.path.expanduser('~/games/smrpg/sfx/geno/extra/HANDCANNON_SINGLE.wav')   # ROM 109 fired once (the boom)
+SINGLE = os.path.join(os.path.expanduser(os.environ.get('SMRPG_SFX', '~/games/smrpg/sfx')), 'geno', 'extra', 'HANDCANNON_SINGLE.wav')   # ROM 109 fired once (the boom)
 SHOT_RATE = 22050             # Melee's rate for its short hits; the bank has 8000 bytes of its booking left
 SHOT = dict(pitch=-2.0,       # semitones: the SMRPG boom a little heavier, its falling ring kept
             thump=(92.0, 44.0, 0.055, 0.30), thump_db=-1.0,   # a sine sweeping 92 -> 44 Hz, 55 ms decay, 0.30 s long
@@ -113,7 +114,7 @@ def shot(p=SHOT):
 
 
 def main():
-    out = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else '~/games/melee/work/sfxbank/gunfit')
+    out = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else os.path.join(SFXBANK, 'gunfit'))
     os.makedirs(out, exist_ok=True)
     entries = json.load(open(TIMED))
     for sid, name, src, keep, fade0, orig, why, *start in CUTS:

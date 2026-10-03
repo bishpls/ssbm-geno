@@ -7,8 +7,8 @@
 The director logs SSS (the hovered entry and cursor), SCENE (with the selected StKind) and the stage's GRFOREST INIT.
     SSS_RUN=flow .venv/bin/python tools/machinima/melee/build.py projects/geno/stage sss_forest
     DOLPHIN_SLOTS=2 .venv/bin/python tools/machinima/dolphin.py run $MELEE_DISC/sys/main.dol RUN --audioonly --until 'DIRECTOR MENU END' --quiet
-The cursor starts at (0, -13) and moves 0.03 x (|stick| - 30) a frame; the Forest Maze's icon is at (-11.2, -1.9) (under
-Random) and Random's at (-14.1, 3.6) (MnSlMap.usd PositionModel).
+The cursor starts at (0, -13) and moves 0.03 x (|stick| - 30) a frame; the Forest Maze's icon is at (-4.0, -9.1) (the bottom
+row's left end) and Random's at (-14.1, 3.6) (MnSlMap.usd PositionModel).
 """
 import os, sys
 from dsl import Menu
@@ -51,18 +51,11 @@ m.goto(215, 1, 110, 'falco')
 m.press(330, 1, 'A')
 m.press(360, 0, 'START')
 if run == 'look':                              # Battlefield first (a vanilla hologram at the same scale)
-    m.hold(560, 0, 4, stick=(40, 40))          # -> (1.2, -11.8)
-    m.hold(564, 0, 9, stick=(0, 40))           # -> (1.2, -9.1): Battlefield
-    m.hold(700, 0, 8, stick=(-80, 0))          # -> x -10.8
-    m.hold(708, 0, 1, stick=(-40, 0))          # -> x -11.1
-    m.hold(709, 0, 4, stick=(0, 80))           # -> y -3.1
-    m.hold(713, 0, 4, stick=(0, 40))           # -> y -1.9: the Forest Maze, under RANDOM
+    t = goto(m, 560, (0.0, -13.0), (1.3, -9.1))
+    goto(m, 700, (1.3, -9.1), (-4.0, -9.1))    # the Forest Maze, at the bottom row's left end
     a_at = 860
 else:
-    m.hold(560, 0, 8, stick=(-80, 0))          # -> x -12.0
-    m.hold(568, 0, 3, stick=(40, 0))           # -> x -11.1
-    m.hold(571, 0, 6, stick=(0, 80))           # -> y -4.0
-    m.hold(577, 0, 7, stick=(0, 40))           # -> y -1.9: the Forest Maze
+    goto(m, 560, (0.0, -13.0), (-4.0, -9.1))
     a_at = 620
 m.press(a_at, 0, 'A')
 t = a_at + int(MATCH_S * 60) + 300              # the load, then the match

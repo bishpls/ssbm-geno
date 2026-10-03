@@ -61,10 +61,10 @@ index 77a02ae..c0a1525 100644
       * Current framing extents, eased toward #CmSubject::target_ext by 0.5 per
 diff --git a/src/melee/director/director.c b/src/melee/director/director.c
 new file mode 100644
-index 0000000..53bd25c
+index 0000000..7328fc7
 --- /dev/null
 +++ b/src/melee/director/director.c
-@@ -0,0 +1,902 @@
+@@ -0,0 +1,1574 @@
 +/* director.c: the runtime half of the machinima director (see director.h). C89, prototypes required (-requireprotos). */
 +#include "director.h"
 +
@@ -75,6 +75,10 @@ index 0000000..53bd25c
 +#include <melee/ft/ftcommon.h>
 +#include <melee/ft/ftwaitanim.h>
 +#include <melee/ft/ftcolanim.h>
++#include <melee/ft/ft_0C31.h>
++#include <melee/ft/ft_0D31.h>
++#include <melee/ft/ftmetal.h>
++#include <melee/ft/ftanim.h>
 +#include <melee/ft/ftdevice.h>
 +#include <melee/ft/ftlib.h>
 +#include <melee/ft/ftparts.h>
@@ -82,6 +86,7 @@ index 0000000..53bd25c
 +#include <melee/ft/types.h>
 +#include <melee/ft/kinds/ftCommon/types.h>
 +#include <melee/gm/forward.h>
++#include <melee/gm/gm_16F1.h>
 +#include <melee/gm/gm_1A3F.h>
 +#include <melee/gm/gmmain_lib.h>
 +#include <melee/gm/gmscene.h>
@@ -89,9 +94,22 @@ index 0000000..53bd25c
 +#include <melee/gr/ground.h>
 +#include <melee/gr/stage.h>
 +#include <melee/gr/types.h>
++#include <melee/gr/grcastle.h>
++#include <melee/lb/lb_00B0.h>
 +#include <melee/mp/mplib.h>
 +#include <melee/mp/types.h>
 +#include <melee/if/ifall.h>
++#include <melee/if/ifstatus.h>
++#include <melee/if/iftime.h>
++#include <melee/if/ifmagnify.h>
++#include <melee/if/ifhazard.h>
++#include <melee/if/if_2FD9.h>
++#include <melee/if/ifcoget.h>
++#include <melee/gm/gmmain_lib.h>
++#include <melee/it/itzako.h>
++#include <melee/ef/eflib.h>
++#include <melee/it/kinds/itnokonoko.h>
++#include <melee/it/kinds/itpatapata.h>
 +#include <melee/it/it_26B1.h>
 +#include <melee/it/item.h>
 +#include <melee/it/kinds/itfoxlaser.h>
@@ -106,6 +124,7 @@ index 0000000..53bd25c
 +#include <sysdolphin/baselib/cobj.h>
 +#include <sysdolphin/baselib/controller.h>
 +#include <sysdolphin/baselib/gobj.h>
++#include <sysdolphin/baselib/perf.h>
 +#include <sysdolphin/baselib/jobj.h>
 +#include <math.h>
 +#include <string.h>
@@ -115,6 +134,9 @@ index 0000000..53bd25c
 +static void director_update(void);
 +static void put_pad(int port, const DirPad* p);
 +static void put_camera(int s);
++extern HSD_CObj* cm_804D6464;  /* camera.c: the camera a screen KO is placed against (DIR_GLASS) */
++static int glass_sync;          /* DIR_GLASS: keep cm_804D6464 on the director's camera */
++static int game_cam;            /* DIR_GAMECAM: the game's own camera is running */
 +static void cam_abs(const DirCam* k, Vec3* eye, Vec3* at);
 +static void run_cue(const DirCue* c);
 +static void slate(int on);
@@ -125,6 +147,7 @@ index 0000000..53bd25c
 +static void show_coll(void);
 +
 +static int F;                 /* game frames since match start */
++static int perf_log;          /* DIR_PERF: log the engine's frame timings */
 +static s32 crowd_last[3] = { -1, -1, -1 }; /* the crowd state last logged (CROWD lines) */
 +static int s_end;             /* the script's last frame + 1 (a DIR_END cue can shorten it) */
 +static int done;
@@ -135,7 +158,31 @@ index 0000000..53bd25c
 +static s32 last_msid[4];
 +static s32 last_held[4];      /* whether each port held an item last frame (HOLD / LETGO lines) */
 +static s32 last_vis[4];       /* each port's visibility-group options last frame, packed 4 bits a group (VIS lines) */
-+static Vec3 trk[4];           /* smoothed tracking points: [DIR_MID], [DIR_P0], [DIR_P1] */
++static Vec3 trk[7];           /* smoothed tracking points: [DIR_MID], [DIR_P0] .. [DIR_P3], [DIR_ALL] */
++static int slow_n;            /* DIR_SLOW: run one game frame in slow_n (0/1: normal) */
++static int frozen;            /* DIR_FREEZE on */
++static int itrace_until = -1; /* DIR_ITEMTRACE */
++static HSD_GObj* pin_g[16];   /* DIR_ITEMPIN: the pinned items, their x and their damage when pinned */
++static f32 pin_x[16];
++static f32 pin_y[16];
++static int pin_mode;          /* 1: x only (walk in place), 2: x and y, velocity zeroed (a box floating in the air) */
++static s32 pin_dmg[16];
++static int pin_n;
++static int star_contact;       /* DIR_STARCONTACT on */
++static f32 star_kb, star_angle;
++static HSD_GObj* star_hit[16];  /* enemies it has already KO'd (one hit each) */
++static int star_nhit;
++static int bill_until = -1;    /* DIR_BILL: log the flight until this frame */
++static int bone_until[4];      /* DIR_BONE: per port, the part and until when */
++static int bone_part[4];
++static void star_contact_update(int s);
++#define REACT_SLOTS 12          /* DIR_REACT: independent armed reactions (a grab and the throw after it, per port) */
++static int react_until[REACT_SLOTS]; /* armed until this frame (-1: free) */
++static s32 react_port[REACT_SLOTS], react_state[REACT_SLOTS], react_prev[REACT_SLOTS];
++static u32 react_btn[REACT_SLOTS];
++static int react_dir[REACT_SLOTS], react_hold[REACT_SLOTS];
++static void react_update(int s);
++static void bill_trace(int s);
 +static int cam_key;           /* the camera key in effect last frame */
 +static int ap_until[4];       /* approach: active while s < ap_until */
 +static f32 ap_range[4];
@@ -220,10 +267,27 @@ index 0000000..53bd25c
 +
 +int director_boot(void)
 +{
-+    if (dir_boot_mode != GM_DEBUG_VS) {
++    int i;
++    /* the prize boot (dsl Menu(boot='prize')): the challenger mode with no human starts on its prize screen
++     * (gm_Mode_ChallengerApproach_OnLoad), as the game's own unlock-only flow does */
++    bool prize = dir_boot_mode == GM_CHALLENGER_APPROACH && dir_setup.ckind[0] == ChKind_None;
++    if (dir_boot_mode != GM_DEBUG_VS && !prize) {   /* (unlocking everything would raise the "all characters" prizes) */
 +        *gmMainLib_GetUnlockedCharactersBitmaskPtr() = 0x7FF; /* all 11 unlockable characters */
 +        *gmMainLib_8015EDA4() = 0x7FF;                         /* all 11 unlockable stages (save data x186A) */
 +        gmMainLib_GetGamePrefs()->stage_mask = 0xFFFFFFFF;     /* and every stage on in random stage select */
++    }
++    if (dir_boot_mode == GM_CHALLENGER_APPROACH) {
++        /* the challenger screen (dsl Menu(boot='challenger', challenger=(human, cpu))): the mode reads the challenger
++         * record that a VS or 1P ending fills; zeroed, it shows the fallback silhouette and its fight reads out of bounds.
++         * Human on port 0, nametag none, returning to the main menu */
++        gm_InitChallengerData(dir_setup.ckind[0], dir_setup.color[0], 0, 120, dir_setup.ckind[1], GM_MENU);
++        OSReport("DIRECTOR CHALLENGER human %d cpu %d\n", dir_setup.ckind[0], dir_setup.ckind[1]);
++        for (i = 0; i < 4; i++) {
++            if (prize && dir_setup.prize[i] != 0) {
++                gmMainLib_8015D818(dir_setup.prize[i] - 1);   /* unlocked and not yet shown */
++                OSReport("DIRECTOR PRIZE %d\n", dir_setup.prize[i] - 1);
++            }
++        }
 +    }
 +    OSReport("DIRECTOR BOOT mode %d\n", dir_boot_mode);
 +    return dir_boot_mode;
@@ -305,7 +369,7 @@ index 0000000..53bd25c
 +    start->rules.item_freq = -1;
 +    start->rules.x1_2 = 1; /* no READY splash */
 +    start->rules.x1_3 = 1; /* no GO splash; input live at once */
-+    start->rules.x1_4 = 1; /* never start the stage music */
++    start->rules.x1_4 = !dir_stage_music; /* never start the stage music, unless a film asks for it (dsl music=True) */
 +    start->rules.disable_pausing = 1;
 +    start->rules.on_match_start = director_match_start;
 +    start->rules.on_frame_start = director_update;
@@ -325,6 +389,17 @@ index 0000000..53bd25c
 +        }
 +        start->players[i].rumble_enabled = 0;
 +        start->players[i].nametag = 120;
++        if (i < dir_setup.nplayers && dir_setup.nametag[i][0] != 0) {
++            /* a name tag: the save data's name table slot 119 - i (the slots from the top, rarely used), Shift-JIS */
++            struct NameTagData* nd = GetPersistentNameData(119 - i);
++            int k;
++            for (k = 0; k < 8; k++) {
++                nd->namedata[k] = dir_setup.nametag[i][k];
++            }
++            nd->x1A0 = 0;
++            start->players[i].nametag = 119 - i;
++            OSReport("NAMETAG port %d slot %d\n", i, 119 - i);
++        }
 +    }
 +    OSReport("DIRECTOR SETUP stage %d players %d seed %u\n", dir_setup.stage, dir_setup.nplayers, dir_setup.seed);
 +}
@@ -337,7 +412,21 @@ index 0000000..53bd25c
 +    cue_i = 0;
 +    s_end = dir_len;
 +    cam_key = -1;
++    glass_sync = 0;
++    game_cam = 0;
++    slow_n = 0;
++    frozen = 0;
++    itrace_until = -1;
++    pin_n = 0;
++    star_contact = 0;
++    for (i = 0; i < REACT_SLOTS; i++) {
++        react_until[i] = -1;
++        react_hold[i] = 0;
++    }
++    star_nhit = 0;
++    bill_until = -1;
 +    for (i = 0; i < 4; i++) {
++        bone_until[i] = -1;
 +        pad_i[i] = -1;
 +        pad_cur[i] = NULL;
 +        last_buttons[i] = 0;
@@ -360,7 +449,9 @@ index 0000000..53bd25c
 +    if (dir_setup.aspect > 0.0f) {
 +        HSD_CObjSetAspect(GET_COBJ(Camera_80030A50()), dir_setup.aspect);
 +    }
-+    lbAudioAx_80025064(0, 1); /* music off, sound effects on (belt and braces with rules.x1_4) */
++    if (!dir_stage_music) {
++        lbAudioAx_80025064(0, 1); /* music off, sound effects on (belt and braces with rules.x1_4) */
++    }
 +    OSReport("DIRECTOR START len %d slate %d\n", dir_len, DIR_SLATE);
 +}
 +
@@ -388,6 +479,10 @@ index 0000000..53bd25c
 +    int s = F - DIR_SLATE, port, i;
 +    if (done) {
 +        return;
++    }
++    if (perf_log) {
++        OSReport("PERF %d %.3f %.3f %.3f %u\n", s, HSD_PerfLastStat.cpu_time, HSD_PerfLastStat.draw_time,
++                 HSD_PerfLastStat.total_time, HSD_PerfLastStat.nb_mtx_load);
 +    }
 +    if (F == 0) {
 +        slate(1);
@@ -417,6 +512,14 @@ index 0000000..53bd25c
 +                         fp->co_attrs.jump_h_initial_velocity, fp->co_attrs.gravity, fp->co_attrs.terminal_velocity,
 +                         fp->co_attrs.fast_fall_velocity, fp->co_attrs.air_drift_max, fp->co_attrs.aerial_friction,
 +                         fp->co_attrs.ground_friction);
++                /* SO BACK: the air-mobility attributes (ftCo_DatAttrs), for the carried-momentum lab */
++                OSReport("ATTR2 %d %d gr2air %.4f jumphmax %.4f airjumpv %.4f airjumph %.4f jumps %d airmul %.4f airbase %.4f "
++                         "airhmax %.4f groundhmax %.4f dashaccm %.4f dashaccb %.4f\n",
++                         i, fp->kind, fp->co_attrs.ground_to_air_jump_momentum_multiplier, fp->co_attrs.jump_h_max_velocity,
++                         fp->co_attrs.air_jump_v_multiplier, fp->co_attrs.air_jump_h_multiplier, fp->co_attrs.max_jumps,
++                         fp->co_attrs.air_drift_stick_mul, fp->co_attrs.aerial_drift_base,
++                         fp->co_attrs.air_max_horizontal_velocity, fp->co_attrs.ground_max_horizontal_velocity,
++                         fp->co_attrs.dash_accel_mul, fp->co_attrs.dash_accel_base);
 +                OSReport("LAG %d landing %.0f n %.0f f %.0f b %.0f hi %.0f lw %.0f weight %.0f\n", i,
 +                         fp->co_attrs.normal_landing_lag, fp->co_attrs.landingairn_lag, fp->co_attrs.landingairf_lag,
 +                         fp->co_attrs.landingairb_lag, fp->co_attrs.landingairhi_lag, fp->co_attrs.landingairlw_lag,
@@ -428,10 +531,66 @@ index 0000000..53bd25c
 +        slate(0);
 +        OSReport("S0 %d\n", F);
 +    }
++    if (s >= 0 && s < s_end && slow_n > 1 && !frozen) {
++        /* slow motion: the fighters, items and effects run one frame in slow_n; the camera keeps moving */
++        if (F % slow_n == 0) {
++            gm_ClearDbPauseFlag(1);
++        } else {
++            gm_SetDbPauseFlag(1);
++        }
++    }
++    if (s >= 0 && pin_n > 0) {
++        /* pinned items: put each back on its x (before the game's logic moves it again), while it is still alive and
++         * unhurt */
++        HSD_GObj* ig;
++        int k;
++        for (k = 0; k < pin_n; k++) {
++            for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL && ig != pin_g[k]; ig = ig->next) {
++            }
++            if (ig == NULL) {
++                pin_g[k] = NULL;
++            } else {
++                Item* ip = (Item*) ig->user_data;
++                if (pin_mode != 2 && ip->xC9C != pin_dmg[k]) { /* a floating box stays up until it breaks */
++                    pin_g[k] = NULL;
++                } else {
++                    ip->pos.x = pin_x[k];
++                    if (pin_mode == 2) {
++                        ip->pos.y = pin_y[k];
++                        ip->x40_vel.x = ip->x40_vel.y = 0.0f;
++                    }
++                }
++            }
++        }
++    }
++    if (s >= 0 && s < itrace_until) {
++        HSD_GObj* ig;
++        for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL; ig = ig->next) {
++            Item* ip = (Item*) ig->user_data;
++            OSReport("ITR %d %d %.2f %.2f %d %d\n", s, (int) ip->kind, ip->pos.x, ip->pos.y, (int) ip->msid, (int) ip->xC9C);
++        }
++    }
 +    if (s >= 0 && s < s_end) {
 +        while (cue_i < dir_ncues && dir_cues[cue_i].frame <= s) {
 +            run_cue(&dir_cues[cue_i]);
 +            cue_i++;
++        }
++    }
++    if (s >= 0 && s < s_end && star_contact) {
++        star_contact_update(s);
++    }
++    if (s >= 0 && s < bill_until) {
++        bill_trace(s);
++    }
++    if (s >= 0 && s < s_end) {
++        for (port = 0; port < dir_setup.nplayers; port++) {
++            Fighter* fp = fighter(port);
++            if (fp != NULL && s < bone_until[port]) {
++                MtxPtr m = HSD_JObjGetMtxPtr(fp->parts[ftParts_GetBoneIndex(fp, bone_part[port])].joint);
++                OSReport("BONE %d %d %d %.3f %.3f %.3f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %d %.2f\n", s, port,
++                         bone_part[port], m[0][3], m[1][3], m[2][3], m[0][0], m[1][0], m[2][0], m[0][1], m[1][1], m[2][1],
++                         m[0][2], m[1][2], m[2][2], fp->motion_id, fp->cur_anim_frame);
++            }
 +        }
 +    }
 +    if (s == s_end) {
@@ -471,16 +630,33 @@ index 0000000..53bd25c
 +        }
 +    }
 +    if (s >= 0 && s < s_end) {
++        react_update(s);
 +        auto_tech(s);
 +        for (port = 0; port < dir_setup.nplayers; port++) {
 +            Fighter* fp = fighter(port);
 +            if (fp != NULL && s < trace_until[port]) {
-+                /* and the hip joint's world position: what the eye follows. A ledge action's cur_pos is the ledge plus
-+                 * TransN, but CliffWait keeps cur_pos at the corner and hangs the body by TransN in the skeleton, so
-+                 * only the joint shows whether the body jumps between actions */
++                /* POS: position, motion, then the hip joint's world position (what the eye follows: a ledge action's
++                 * cur_pos is the ledge plus TransN, but CliffWait keeps cur_pos at the corner and hangs the body by TransN
++                 * in the skeleton, so only the joint shows whether the body jumps between actions), then SO BACK's
++                 * velocities (self and knockback), the airborne flag, the jump counter and percent. Fields only ever
++                 * append: parsers read by index (Geno's labs the hip at 6-7) */
 +                MtxPtr m = HSD_JObjGetMtxPtr(fp->parts[ftParts_GetBoneIndex(fp, FtPart_HipN)].joint);
-+                OSReport("POS %d %d %.2f %.2f %d %.2f %.2f\n", s, port, fp->cur_pos.x, fp->cur_pos.y, fp->motion_id,
-+                         m[0][3], m[1][3]);
++                /* then (the trailer lab, round 2) hitlag frames left, the animation frame and shield health: the
++                 * frame-by-frame advantage of shield pressure */
++                OSReport("POS %d %d %.2f %.2f %d %.2f %.2f %.3f %.3f %.3f %.3f %d %d %.1f %.0f %.2f %.2f\n", s, port,
++                         fp->cur_pos.x, fp->cur_pos.y, fp->motion_id, m[0][3], m[1][3], fp->self_vel.x, fp->self_vel.y,
++                         fp->x8c_kb_vel.x, fp->x8c_kb_vel.y, fp->ground_or_air == GA_Air, fp->x1968_jumpsUsed,
++                         fp->dmg.x1830_percent, fp->dmg.x195c_hitlag_frames, fp->cur_anim_frame, fp->shield_health);
++                {
++                    int k;
++                    for (k = 0; k < 4; k++) {
++                        HitCapsule* hb = &fp->x914[k];
++                        if (hb->state != HitCapsule_Disabled) {
++                            OSReport("HB %d %d %d %.1f %d %.2f %.2f %.2f\n", s, port, k, hb->damage, hb->kb_angle, hb->x4C.x,
++                                     hb->x4C.y, hb->scale);
++                        }
++                    }
++                }
 +            }
 +        }
 +    }
@@ -649,16 +825,22 @@ index 0000000..53bd25c
 +
 +static void track_update(int snap)
 +{
-+    Vec3 raw[4];
-+    int i, n = 0;
++    Vec3 raw[7];
++    int i, n = 0, na = 0;
 +    raw[DIR_MID].x = raw[DIR_MID].y = raw[DIR_MID].z = 0.0f;
-+    for (i = 0; i < 2 && i < dir_setup.nplayers; i++) {
-+        Fighter* fp = fighter(i);
-+        if (fp != NULL) {
++    raw[DIR_ALL] = raw[DIR_MID];
++    for (i = 0; i < 4; i++) {
++        Fighter* fp = i < dir_setup.nplayers ? fighter(i) : NULL;
++        if (fp != NULL && fp->motion_id > 13) { /* alive and not on the respawn platform */
 +            raw[DIR_P0 + i] = fp->cur_pos;
-+            raw[DIR_MID].x += fp->cur_pos.x;
-+            raw[DIR_MID].y += fp->cur_pos.y;
-+            n++;
++            if (i < 2) {
++                raw[DIR_MID].x += fp->cur_pos.x;
++                raw[DIR_MID].y += fp->cur_pos.y;
++                n++;
++            }
++            raw[DIR_ALL].x += fp->cur_pos.x;
++            raw[DIR_ALL].y += fp->cur_pos.y;
++            na++;
 +        } else {
 +            raw[DIR_P0 + i] = trk[DIR_P0 + i];
 +        }
@@ -666,8 +848,16 @@ index 0000000..53bd25c
 +    if (n > 0) {
 +        raw[DIR_MID].x /= n;
 +        raw[DIR_MID].y /= n;
++    } else {
++        raw[DIR_MID] = trk[DIR_MID];
 +    }
-+    for (i = DIR_MID; i <= DIR_P1; i++) {
++    if (na > 0) {
++        raw[DIR_ALL].x /= na;
++        raw[DIR_ALL].y /= na;
++    } else {
++        raw[DIR_ALL] = trk[DIR_ALL];
++    }
++    for (i = DIR_MID; i <= DIR_ALL; i++) {
 +        if (snap) {
 +            trk[i] = raw[i];
 +        } else { /* critically damped enough for knockback, never jittery */
@@ -700,8 +890,9 @@ index 0000000..53bd25c
 +    const DirCam* b;
 +    Vec3 ea, aa, eb, ab;
 +    f32 u = 0.0f;
-+    if (dir_ncams == 0) {
-+        /* the game's own camera: log where it is (eye, interest, fov) so a board can place world points on the image */
++    if (dir_ncams == 0 || game_cam) {
++        /* the game's own camera (no keys, or DIR_GAMECAM handed it back): log where it is (eye, interest, fov) so a board
++         * can place world points on the image */
 +        HSD_CObj* cobj = GET_COBJ(Camera_80030A50());
 +        HSD_CObjGetEyePosition(cobj, &ea);
 +        HSD_CObjGetInterest(cobj, &aa);
@@ -729,20 +920,235 @@ index 0000000..53bd25c
 +    cm_80453004.free_int_pos.z = aa.z + (ab.z - aa.z) * u;
 +    cm_80453004.free_fov = a->fov + (b->fov - a->fov) * u;
 +    HSD_CObjSetRoll(GET_COBJ(Camera_80030A50()), (a->roll + (b->roll - a->roll) * u) * 0.017453292f);
++    if (glass_sync) { /* DIR_GLASS: the screen-KO camera sees what the director's camera sees */
++        HSD_CObjSetFov(cm_804D6464, cm_80453004.free_fov);
++        HSD_CObjSetInterest(cm_804D6464, &cm_80453004.free_int_pos);
++        HSD_CObjSetEyePosition(cm_804D6464, &cm_80453004.free_eye_pos);
++        HSD_CObjSetRoll(cm_804D6464, (a->roll + (b->roll - a->roll) * u) * 0.017453292f);
++        if (dir_setup.aspect > 0.0f) {
++            HSD_CObjSetAspect(cm_804D6464, dir_setup.aspect);
++        }
++    }
++}
++
++/* squared distance between segments p0-p1 and q0-q1 (x and y only: fighters and items live on z = 0, and a capsule's
++ * z offset is the model's depth, which collision ignores too) */
++static f32 seg_dist2(const Vec3* p0, const Vec3* p1, const Vec3* q0, const Vec3* q1)
++{
++    f32 dx = p1->x - p0->x, dy = p1->y - p0->y, ex = q1->x - q0->x, ey = q1->y - q0->y;
++    f32 rx = p0->x - q0->x, ry = p0->y - q0->y;
++    f32 a = dx * dx + dy * dy, e = ex * ex + ey * ey, f = ex * rx + ey * ry;
++    f32 sn, tn, cx, cy;
++    if (a < 1e-6f && e < 1e-6f) {
++        sn = tn = 0.0f;
++    } else if (a < 1e-6f) {
++        sn = 0.0f;
++        tn = f / e;
++    } else {
++        f32 c = dx * rx + dy * ry;
++        if (e < 1e-6f) {
++            tn = 0.0f;
++            sn = -c / a;
++        } else {
++            f32 b = dx * ex + dy * ey, den = a * e - b * b;
++            sn = den > 1e-6f ? (b * f - c * e) / den : 0.0f;
++            if (sn < 0.0f) {
++                sn = 0.0f;
++            } else if (sn > 1.0f) {
++                sn = 1.0f;
++            }
++            tn = (b * sn + f) / e;
++        }
++    }
++    if (tn < 0.0f) {
++        tn = 0.0f;
++        sn = a > 1e-6f ? -(dx * rx + dy * ry) / a : 0.0f;
++    } else if (tn > 1.0f) {
++        tn = 1.0f;
++        sn = a > 1e-6f ? (dx * ex + dy * ey - (dx * rx + dy * ry)) / a : 0.0f;
++    }
++    if (sn < 0.0f) {
++        sn = 0.0f;
++    } else if (sn > 1.0f) {
++        sn = 1.0f;
++    }
++    cx = rx + dx * sn - ex * tn;
++    cy = ry + dy * sn - ey * tn;
++    return cx * cx + cy * cy;
++}
++
++static int is_zako(int kind)
++{
++    return (kind >= It_Kind_Kuriboh && kind < It_Kind_Octarock_Stone) || kind == It_Kind_Nokonoko ||
++           kind == It_Kind_Patapata;
++}
++
++/* DIR_STARCONTACT: SMRPG's star run. An enemy touching a starred fighter takes a hit from him, set up as the item
++ * collision's fighter case sets it (it_802706D0: the source, the direction away from him, the angle, the knockback and the
++ * damage), before this frame's hit think (Item_8026A294, proc 14) hands it to the enemy's own damage callback. */
++static void star_contact_update(int s)
++{
++    int port, k, j, n;
++    HSD_GObj* ig;
++    for (port = 0; port < dir_setup.nplayers; port++) {
++        Fighter* fp = fighter(port);
++        if (fp == NULL || !fp->x221D_b6 || fp->motion_id <= 13) {
++            continue;
++        }
++        for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL; ig = ig->next) {
++            Item* ip = (Item*) ig->user_data;
++            int touch = 0;
++            if (ip == NULL || !is_zako((int) ip->kind)) {
++                continue;
++            }
++            for (j = 0; j < star_nhit; j++) {
++                if (star_hit[j] == ig) {
++                    break;
++                }
++            }
++            if (j < star_nhit) {
++                continue;
++            }
++            n = ip->xAC8_hurtboxNum < 2 ? ip->xAC8_hurtboxNum : 2;
++            for (k = 0; k < fp->hurt_capsules_len && !touch; k++) {
++                HurtCapsule* h = &fp->hurt_capsules[k].capsule;
++                if (n == 0) {
++                    Vec3 c = ip->pos;
++                    f32 r = h->scale + 4.0f;
++                    c.y += 4.0f;
++                    touch = seg_dist2(&h->a_pos, &h->b_pos, &c, &c) < r * r;
++                }
++                for (j = 0; j < n && !touch; j++) {
++                    /* the item's capsule from its bone now: its stored a_pos/b_pos are only refreshed inside the game's
++                     * own collision checks (skip_update_pos), so they can be stale */
++                    HurtCapsule* ih = &ip->xACC_itemHurtbox[j];
++                    f32 r = h->scale + ih->scale;
++                    Vec3 ia, ib;
++                    if (ih->bone == NULL) {
++                        continue;
++                    }
++                    lb_8000B1CC(ih->bone, &ih->a_offset, &ia);
++                    lb_8000B1CC(ih->bone, &ih->b_offset, &ib);
++                    touch = seg_dist2(&h->a_pos, &h->b_pos, &ia, &ib) < r * r;
++                }
++            }
++            if (!touch) {
++                continue;
++            }
++            ip->xCB0_source_ply = port;
++            ip->xCEC_fighterGObj = Player_GetEntity(port);
++            ip->xCF0_itemGObj = NULL;
++            ip->xCCC_incDamageDirection = ip->pos.x > fp->cur_pos.x ? -1.0f : 1.0f;
++            ip->xCAC_angle = (s32) star_angle;
++            ip->xCC8_knockback = star_kb;
++            ip->xCC4 = 0;
++            ip->xCA0 += 20;
++            if (ip->xCA4 < 20) {
++                ip->xCA4 = 20;
++            }
++            if (star_nhit < 16) {
++                star_hit[star_nhit++] = ig;
++            }
++            OSReport("STARHIT %d %d %d %.2f %.2f fighter %.2f %.2f\n", s, port, (int) ip->kind, ip->pos.x, ip->pos.y,
++                     fp->cur_pos.x, fp->cur_pos.y);
++        }
++    }
++}
++
++/* DIR_BILL's trace: the castle's Bill flights (map gobjs 8-16), the explosion (1) and gobj 2, where they are */
++static void bill_trace(int s)
++{
++    static const int ids[] = { 1, 2, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
++    int i;
++    if (stage_info.grkind != Gr_Kind_Castle) {
++        return;
++    }
++    for (i = 0; i < (int) (sizeof(ids) / sizeof(ids[0])); i++) {
++        HSD_GObj* g = Ground_GetMapGObj(ids[i]);
++        if (g != NULL) {
++            HSD_JObj* j = Ground_801C3FA4(g, 0);
++            Vec3 p;
++            if (j != NULL) {
++                lb_8000B1CC(j, NULL, &p);
++                OSReport("BILLPOS %d %d %.2f %.2f %.2f\n", s, ids[i], p.x, p.y, p.z);
++            }
++        }
++    }
++}
++
++/* DIR_REACT: the pad is read later this frame, so a press written now lands on the first frame the state allows it */
++static void react_update(int s)
++{
++    int k;
++    for (k = 0; k < REACT_SLOTS; k++) {
++        int port = react_port[k];
++        Fighter* fp;
++        HSD_PadStatus* ps;
++        if (react_until[k] < 0 && react_hold[k] == 0) {
++            continue;
++        }
++        fp = fighter(port);
++        ps = &HSD_PadGameStatus[port];
++        if (fp == NULL) {
++            continue;
++        }
++        if (react_until[k] > s && fp->motion_id == react_state[k] && react_prev[k] != react_state[k]) {
++            react_until[k] = -1;
++            react_hold[k] = 2;
++            OSReport("REACT %d %d %d %.2f\n", s, port, fp->motion_id, fp->cur_anim_frame);
++        } else if (react_until[k] >= 0 && react_until[k] <= s) {
++            react_until[k] = -1; /* expired unfired */
++        }
++        react_prev[k] = fp->motion_id;
++        if (react_hold[k] > 0) {
++            int d = react_dir[k];
++            s8 sx = 0, sy = 0;
++            if (d == 1) {
++                sy = 80;
++            } else if (d == 2) {
++                sy = -80;
++            } else if (d == 3 || d == 4) {
++                sx = (s8) ((d == 3 ? 80.0f : -80.0f) * fp->facing_dir);
++            }
++            if (react_hold[k] == 2) {
++                ps->trigger |= react_btn[k] & ~ps->last_button;
++            }
++            ps->button |= react_btn[k];
++            if (d != 0) {
++                ps->stickX = sx;
++                ps->stickY = sy;
++                ps->nml_stickX = sx / 80.0f;
++                ps->nml_stickY = sy / 80.0f;
++            }
++            react_hold[k]--;
++        }
++    }
 +}
 +
 +static void run_cue(const DirCue* c)
 +{
-+    Fighter* fp = fighter(c->port);
++    Fighter* fp = c->port < 4 ? fighter(c->port) : NULL; /* DIR_ENEMY packs more than a port into it */
 +    Vec3 p;
 +    SpawnItem spawn;
 +    switch (c->kind) {
 +    case DIR_FREEZE:
++        frozen = c->a != 0.0f;
 +        if (c->a != 0.0f) {
 +            gm_SetDbPauseFlag(1);
 +        } else {
 +            gm_ClearDbPauseFlag(1);
 +        }
++        break;
++    case DIR_GAMECAM:
++        game_cam = c->a != 0.0f;
++        if (game_cam) {
++            Camera_800300F0(); /* back to the mode the director's debug free camera replaced */
++        } else {
++            Camera_8003006C();
++        }
++        break;
++    case DIR_GLASS:
++        glass_sync = c->a != 0.0f;
 +        break;
 +    case DIR_STAGE:
 +        Camera_SetStageVisible(c->a != 0.0f);
@@ -832,6 +1238,7 @@ index 0000000..53bd25c
 +        if (fp != NULL) {
 +            fp->shield_health = c->a;
 +        }
++        break;
 +    case DIR_ITEM:
 +        /* the game's own drop (itdrop.c): an item at rest where it lands, facing the stage's centre */
 +        memset(&spawn, 0, sizeof(spawn));
@@ -868,6 +1275,172 @@ index 0000000..53bd25c
 +            OSReport("SHOOT %d %d kind %d state %d %.2f %.2f %.1f\n", F - DIR_SLATE, c->port, kind, state, p.x, p.y, speed);
 +        }
 +        break;
++    case DIR_STALL: {
++        OSTime t0 = OSGetTime();
++        while (OSTicksToMilliseconds(OSGetTime() - t0) < (OSTime) c->a) {
++        }
++        OSReport("STALL %d %d\n", F - DIR_SLATE, (int) c->a);
++        break;
++    }
++    case DIR_PERF:
++        perf_log = c->a != 0.0f;
++        break;
++    case DIR_STARKO:
++        if (fp != NULL && fp->motion_id > 13) {
++            ftCo_800D40B8(Player_GetEntity(c->port));
++            OSReport("STARKO %d %d %.2f %.2f\n", F - DIR_SLATE, c->port, fp->cur_pos.x, fp->cur_pos.y);
++        } else {
++            OSReport("STARKO SKIPPED %d %d\n", F - DIR_SLATE, c->port);
++        }
++        break;
++    case DIR_SLOW:
++        slow_n = (int) c->a;
++        if (slow_n <= 1 && !frozen) {
++            gm_ClearDbPauseFlag(1);
++        }
++        OSReport("SLOW %d %d\n", F - DIR_SLATE, slow_n);
++        break;
++    case DIR_METAL:
++        if (fp != NULL) {
++            if (c->a != 0.0f) {
++                ftCo_800C8348(Player_GetEntity(c->port), 0x7FFFFFFF, 1000);
++            } else {
++                ftCo_800C8540(Player_GetEntity(c->port));
++            }
++            OSReport("METAL %d %d %d\n", F - DIR_SLATE, c->port, (int) c->a);
++        }
++        break;
++    case DIR_ANIMRATE:
++        if (fp != NULL) {
++            ftAnim_SetAnimRate(Player_GetEntity(c->port), c->a);
++        }
++        break;
++    case DIR_COLANIM:
++        if (fp != NULL) {
++            if (c->a < 0.0f) {
++                ftCo_800C0200(fp, ftCo_800C0694(fp));
++            } else {
++                ftCo_800BFFD0(fp, (int) c->a, 0);
++            }
++            OSReport("COLANIM %d %d %d\n", F - DIR_SLATE, c->port, (int) c->a);
++        }
++        break;
++    case DIR_ENTRY:
++        if (fp != NULL && fp->motion_id > 13) {
++            ftCo_800C61B0(Player_GetEntity(c->port));
++            OSReport("ENTRY %d %d\n", F - DIR_SLATE, c->port);
++        }
++        break;
++    case DIR_ENEMY: {
++        Item_GObj* ig = NULL;
++        int kind = (int) c->a;
++        int rel = (c->port >> 4) - 1; /* the port packs the variant (low 4 bits) and a fighter to spawn relative to */
++        Fighter* rf = rel >= 0 ? fighter(rel) : NULL;
++        p.x = c->b + (rf != NULL ? rf->cur_pos.x : 0.0f);
++        p.y = c->c + (rf != NULL ? rf->cur_pos.y : 0.0f);
++        p.z = 0.0f;
++        if (kind == It_Kind_Nokonoko) {
++            ig = it_802DD7F0(c->port & 15, &p, NULL, p.x > 0.0f ? -1 : 1);
++        } else if (kind == It_Kind_Patapata) {
++            ig = it_802E16F8(c->port & 15, &p, p.x > 0.0f ? -1 : 1);
++        } else {
++            ig = it_8027B5B0((ItemKind) kind, &p, NULL, NULL, 1);
++        }
++        OSReport("ENEMY %d kind %d variant %d at %.1f %.1f %s\n", F - DIR_SLATE, kind, c->port & 15, p.x, p.y,
++                 ig != NULL ? "ok" : "failed");
++        break;
++    }
++    case DIR_RESPAWN:
++        if (fp != NULL && fp->motion_id > 13) {
++            Vec3 at = fp->cur_pos;
++            f32 face = fp->facing_dir;
++            Fighter* nf;
++            Player_80031EBC(c->port);
++            Player_SetCostumeId(c->port, (int) c->a);
++            Player_80031AD0(c->port);
++            Player_80031848(c->port); /* the input link (ftLib_EnableInput), as the game's own mid-match spawn does
++                                       * (gm_8016EDDC): without it the new fighter ignores its pad */
++            nf = fighter(c->port);
++            if (nf != NULL) {
++                at.y = 0.0f;
++                ftLib_SetPos(Player_GetEntity(c->port), &at);
++                nf->facing_dir = face;
++                last_msid[c->port] = -1;
++            }
++            OSReport("RESPAWN %d %d costume %d %s\n", F - DIR_SLATE, c->port, (int) c->a, nf != NULL ? "ok" : "failed");
++        }
++        break;
++    case DIR_HUD:
++        if (c->a == 0.0f) {
++            ifAll_HideHUD();
++        } else {
++            ifAll_ShowHUD();
++            if (c->a == 1.0f) { /* ifAll_802F3394's hides but the name tags' (un_802FD450) */
++                ifStatus_802F6898();
++                ifTime_HideTimers();
++                ifMagnify_802FC8E8();
++                un_802FD668();
++                un_802FD910();
++                un_802FF570();
++            }
++        }
++        OSReport("HUD %d %d\n", F - DIR_SLATE, (int) c->a);
++        break;
++    case DIR_ITEMPIN: {
++        HSD_GObj* ig;
++        pin_n = 0;
++        pin_mode = (int) c->a;
++        if (c->a != 0.0f) {
++            for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL && pin_n < 16; ig = ig->next) {
++                Item* ip = (Item*) ig->user_data;
++                pin_g[pin_n] = ig;
++                pin_x[pin_n] = ip->pos.x;
++                pin_y[pin_n] = ip->pos.y;
++                pin_dmg[pin_n] = ip->xC9C;
++                pin_n++;
++            }
++        }
++        OSReport("PIN %d %d\n", F - DIR_SLATE, pin_n);
++        break;
++    }
++    case DIR_ITEMCLEAR: {
++        HSD_GObj* ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM];
++        int k = 0;
++        pin_n = 0;
++        while (ig != NULL) {
++            HSD_GObj* next = ig->next;
++            Item* ip = (Item*) ig->user_data;
++            if (ip != NULL && ip->owner == NULL) {
++                Item_8026A8EC((Item_GObj*) ig);
++                k++;
++            }
++            ig = next;
++        }
++        OSReport("ITEMCLEAR %d %d\n", F - DIR_SLATE, k);
++        break;
++    }
++    case DIR_EFCLEAR:
++        if (fp != NULL) {
++            efLib_DestroyAll(Player_GetEntity(c->port));
++            OSReport("EFCLEAR %d %d\n", F - DIR_SLATE, c->port);
++        }
++        break;
++    case DIR_ITEMTRACE:
++        itrace_until = (int) c->a;
++        break;
++    case DIR_ITEMVEL: {
++        HSD_GObj* ig;
++        Item* last = NULL;
++        for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL; ig = ig->next) {
++            last = (Item*) ig->user_data;
++        }
++        if (last != NULL) {
++            last->x40_vel.x = c->a;
++            last->x40_vel.y = c->b;
++            OSReport("ITEMVEL %d kind %d %.2f %.2f\n", F - DIR_SLATE, (int) last->kind, c->a, c->b);
++        }
++        break;
++    }
 +    case DIR_ITEMS: {
 +        HSD_GObj* ig;
 +        for (ig = HSD_GObjPLinkHead[HSD_GOBJ_PLINK_ITEM]; ig != NULL; ig = ig->next) {
@@ -908,6 +1481,79 @@ index 0000000..53bd25c
 +        }
 +        break;
 +    }
++    case DIR_PLACE:
++        if (fp != NULL && fp->motion_id > 13) {
++            Vec3 hit, nrm;
++            int line = -1;
++            u32 flags = 0;
++            HSD_GObj* g = Player_GetEntity(c->port);
++            if (mpCheckFloor(c->a, c->b + 10.0f, c->a, c->b - 10.0f, 0.0f, &hit, &line, &flags, &nrm, -1, -1, -1, NULL,
++                             NULL))
++            {
++                p.x = c->a;
++                p.y = hit.y;
++                p.z = 0.0f;
++                ftLib_SetPos(g, &p);
++                fp->prev_pos = p;
++                fp->coll_data.cur_pos = p;
++                fp->coll_data.prev_pos = p;
++                fp->coll_data.last_pos = p;
++                fp->coll_data.floor.index = line;
++                fp->coll_data.floor.flags = flags;
++                fp->coll_data.floor.normal = nrm;
++                fp->self_vel.x = fp->self_vel.y = fp->self_vel.z = 0.0f;
++                fp->x8c_kb_vel.x = fp->x8c_kb_vel.y = fp->x8c_kb_vel.z = 0.0f;
++                fp->gr_vel = 0.0f;
++                fp->xF0_ground_kb_vel = 0.0f;
++                fp->facing_dir = c->c;
++                plStale_ResetStaleMoveTableForPlayer(c->port);
++                if (fp->ground_or_air == GA_Air) {
++                    ftCommon_8007D7FC(fp);
++                }
++                ft_8008A2BC(g);
++                OSReport("PLACE %d %d %.2f %.2f %d\n", F - DIR_SLATE, c->port, p.x, p.y, line);
++            } else {
++                OSReport("PLACE %d %d %.2f %.2f -1\n", F - DIR_SLATE, c->port, c->a, c->b);
++            }
++        }
++        break;
++    case DIR_STARCONTACT:
++        star_contact = c->a != 0.0f;
++        star_kb = c->b > 0.0f ? c->b : 120.0f;
++        star_angle = c->c > 0.0f ? c->c : 70.0f;
++        star_nhit = 0;
++        OSReport("STARCONTACT %d %d %.0f %.0f\n", F - DIR_SLATE, star_contact, star_kb, star_angle);
++        break;
++    case DIR_BILL:
++        OSReport("BILL %d %d %d\n", F - DIR_SLATE, (int) c->a, grCastle_DirectorBill((int) c->a));
++        if (c->b > 0.0f) {
++            bill_until = (int) c->b;
++        }
++        break;
++    case DIR_REACT:
++        if (c->port < 4) {
++            Fighter* rf = fighter(c->port);
++            int packed = (int) c->b, k;
++            for (k = 0; k < REACT_SLOTS && (react_until[k] >= 0 || react_hold[k] > 0); k++) {
++            }
++            if (k < REACT_SLOTS) {
++                react_port[k] = c->port;
++                react_state[k] = (s32) c->a;
++                react_btn[k] = (u32) (packed & 4095);
++                react_dir[k] = packed >> 12;
++                react_until[k] = (int) c->c;
++                react_prev[k] = rf != NULL ? rf->motion_id : -1;
++            } else {
++                OSReport("REACT FULL %d %d\n", F - DIR_SLATE, c->port);
++            }
++        }
++        break;
++    case DIR_BONE:
++        if (c->port < 4) {
++            bone_part[c->port] = (int) c->a;
++            bone_until[c->port] = (int) c->b;
++        }
++        break;
 +    case DIR_RESET:
 +        if (fp != NULL && fp->motion_id <= 13) {
 +            /* dead (0-11) or on the respawn platform (Rebirth, RebirthWait): forcing them onto the ground asserts
@@ -920,8 +1566,9 @@ index 0000000..53bd25c
 +            p.z = 0.0f;
 +            ftLib_SetPos(g, &p);
 +            fp->prev_pos = p;
-+            /* as for setpos: collision sweeps from the previous positions, so a reset from under a ledge (hanging on it)
-+             * swept into the stage and dropped the fighter back below it */
++            /* restart the collision sweep here too, as DIR_SETPOS does: collision sweeps from the previous positions, so a
++             * reset from under a ledge (hanging on it) swept into the stage and dropped the fighter back below it (Geno),
++             * and a reset from far offstage swept him back across the stage onto the far ledge (SO BACK) */
 +            fp->coll_data.cur_pos = p;
 +            fp->coll_data.prev_pos = p;
 +            fp->coll_data.last_pos = p;
@@ -930,12 +1577,32 @@ index 0000000..53bd25c
 +            fp->gr_vel = 0.0f;
 +            fp->xF0_ground_kb_vel = 0.0f;
 +            fp->facing_dir = c->b;
-+            plStale_ResetStaleMoveTableForPlayer(c->port); /* fresh moves: a lab repeats one, and staling weakens it */
++            if (c->c != 0.0f) { /* c = 1: fresh moves (a lab repeats one, and staling weakens it). dsl reset() sends it
++                                 * by default on the Geno line; reset(..., fresh=False) keeps the game's staling (FRAME
++                                 * PERFECT's damage was captured with it) */
++                plStale_ResetStaleMoveTableForPlayer(c->port);
++            }
 +            if (fp->x1990 != 0 || fp->x1994 != 0) { /* respawn invincibility (and its flashing) would carry into the test */
 +                fp->x1990 = fp->x1994 = 0;
 +                fp->x198C = 0;
 +                if (ftCo_800C0694(fp) == 9) {
 +                    ftCo_800C0200(fp, 9);
++                }
++            }
++            {
++                /* link him to the floor under x, as DIR_PLACE does: the floor line he was on can be another one (a
++                 * grounded fighter follows his line, so a reset from the Forest Maze's mushroom cap to y = 0 put him
++                 * straight back on the cap), or stale or unset (just off the respawn platform: grounding him asserted
++                 * "fighter ground no under") */
++                Vec3 hit, nrm;
++                int line = -1;
++                u32 flags = 0;
++                if (mpCheckFloor(c->a, 10.0f, c->a, -10.0f, 0.0f, &hit, &line, &flags, &nrm, -1, -1, -1, NULL, NULL)) {
++                    fp->coll_data.floor.index = line;
++                    fp->coll_data.floor.flags = flags;
++                    fp->coll_data.floor.normal = nrm;
++                } else {
++                    OSReport("RESET NOFLOOR %d %d %.2f\n", F - DIR_SLATE, c->port, c->a);
 +                }
 +            }
 +            if (fp->ground_or_air == GA_Air) {
@@ -967,12 +1634,17 @@ index 0000000..53bd25c
 +    (void) kind;
 +    OSReport("LASER %d %d %.2f %.2f %.3f %.2f\n", F - DIR_SLATE, fp->player_idx, pos->x, pos->y, angle, speed);
 +}
++
++void director_on_lag(int n)
++{
++    OSReport("LAGFRAME %d %d\n", F - DIR_SLATE, n);
++}
 diff --git a/src/melee/director/director.h b/src/melee/director/director.h
 new file mode 100644
-index 0000000..8b2ef8f
+index 0000000..5c1a106
 --- /dev/null
 +++ b/src/melee/director/director.h
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,231 @@
 +/* director: turns Super Smash Bros. Melee (the doldecomp/melee decompilation, non-matching build) into a deterministic
 + * machinima renderer. The game boots straight into a VS match set up by the script, the HUD and music are off, and every game
 + * frame the director writes the script's controller states, camera and one-shot cues. It reports back through OSReport, which
@@ -1008,7 +1680,7 @@ index 0000000..8b2ef8f
 +enum { DIR_CUT = 0, DIR_LINEAR, DIR_INOUT, DIR_IN, DIR_OUT };
 +enum { DIR_AUTO_FASTFALL = 1, DIR_AUTO_LCANCEL = 2, DIR_AUTO_LOWLASER = 4 };
 +
-+enum { DIR_WORLD = 0, DIR_MID, DIR_P0, DIR_P1 };
++enum { DIR_WORLD = 0, DIR_MID, DIR_P0, DIR_P1, DIR_P2, DIR_P3, DIR_ALL };
 +
 +/* camera keys: eye, interest (at), vertical fov in degrees and roll in degrees; `ease` shapes the move to the next key.
 + * With `track` set, eye and at are offsets from a smoothed tracking point: the fighters' midpoint, or one fighter. The point
@@ -1033,14 +1705,18 @@ index 0000000..8b2ef8f
 +    DIR_PERCENT,    /* port; a: damage percent */
 +    DIR_MARK,       /* a: id, logged as MARK */
 +    DIR_END,        /* end the script here */
-+    DIR_RESET,      /* port; a: x, b: facing. Stand the fighter on the floor at x, in Wait, with no momentum (between shots) */
++    DIR_RESET,      /* port; a: x, b: facing, c: 1 also clears the stale-move table (fresh moves: dsl reset()'s default on the
++                     * Geno line; fresh=False keeps staling). Stand the fighter on the floor at x, in Wait, with no momentum
++                     * (between shots) */
 +    DIR_APPROACH,   /* port; a: range, b: until frame, c: stick. Closed loop: walk toward the opponent while farther than
 +                     * range, then stand, so a scripted move finds its mark whatever the last knockback did */
 +    DIR_AUTO,       /* port; a: flags. Closed-loop tech on every aerial: 1 fast fall on the first descending frame,
 +                     * 2 L-cancel (a shoulder press ~3 frames before touching the floor), 4 low laser (B on the 8th
 +                     * airborne frame of any hop: the laser spawns 12 frames later at standing-fighter height) */
-+    DIR_TRACE,      /* port; a: until frame. Log POS s port x y motion hipx hipy every frame (for planning combos; the hip
-+                     * joint shows the body where cur_pos does not, e.g. hanging on a ledge) */
++    DIR_TRACE,      /* port; a: until frame. Log POS s port x y motion hipx hipy vx vy kbx kby air jumps percent every frame
++                     * (for planning combos; the hip joint shows the body where cur_pos does not, e.g. hanging on a ledge;
++                     * then self and knockback velocity, airborne, jumps used and percent, SO BACK), and HB s port k damage
++                     * angle x y radius for each active hitbox */
 +    DIR_STATUS,     /* port. Log STATUS s port percent x y motion (for labs: throw damage, launch results) */
 +    DIR_SHIELD,     /* port. Log the shield sphere (ThrowN's world centre and scale) and every hurtbox capsule in world space */
 +    DIR_FEET,       /* port. Log FEET s port side x y z fx fy fz dx dy dz motion frame: each foot bone's world position and
@@ -1059,10 +1735,72 @@ index 0000000..8b2ef8f
 +                     * ledge for every fighter (the floor line it stands on; the ledge line it holds, in the cliff states).
 +                     * For stage labs and stage-build checks */
 +    DIR_ITEMS,      /* Log ITEMS s kind x y per live item this frame (a lab's projectile paths: Link's boomerang, Geno's Whirl) */
-+    DIR_SHOOT       /* port: the owner; a: kind*16 + state + 4096*(speed*10); b, c: the spawn's offset from the owner (b along
++    DIR_SHOOT,      /* port: the owner; a: kind*16 + state + 4096*(speed*10); b, c: the spawn's offset from the owner (b along
 +                     * his facing, c up). A laser-type projectile (it_8029C504: Fox's, Falco's, Geno's Finger Shot and Beam
 +                     * states) fired straight ahead, as its owner's: a lab fires any state of those articles where a move
 +                     * can't aim it (Geno's throw shots at a PSI Magnet). Logs SHOOT s port kind state x y speed */
++    DIR_STALL,      /* a: milliseconds. Busy-waits that long in this frame (console time), so the next loop frame finds
++                     * the extra pad samples: a lag frame on purpose, the lag measure's in-band positive control. Logs STALL */
++    DIR_PERF,       /* a: 1 on, 0 off. Logs PERF s cpu draw total mtx every frame: the engine's own timings of the last loop
++                     * frame (HSD_PerfLastStat, in 60ths of a second of console time: logic, logic + draw submission, all
++                     * of it; over 1.0 the frame overran) and its matrix loads. Performance labs */
++    /* numbering: 1-25 Geno's labs, 40-41 SO BACK's capture lanes (main), 50 on the Geno trailer. Values are explicit past
++     * 25 so parallel lines of work can't collide; keep dsl.py's CUE in step */
++    DIR_GLASS = 40  /* (lane 2) a: 1 keeps the screen-KO camera (cm_804D6464) on the director's camera, 0 stops. A screen KO places
++                     * the fighter in that camera's view space, and the game only refreshes it in its standard and fixed modes,
++                     * so under the director's debug free camera a screen KO hit the glass of the match-start camera */,
++    DIR_GAMECAM = 41 /* (lane 2) a: 1 hands the camera back to the game (its own standard match camera; the director's keys
++                      * are ignored), 0 takes it again. For checking what the vanilla game shows */,
++    /* the trailer lab's cues (projects/geno/trailer/lab), numbered from 50: geno's own run 1-25 and main's SO BACK kit
++     * takes 40 (glass) and 41 (gamecam), so the three merge without collisions */
++    DIR_STARKO = 50,     /* port. A star KO from where the fighter is (ftCo_800D40B8: the death bookkeeping, the flight into the
++                     * background, the twinkle), no blast-zone crossing needed. Skipped if already dead. Logs STARKO */
++    DIR_SLOW,       /* a: N. Slow motion by strobing the pause flag: the game runs one frame in N (1 = normal speed); the
++                     * camera keeps moving every frame. A freeze cue wins while on. Logs SLOW */
++    DIR_METAL,      /* port; a: 1 metal (the Metal Box look, ftCo_800C8348), 0 back to normal (ftCo_800C8540) */
++    DIR_ANIMRATE,   /* port; a: the animation rate (0 holds the pose: a trophy); an action change resets it to 1 */
++    DIR_COLANIM,    /* port; a: a PlCo colour-animation id (ftCo_800BFFD0; the entry's glow is 0x75), -1 clears it */
++    DIR_ENTRY,      /* port. Replay the match-start entry: the fighter hides, then grows out of the trophy stand
++                     * (ftCo_800C61B0, the Entry state). Logs ENTRY */
++    DIR_ENEMY,      /* port: variant | (fighter + 1) << 4 (x, y relative to that fighter); a: ::ItemKind, b, c: x, y. Spawn a stage enemy through the zako spawner
++                     * (it_8027B5B0: the Goomba 0x2B lives in ItCo and works on any stage; Koopas 0xD3 and Paratroopas 0xD4
++                     * need their stage's item data, it_802DD7F0 / it_802E16F8). Logs ENEMY */
++    DIR_RESPAWN,    /* port; a: costume. Free the fighter and create it again in another costume (Player_80031EBC,
++                     * Player_SetCostumeId, Player_80031AD0), then stand it where it was. Logs RESPAWN */
++    DIR_HUD,        /* a: 0 the HUD hidden (films' default), 1 name tags only (percents, timer and the rest hidden),
++                     * 2 the whole HUD */
++    DIR_ITEMTRACE,  /* a: until frame. Log ITR s kind x y state dmg for every live item every frame (enemies' damage:
++                     * Item xC9C), for overlays tracked to an enemy */
++    DIR_ITEMVEL,    /* a, b: vx, vy. Set the newest live item's velocity (hold a Starman still: 0, 0). Logs ITEMVEL */
++    DIR_ITEMPIN,    /* a: 1 pins every live item's x where it is now (enemies walk in place: a battle line-up) until it is
++                     * hit (its damage rises) or a: 0 releases them all; 2 pins x and y with no velocity (a box held in
++                     * the air). Logs PIN */
++    DIR_ITEMCLEAR,  /* Destroy every live item no fighter holds (Item_8026A8EC): a clean slate between a lab's tries.
++                     * Logs ITEMCLEAR */
++    DIR_EFCLEAR,    /* port. Destroy the fighter's attached effects (efLib_DestroyAll: the entry's light pillars and
++                     * sparkles), so a held entry reads as a figure on its stand. Logs EFCLEAR */
++    /* the trailer lab's round 2 (projects/geno/trailer/lab, geno-trailer-lab2), numbered from 64 */
++    DIR_PLACE = 64, /* port; a: x, b: y, c: facing. DIR_RESET on a floor that isn't y = 0: the floor line under (x, y) is
++                     * found (mpCheckFloor, from 10 above to 10 below), the fighter stood on it and linked to that line,
++                     * in Wait with no momentum, fresh moves. Logs PLACE s port x y line (line -1: no floor, skipped) */
++    DIR_STARCONTACT, /* a: 1 on, 0 off; b: knockback (0: 120); c: angle in degrees (0: 70). SMRPG's star run: while on,
++                     * any stage enemy (the zako items: Goombas, ReDeads, Octoroks, Koopas) whose hurtbox touches the hurtbox of
++                     * a fighter under a Starman (x221D_b6) takes a hit from that fighter, as the item collision would
++                     * credit one (it_802706D0's fighter case: source, direction away from him, angle, knockback, 20
++                     * damage), which the enemy's own damage callback turns into its KO flight. Logs STARHIT s port kind x y */
++    DIR_BILL,       /* a: variant. Princess Peach's Castle's Banzai Bill (grCastle_DirectorBill): 0-8 launches that flight
++                     * now, -1 lets the game pick, -2 stops the natural timer, -3 logs its parameters (BILLPARAM, BILLVAR).
++                     * b: log the flight and explosion (map gobjs 1, 2 and 8-16: BILLPOS s gobj x y z) every frame until
++                     * that frame. Logs BILL s variant launched */
++    DIR_BONE,       /* port; a: FtPart (the fighter's part enum, e.g. HeadN), b: until frame. Log BONE s port part x y z
++                     * ax ay az bx by bz cx cy cz motion frame every frame: the part's world position and its local X, Y and Z
++                     * axes (a head's pitch, a look up) */
++    DIR_REACT       /* port; a: motion state; b: buttons + 4096 * stick (0 none, 1 up, 2 down, 3 forward, 4 back, relative
++                     * to his facing); c: until frame. Closed loop, once: on the first frame from the cue whose motion (at
++                     * the frame's start, when the game reads the pad) is `a` after a different one, press those buttons
++                     * (a new press) and the stick, held 2 frames, on top of the script's pad. The frame an action becomes
++                     * possible: a grab on the first frame out of landing lag, a shielder's jump on his first frame out of
++                     * shieldstun. Logs REACT s port motion anim-frame */
 +};
 +
 +typedef struct DirCue {
@@ -1084,6 +1822,11 @@ index 0000000..8b2ef8f
 +    f32 aspect;    /* 0 keeps the game's 4:3 */
 +    u8 cpu[4];     /* 0: the director's pads drive the port; 1-9: the game's CPU at that level */
 +    u8 stocks;     /* 0: a time match with no timer (films); N: a stock match with N stocks each (the HUD shows stocks) */
++    char nametag[4][12]; /* a VS name tag per port, Shift-JIS (2 bytes a character, up to 4): written into the save data's
++                          * name table (slots 119 - port) and shown over the fighter (human ports; DIR_HUD 1 or 2). Empty: none */
++    u8 prize[4];   /* the prize boot (GM_CHALLENGER_APPROACH with no human, ckind[0] = ChKind_None: the mode starts on its prize
++                    * screen): save-data notifications to raise first, id + 1 (0: none); a Geno challenger (ckind[1]) adds
++                    * his own two messages (if/ifprize.c) */
 +} DirSetup;
 +
 +/* menu tests: boot into one of the game's own modes (dir_boot_mode, a ::GameModeKind; films use GM_DEBUG_VS) and drive its
@@ -1106,7 +1849,8 @@ index 0000000..8b2ef8f
 +} DirMenuGoto;
 +
 +extern const int dir_boot_mode;
-+extern const int dir_show_coll;   /* developer display: 0 off, 1 the model with hitboxes and hurtboxes, 2 the capsules only */
++extern const int dir_show_coll;     /* developer display: 0 off, 1 the model with hitboxes and hurtboxes, 2 the capsules only */
++extern const int dir_stage_music;   /* 1: the match plays its stage music (reels) */
 +extern const int dir_results_music; /* 1: music back on for the scenes after a match (the victory fanfare); films 0 */
 +extern const DirMenuGoto dir_menu_gotos[];
 +extern const int dir_nmenu_gotos;
@@ -1126,6 +1870,8 @@ index 0000000..8b2ef8f
 +int director_boot(void);        /* at boot: returns the ::GameModeKind to start in (menu tests also unlock every character) */
 +void director_boot_frame(void); /* every loop frame, after the master pad status is read */
 +void director_on_hit(Fighter_GObj* attacker, Fighter_GObj* victim, float dmg);
++/* a loop frame that found N > 1 pad samples queued: it ran over a video frame (logged as LAG f n) */
++void director_on_lag(int n) /* LAGFRAME f n */;
 +void director_on_item_hit(HSD_GObj* item, Fighter_GObj* victim, float dmg);
 +void director_on_laser(HSD_GObj* parent, Vec3* pos, int kind, float angle, float speed);
 +
@@ -5159,7 +5905,7 @@ index f3f409a..333da2b 100644
  struct IKState {
      /* 0x00 */ HSD_JObj* jobj0;
 diff --git a/src/melee/gm/gm_1601.c b/src/melee/gm/gm_1601.c
-index 273eb40..b3de3a9 100644
+index 273eb40..c9b0bfe 100644
 --- a/src/melee/gm/gm_1601.c
 +++ b/src/melee/gm/gm_1601.c
 @@ -17,6 +17,9 @@
@@ -5407,9 +6153,9 @@ index 273eb40..b3de3a9 100644
 +    "ÇfÅ|ÇaÇèÇóÇìÇÖÇí",
 +    "ÇbÇíÇÅÇöÇôÇàÇÅÇéÇÑ",
 +    "ÇrÇÅÇéÇÑÇÇÇÅÇá",
-+    NULL,
-+#ifndef MUST_MATCH
      NULL,
++#ifndef MUST_MATCH
++    NULL,
 +    "ÇfÇÖÇéÇè",
 +#endif
  };
@@ -5522,7 +6268,21 @@ index 273eb40..b3de3a9 100644
      {
          ChKind_None,
          -1,
-@@ -2377,7 +2462,11 @@ bool fn_801642A0(void)
+@@ -831,6 +916,13 @@ u8 fn_80160710(int arg0)
+ StKind gm_GetChallengerStKind(SelectableCharacterKind selkind)
+ {
+     ssize_t i;
++#ifndef MUST_MATCH /* animation-pipeline: Geno as the challenger (the trailer's NEW CHALLENGER) fights on his own stage,
++                    * the Forest Maze (the Akaneia slot). Not a 12th unlockable row: the table's 11 ripple into the save
++                    * format, and the vanilla fallback (St_Kind_Unk328) would index past stage_id_map */
++    if (selkind == SELKIND_GENO) {
++        return St_Kind_Akaneia;
++    }
++#endif
+     for (i = 0; i < NUM_UNLOCKABLE_CHARACTERS; i++) {
+         if (selkind == lbl_803B78C8[i].selkind) {
+             return lbl_803B78C8[i].stkind;
+@@ -2377,7 +2469,11 @@ bool fn_801642A0(void)
      u8 enabled;
  
      enabled_count = 0;
@@ -5534,7 +6294,7 @@ index 273eb40..b3de3a9 100644
          if ((1 << (u16) i) & gmMainLib_GetGamePrefs()->stage_mask) {
              enabled = true;
          } else {
-@@ -2410,7 +2499,11 @@ bool gm_80164330(s32 arg0)
+@@ -2410,7 +2506,11 @@ bool gm_80164330(s32 arg0)
  
      total_stages_on = 0;
      i = 0;
@@ -5546,7 +6306,7 @@ index 273eb40..b3de3a9 100644
          if ((1 << (u16) i) & gmMainLib_GetGamePrefs()->stage_mask) {
              var_r0 = 1;
          } else {
-@@ -4078,6 +4171,11 @@ f32 gm_80168B34(CharacterKind ckind, int arg1, int arg2)
+@@ -4078,6 +4178,11 @@ f32 gm_80168B34(CharacterKind ckind, int arg1, int arg2)
      if (ckind == CKind_CrezyH) {
          return 27.0F;
      }
@@ -5558,7 +6318,7 @@ index 273eb40..b3de3a9 100644
      if (ckind == CKind_Zelda || ckind == CKind_Seak) {
          if (arg1 == 7) {
              base = 0x19;
-@@ -4188,6 +4286,11 @@ void gm_80168C5C(u32 arg0)
+@@ -4188,6 +4293,11 @@ void gm_80168C5C(u32 arg0)
      case 29:
          lbAudioAx_800243F4(0x7C838);
          break;
@@ -5570,7 +6330,7 @@ index 273eb40..b3de3a9 100644
      }
  }
  
-@@ -4335,6 +4438,11 @@ u8 gm_GetNumCostumesForCKind(u8 ckind)
+@@ -4335,6 +4445,11 @@ u8 gm_GetNumCostumesForCKind(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5582,7 +6342,7 @@ index 273eb40..b3de3a9 100644
      return lbl_803D51A0[ckind].ncolors;
  }
  
-@@ -4343,6 +4451,11 @@ u8 gm_80169264(u8 ckind)
+@@ -4343,6 +4458,11 @@ u8 gm_80169264(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5594,7 +6354,7 @@ index 273eb40..b3de3a9 100644
      return lbl_803D51A0[ckind].x1;
  }
  
-@@ -4351,6 +4464,11 @@ u8 gm_80169290(u8 ckind)
+@@ -4351,6 +4471,11 @@ u8 gm_80169290(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5606,7 +6366,7 @@ index 273eb40..b3de3a9 100644
      return lbl_803D51A0[ckind].x3;
  }
  
-@@ -4359,6 +4477,11 @@ u8 gm_801692BC(u8 ckind)
+@@ -4359,6 +4484,11 @@ u8 gm_801692BC(u8 ckind)
      if (ckind >= ARRAY_SIZE(lbl_803D51A0)) {
          return 0;
      }
@@ -5618,6 +6378,23 @@ index 273eb40..b3de3a9 100644
      return lbl_803D51A0[ckind].x2;
  }
  
+diff --git a/src/melee/gm/gm_16F1.c b/src/melee/gm/gm_16F1.c
+index 64702e6..4961f99 100644
+--- a/src/melee/gm/gm_16F1.c
++++ b/src/melee/gm/gm_16F1.c
+@@ -2157,6 +2157,12 @@ u8 gm_DecideChallengerCpuLevel(u8 cpu_ckind, UNUSED u8 human_nametag)
+     int var_r0;
+     const struct lbl_803B7AD0_t* var_r31 = inline2(cpu_ckind);
+ 
++#ifndef MUST_MATCH /* animation-pipeline: a challenger outside the 11 unlockables (Geno, booted by the director) has no
++                    * row; every row starts at level 5, and he has no failed attempts to count */
++    if (var_r31 == NULL) {
++        return 5;
++    }
++#endif
+     var_r0 = var_r31->x1 - var_r31->x2 * gmMainLib_8015DB6C(
+                                              gm_CKindToUnlockIndex(cpu_ckind));
+     if (var_r0 < 0) {
 diff --git a/src/melee/gm/gm_1798.c b/src/melee/gm/gm_1798.c
 index cefcbae..8aca524 100644
 --- a/src/melee/gm/gm_1798.c
@@ -5841,6 +6618,102 @@ index 6596328..f3e5b54 100644
      }
      state_machine.routing.prev_mode = GM_COUNT;
  
+diff --git a/src/melee/gm/gm_1BFA.c b/src/melee/gm/gm_1BFA.c
+index d0b8113..d725d28 100644
+--- a/src/melee/gm/gm_1BFA.c
++++ b/src/melee/gm/gm_1BFA.c
+@@ -13,6 +13,9 @@
+ #include <melee/lb/lbtime.h>
+ #include <melee/ty/toy.h>
+ #include <sysdolphin/baselib/memory.h>
++#ifndef MUST_MATCH
++#include <melee/if/ifprize.h>
++#endif
+ 
+ enum {
+     state_approach,
+@@ -21,6 +24,11 @@ enum {
+ };
+ 
+ /* 1BFBA8 */ static void onExitVs(GameModeState*);
++#ifndef MUST_MATCH
++/* animation-pipeline: the human beat Geno in the challenger fight (onExitVs), so the prize screen that follows opens on his
++ * messages; a loss shows only what the save data has pending, as for anyone */
++static bool gm_GenoChallengerBeaten;
++#endif
+ /* 1BFF7C */ static void onExitPrize(GameModeState*);
+ 
+ GameModeState gm_Mode_ChallengerApproach_States[] = {
+@@ -113,7 +121,17 @@ void onExitVs(GameModeState* state)
+     }
+     gm_80173EEC();
+     gm_80172898(0x100U);
+-    if (!gm_801721EC()) {
++#ifndef MUST_MATCH /* animation-pipeline: beating Geno as the challenger goes on to his prize messages (no notification is
++                    * pending for him: he isn't one of the 11 unlockables, and the save data stays as it is) */
++    gm_GenoChallengerBeaten = challenger->cpu_ckind == CKind_Geno &&
++                              mei->match_end.outcome != OUTCOME_NO_CONTEST &&
++                              mei->match_end.outcome != OUTCOME_RETRY &&
++                              mei->match_end.player_standings[0].stocks != 0;
++    if (!gm_801721EC() && !gm_GenoChallengerBeaten)
++#else
++    if (!gm_801721EC())
++#endif
++    {
+         gm_SetPendingGameMode(challenger->curr_mode);
+         gm_SetNewGameModePending();
+     }
+@@ -171,6 +189,20 @@ void gm_ModeState_Prize_OnEnter(GameModeState* arg0)
+     var_r27_2_s11 = var_r27_2;
+ #endif
+     p3 = gm_8049E558;
++#ifndef MUST_MATCH /* animation-pipeline: Geno, the challenger, beaten (or the director's prize boot, which has no human and no
++                    * fight): his two messages first, ahead of anything else pending (ifprize.c) */
++    if (gm_GetCurrentGameMode() == GM_CHALLENGER_APPROACH &&
++        gm_GetChallengerData()->cpu_ckind == CKind_Geno &&
++        (gm_GenoChallengerBeaten ||
++         gm_GetChallengerData()->human_ckind == ChKind_None))
++    {
++        gm_GenoChallengerBeaten = false;
++        var_r31 = gm_801BFC60(IFPRIZE_GENO, var_r30, 0, lbTime_GetTimeInSeconds(), var_r31);
++        var_r30 += 1;
++        var_r31 = gm_801BFC60(IFPRIZE_GENO_MOD, var_r30, 0, lbTime_GetTimeInSeconds(), var_r31);
++        var_r30 += 1;
++    }
++#endif
+     {
+         int var_r25;
+         u32 KP;
+diff --git a/src/melee/gm/gmapproach.c b/src/melee/gm/gmapproach.c
+index 47ea16f..5752125 100644
+--- a/src/melee/gm/gmapproach.c
++++ b/src/melee/gm/gmapproach.c
+@@ -79,6 +79,12 @@ static void fn_801AD920(HSD_GObj* gobj)
+     case 25:
+         var_r0_2 = 11;
+         break;
++#ifndef MUST_MATCH /* animation-pipeline: Geno's own silhouette, NtAppro.usd's image 11 at texture-animation frame 12
++                    * (datkit approach-geno; a vanilla NtAppro.usd shows the last image, Ganondorf's, there) */
++    case CKind_Geno:
++        var_r0_2 = 12;
++        break;
++#endif
+     default:
+         var_r0_2 = 0;
+         break;
+@@ -139,7 +145,11 @@ void gm_Scene_Approach_OnEnter(void* arg0_)
+     var_r0 = arg0[0];
+     if (var_r0 != 3 && var_r0 != 7 && var_r0 != 9 && var_r0 != 10 &&
+         var_r0 != 15 && var_r0 != 20 && var_r0 != 21 && var_r0 != 22 &&
+-        var_r0 != 23 && var_r0 != 24 && var_r0 != 25)
++        var_r0 != 23 && var_r0 != 24 && var_r0 != 25
++#ifndef MUST_MATCH /* animation-pipeline: Geno keeps his kind (his silhouette), not the Ganondorf fallback */
++        && var_r0 != CKind_Geno
++#endif
++    )
+     {
+         var_r0 = 25;
+     }
 diff --git a/src/melee/gm/gmevent.c b/src/melee/gm/gmevent.c
 index f2bfae4..e79bb4f 100644
 --- a/src/melee/gm/gmevent.c
@@ -5872,6 +6745,33 @@ index f2bfae4..e79bb4f 100644
          gm_InitChallengerData(ev->x0, ev->x1, ev->x6, ev->nametag, kind,
                                GM_MENU);
          gm_ChangeGameModeAfterCurrentScene(GM_CHALLENGER_APPROACH);
+diff --git a/src/melee/gm/gmmain_lib.c b/src/melee/gm/gmmain_lib.c
+index eee1336..6969ebf 100644
+--- a/src/melee/gm/gmmain_lib.c
++++ b/src/melee/gm/gmmain_lib.c
+@@ -746,11 +746,22 @@ void gmMainLib_8015DB18(void)
+ void gmMainLib_8015DB2C(u8 arg0)
+ {
+     struct gmm_x0* gmmthing = gmMainLib_804D3EE0;
++#ifndef MUST_MATCH /* animation-pipeline: the challenger failure counters hold the 11 unlockables; an index past them
++                    * (Geno, gm_CKindToUnlockIndex's "not found" 11) would write the save data beyond the array */
++    if (arg0 >= 11) {
++        return;
++    }
++#endif
+     gmmthing->x39[arg0] = lbTime_8000AF74(gmMainLib_804D3EE0->x39[arg0], 1);
+ }
+ 
+ u8 gmMainLib_8015DB6C(u8 arg0)
+ {
++#ifndef MUST_MATCH /* animation-pipeline: as gmMainLib_8015DB2C: no counter past the 11 unlockables */
++    if (arg0 >= 11) {
++        return 0;
++    }
++#endif
+     return gmMainLib_804D3EE0->x39[arg0];
+ }
+ 
 diff --git a/src/melee/gm/gmregclear.c b/src/melee/gm/gmregclear.c
 index 9c52cc9..a4fcad7 100644
 --- a/src/melee/gm/gmregclear.c
@@ -5911,7 +6811,7 @@ index 066c455..b2f685c 100644
          { 0 },         { 0 },
      },
 diff --git a/src/melee/gm/gmscene.c b/src/melee/gm/gmscene.c
-index 6d9bd4c..ae0ccec 100644
+index 6d9bd4c..0ad7523 100644
 --- a/src/melee/gm/gmscene.c
 +++ b/src/melee/gm/gmscene.c
 @@ -21,6 +21,9 @@
@@ -5924,12 +6824,13 @@ index 6d9bd4c..ae0ccec 100644
  
  /* 479D30 */ static HSD_GObjLibInitDataType gobj_init_data;
  /* 479D58 */ static struct gm_80479D58_t gm_80479D58;
-@@ -293,6 +296,12 @@ void gm_801A4D34(void (*on_frame)(void), UNUSED GameSceneInfo* info)
+@@ -293,6 +296,13 @@ void gm_801A4D34(void (*on_frame)(void), UNUSED GameSceneInfo* info)
              lb_800195D0();
          }
          lb_800195D0();
 +#ifndef MUST_MATCH /* director */
 +        if (pad_queue_count > 1) {
++            director_on_lag(pad_queue_count);
 +            HSD_PadFlushQueue(HSD_PAD_FLUSH_QUEUE_LEAVE1);
 +            pad_queue_count = 1;
 +        }
@@ -5937,7 +6838,7 @@ index 6d9bd4c..ae0ccec 100644
  
          if (HSD_PadGetResetSwitch()) {
              gmMainLib_8046B0F0.resetting = true;
-@@ -302,6 +311,9 @@ void gm_801A4D34(void (*on_frame)(void), UNUSED GameSceneInfo* info)
+@@ -302,6 +312,9 @@ void gm_801A4D34(void (*on_frame)(void), UNUSED GameSceneInfo* info)
          for (i = 0; i < pad_queue_count; i++) {
              HSD_PerfSetStartTime();
              lb_800198E0();
@@ -5984,6 +6885,82 @@ index 9f8acb0..c7c38f5 100644
      gm_LoadAnnouncer();
  }
  
+diff --git a/src/melee/gr/grcastle.c b/src/melee/gr/grcastle.c
+index 118559d..21d9c8a 100644
+--- a/src/melee/gr/grcastle.c
++++ b/src/melee/gr/grcastle.c
+@@ -2016,3 +2016,57 @@ f32 grCastle_801D0FF0(void)
+ {
+     return 50.0f * Ground_801C0498();
+ }
++
++#ifndef MUST_MATCH
++/* The machinima director's Banzai Bill (tools/machinima/melee, DIR_BILL; not in the matching build). The castle's own
++ * Bill: map gobj 3 counts a timer down (grCastle_801CE19C) and, at zero, launches one of nine flights (map gobjs 8-16,
++ * each its own animation and landing spot; grCastle_801CE054 picks one at random, never one of the last three), whose
++ * explosion (map gobj 1, grCastle_801CE578 -> grCastle_801CE8E8) is placed where the flight ends.
++ *   variant 0-8: launch that flight now, as the timer would (its sounds and the link back to gobj 3, so its explosion
++ *                re-arms the timer afterwards, as the game does);
++ *   -1:          let the game pick, on its next update;
++ *   -2:          stop the timer (no natural Bill until the next cue);
++ *   -3:          log the timer parameters (BILLPARAM).
++ * Returns the variant launched, or -1. */
++int grCastle_DirectorBill(int variant)
++{
++    HSD_GObj* gobj = Ground_GetMapGObj(3);
++    Ground* gp;
++    if (stage_info.grkind != Gr_Kind_Castle || gobj == NULL || yakumono_param == NULL) {
++        return -1;
++    }
++    gp = GET_GROUND(gobj);
++    if (variant == -3) {
++        int i;
++        OSReport("BILLPARAM first %d+rand(%d) next %d+rand(%d) timer %d on %d boom %d\n", yakumono_param->x8,
++                 yakumono_param->xA, yakumono_param->xC, yakumono_param->xE, gp->u.castle3.xD4,
++                 gp->u.castle3.xDE_b0, yakumono_param->x58);
++        for (i = 0; i < 9; i++) {
++            OSReport("BILLVAR %d delay %d x4 %.3f rot %.3f %.3f %.3f\n", i, yakumono_param->entries[i].x0,
++                     yakumono_param->entries[i].x4, yakumono_param->entries[i].rot.x, yakumono_param->entries[i].rot.y,
++                     yakumono_param->entries[i].rot.z);
++        }
++        return -1;
++    }
++    if (variant == -2) {
++        gp->u.castle3.xDE_b0 = false;
++        return -1;
++    }
++    if (variant < 0 || variant > 8) {
++        gp->u.castle3.xDE_b0 = true;
++        gp->u.castle3.xD4 = -1;
++        return -1;
++    }
++    {
++        HSD_GObj* bill = grCastle_801CD4D0(variant + 8);
++        gp->u.castle3.xDE_b0 = false;
++        if (bill == NULL) {
++            return -1;
++        }
++        Ground_801C5440(gp, 0, 0x53021U);
++        Ground_801C5694(gp, 0, yakumono_param->entries[variant].x4);
++        ((Ground*) bill->user_data)->u.castle11.xD4 = (u32) gobj;
++        return variant;
++    }
++}
++#endif
+diff --git a/src/melee/gr/grcastle.h b/src/melee/gr/grcastle.h
+index a6d42bd..954dbba 100644
+--- a/src/melee/gr/grcastle.h
++++ b/src/melee/gr/grcastle.h
+@@ -16,6 +16,9 @@
+ /* 1CD4A4 */ void grCastle_801CD4A4(void);
+ /* 1CD4C8 */ bool grCastle_801CD4C8(void);
+ /* 1CD4D0 */ HSD_GObj* grCastle_801CD4D0(int);
++#ifndef MUST_MATCH
++int grCastle_DirectorBill(int variant); /* the director's Banzai Bill (grcastle.c) */
++#endif
+ /* 1CD5BC */ void grCastle_801CD5BC(Ground_GObj*);
+ /* 1CD600 */ bool grCastle_801CD600(Ground_GObj*);
+ /* 1CD608 */ void grCastle_801CD608(Ground_GObj*);
 diff --git a/src/melee/gr/grforest.c b/src/melee/gr/grforest.c
 new file mode 100644
 index 0000000..bf9d84d
@@ -6188,6 +7165,69 @@ index ca7a5e7..2b13741 100644
                              gp->u.display.xEE + 1);
      } else {
          temp_r3 = gp2->win_dynamic_p;
+diff --git a/src/melee/if/ifprize.c b/src/melee/if/ifprize.c
+index e65d77d..856e4b8 100644
+--- a/src/melee/if/ifprize.c
++++ b/src/melee/if/ifprize.c
+@@ -280,6 +280,25 @@ static inline void un_802FE918_update_x3(unsigned char* x3_ptr, int* r)
+     *x3_ptr = new_x3;
+ }
+ 
++#ifndef MUST_MATCH
++/* animation-pipeline: one of Geno's two messages (ifprize.h), drawn as the game draws a character's: the icon frame
++ * (0 the character, 5 the notice "!"), the text entry, and the small grey line under the box, which holds the build's
++ * version and date where a notification shows its unlock time. The first plays his victory fanfare (ff_geno.hps; Mario's
++ * on a disc without it) in place of the three info jingles; the second leaves it playing */
++static void ifPrize_GenoMessage(int a)
++{
++    if (a == IFPRIZE_GENO) {
++        lbAudioAx_800236DC();
++        lbAudioAx_80023F28(LBAX_HPS_GENO_FANFARE);
++    }
++    un_803F9D48.x4 = a == IFPRIZE_GENO ? 0 : 5;
++    un_803F9D48.x6 = a == IFPRIZE_GENO ? 0x47 : 0x48;
++    HSD_SisLib_803A6368(un_803F9D48.x20, un_803F9D48.x6);
++    HSD_SisLib_803A7664(un_803F9D48.x24);
++    HSD_SisLib_803A6B98(un_803F9D48.x24, 320.0f, 316.0f, IFPRIZE_GENO_VERSION);
++}
++#endif
++
+ void un_802FE918(int a, int b, int c)
+ {
+     unsigned char* x3_ptr;
+@@ -288,6 +307,12 @@ void un_802FE918(int a, int b, int c)
+     HSD_Text** text;
+     datetime sp14;
+ 
++#ifndef MUST_MATCH
++    if (a == IFPRIZE_GENO || a == IFPRIZE_GENO_MOD) {
++        ifPrize_GenoMessage(a);
++        return;
++    }
++#endif
+     lbAudioAx_800236DC();
+     x3_ptr = &un_803F9D48.x3;
+     lbAudioAx_80023F28(un_803F9D48.x30[*x3_ptr]);
+diff --git a/src/melee/if/ifprize.h b/src/melee/if/ifprize.h
+index e6b3695..689de8c 100644
+--- a/src/melee/if/ifprize.h
++++ b/src/melee/if/ifprize.h
+@@ -5,6 +5,15 @@
+ 
+ #include <sysdolphin/baselib/forward.h>
+ 
++#ifndef MUST_MATCH
++/* animation-pipeline: Geno's prize messages, shown after beating him as the challenger (gm_1BFA.c), numbered past the
++ * game's 0x42 notifications (0x42 itself means "none"). Neither is a save-data notification: no 12th unlockable. Their
++ * text is SdPrize.usd's two unused entries 0x47 and 0x48 (datkit prize-geno). */
++#define IFPRIZE_GENO 0x43     /* "You've unlocked ... Geno!": the character icon, his fanfare */
++#define IFPRIZE_GENO_MOD 0x44 /* the mod's own note: the notice icon, the fanfare plays on */
++#define IFPRIZE_GENO_VERSION "v1.0 \x81\x45 2026-10-02" /* in the unlock date's place; \x81\x45 is the font's middle dot */
++#endif
++
+ /* 2FE3F8 */ void un_802FE3F8(int a, int b, u16* c, u16* d);
+ /* 2FE470 */ void fn_802FE470(HSD_GObj* gobj);
+ /* 2FE6A8 */ void un_802FE6A8(void);
 diff --git a/src/melee/it/forward.h b/src/melee/it/forward.h
 index eff6c24..d5257ea 100644
 --- a/src/melee/it/forward.h
@@ -8788,10 +9828,10 @@ index 0d18563..300b175 100644
          }
          ptr += 2;
 diff --git a/src/melee/mn/mnnamenew.c b/src/melee/mn/mnnamenew.c
-index 3999487..8c7e351 100644
+index 3999487..6cd0264 100644
 --- a/src/melee/mn/mnnamenew.c
 +++ b/src/melee/mn/mnnamenew.c
-@@ -82,21 +82,21 @@ static f32 mnNameNew_804D4C10 = 10.0f;
+@@ -82,21 +82,25 @@ static f32 mnNameNew_804D4C10 = 10.0f;
  
  static MnNameNewKeyMap mnNameNew_KeyMap = {
      { 3, 10, 11, 7, 9, 8, 5, 5 },
@@ -8821,14 +9861,18 @@ index 3999487..8c7e351 100644
 +      "É}", "É~", "ÉÄ", "ÉÅ", "ÉÇ", "ÉÑ", "ÉÜ", "Éà", "Å@", "Å@",
 +      "Éâ", "Éä", "Éã", "Éå", "Éç", "Éè", "Éí", "Éì", "Å[", "ÅB" },
 +    { "Çi", "Çs", "Å@", "ÇX", "ÅD", "Çh", "Çr", "Å@", "ÇW", "Åê",
++#ifdef MUST_MATCH
 +      "Çg", "Çq", "Å@", "ÇV", "Åï", "Çf", "Çp", "Å@", "ÇU", "Åì",
++#else /* trailer lab: heart and note glyphs: keys 12 (the note) and 17 (the heart) */
++      "Çg", "Çq", "\x81\xF4", "ÇV", "Åï", "Çf", "Çp", "\x83\xBB", "ÇU", "Åì",
++#endif
 +      "Çe", "Ço", "Çy", "ÇT", "Åó", "Çd", "Çn", "Çx", "ÇS", "ÅH",
 +      "Çc", "Çm", "Çw", "ÇR", "ÅI", "Çb", "Çl", "Çv", "ÇQ", "ÅÅ",
 +      "Ça", "Çk", "Çu", "ÇP", "Å{", "Ç`", "Çj", "Çt", "ÇO", "Å|" },
  };
  
  /** @remarks The original defines mnNameNew_NullCharacter between the first
-@@ -106,7 +106,7 @@ static MnNameNewKeyMap mnNameNew_KeyMap = {
+@@ -106,7 +110,7 @@ static MnNameNewKeyMap mnNameNew_KeyMap = {
  #ifdef MUST_MATCH
  static void order_sdata(void)
  {
@@ -8837,7 +9881,7 @@ index 3999487..8c7e351 100644
  }
  #endif
  
-@@ -114,108 +114,108 @@ char mnNameNew_NullCharacter[1] = "";
+@@ -114,108 +118,108 @@ char mnNameNew_NullCharacter[1] = "";
  
  static MnNameNewGlyphTable mnNameNew_GlyphTable = {
      {
@@ -9046,7 +10090,7 @@ index 3999487..8c7e351 100644
      },
  };
  
-@@ -676,8 +676,8 @@ bool NameContainsOnlySpaces(void)
+@@ -676,8 +680,8 @@ bool NameContainsOnlySpaces(void)
      for (i = 0; i < 4; i++) {
          null_char = (s8) *mnNameNew_NullCharacter;
          if (null_char != (s8) text[0]) {
@@ -9057,7 +10101,7 @@ index 3999487..8c7e351 100644
              {
                  return false;
              }
-@@ -974,9 +974,9 @@ void mnNameNew_MainInput(HSD_GObj* arg0)
+@@ -974,9 +978,9 @@ void mnNameNew_MainInput(HSD_GObj* arg0)
          if (sel < 0x32U) {
              if (data->mode != 2 && sel < 0x32U) {
                  key_char = layout->lower_glyphs[(u8) sel][0];
@@ -9069,7 +10113,7 @@ index 3999487..8c7e351 100644
                  {
                      n = 1;
                  } else {
-@@ -995,8 +995,8 @@ void mnNameNew_MainInput(HSD_GObj* arg0)
+@@ -995,8 +999,8 @@ void mnNameNew_MainInput(HSD_GObj* arg0)
                      return;
                  }
                  cursor = data->cursor_pos;
@@ -9477,3 +10521,179 @@ index da49bf9..51418ad 100644
  };
  
  ////.bss
+diff --git a/src/sysdolphin/baselib/hsd_3A76.c b/src/sysdolphin/baselib/hsd_3A76.c
+index 42941a8..379634d 100644
+--- a/src/sysdolphin/baselib/hsd_3A76.c
++++ b/src/sysdolphin/baselib/hsd_3A76.c
+@@ -997,7 +997,7 @@ void HSD_SisLib_803A947C(HSD_Archive* archive)
+     lbArchive_80016EFC(archive);
+ }
+ 
+-SisGlyphCode HSD_SisLib_8040C680[288] = {
++SisGlyphCode HSD_SisLib_8040C680[SISLIB_GLYPH_COUNT + 1] = {
+     { 0x20, 0xE3 }, { 0x20, 0xEC }, { 0x20, 0xF4 }, { 0x21, 0x04 },
+     { 0x21, 0x02 }, { 0x21, 0x03 }, { 0x21, 0x05 }, { 0x20, 0xF3 },
+     { 0x20, 0xF5 }, { 0x20, 0xF6 }, { 0x21, 0x06 }, { 0x20, 0xFB },
+@@ -1069,11 +1069,17 @@ SisGlyphCode HSD_SisLib_8040C680[288] = {
+     { 0x21, 0x16 }, { 0x21, 0x10 }, { 0x21, 0x08 }, { 0x21, 0x15 },
+     { 0x21, 0x1E }, { 0x21, 0x11 }, { 0x21, 0x12 }, { 0x21, 0x09 },
+     { 0x21, 0x18 }, { 0x21, 0x0B }, { 0x21, 0x0E }, { 0x21, 0x0F },
+-    { 0x21, 0x1A }, { 0x21, 0x14 }, { 0x21, 0x0D }, { 0x00, 0x00 },
++    { 0x21, 0x1A }, { 0x21, 0x14 }, { 0x21, 0x0D },
++#ifndef MUST_MATCH /* trailer lab: heart and note glyphs */
++    { 0x21, 0x1F }, { 0x21, 0x20 },
++#endif
++    { 0x00, 0x00 },
+ };
++#ifdef MUST_MATCH
+ STATIC_ASSERT(sizeof(HSD_SisLib_8040C680) == 0x240);
++#endif
+ 
+-SjisChar lbl_8040C8C0[288] = {
++SjisChar lbl_8040C8C0[SISLIB_GLYPH_COUNT + 1] = {
+     { 0x81, 0x40 }, { 0x81, 0x49 }, { 0x81, 0x68 }, { 0x81, 0x94 },
+     { 0x81, 0x90 }, { 0x81, 0x93 }, { 0x81, 0x95 }, { 0x81, 0x66 },
+     { 0x81, 0x69 }, { 0x81, 0x6A }, { 0x81, 0x96 }, { 0x81, 0x7B },
+@@ -1145,11 +1151,17 @@ SjisChar lbl_8040C8C0[288] = {
+     { 0x91, 0xCC }, { 0x8E, 0xE6 }, { 0x88, 0xB5 }, { 0x90, 0xE0 },
+     { 0x96, 0xBE }, { 0x8F, 0x91 }, { 0x8F, 0xDA }, { 0x89, 0x9F },
+     { 0x93, 0x64 }, { 0x8C, 0xB9 }, { 0x8E, 0x77 }, { 0x8E, 0xA6 },
+-    { 0x94, 0xAD }, { 0x90, 0xB6 }, { 0x8D, 0x9E }, { 0x00, 0x00 },
++    { 0x94, 0xAD }, { 0x90, 0xB6 }, { 0x8D, 0x9E },
++#ifndef MUST_MATCH /* trailer lab: heart and note glyphs: 83 BB the heart (Shift_JIS-2004), 81 F4 the note */
++    { 0x83, 0xBB }, { 0x81, 0xF4 },
++#endif
++    { 0x00, 0x00 },
+ };
++#ifdef MUST_MATCH
+ STATIC_ASSERT(sizeof(lbl_8040C8C0) == 0x240);
++#endif
+ 
+-TextGlyphMetrics HSD_SisLib_8040CB00[288] = {
++TextGlyphMetrics HSD_SisLib_8040CB00[SISLIB_GLYPH_COUNT + 1] = {
+     { 0x09, 0x08 }, { 0x09, 0x0C }, { 0x09, 0x08 }, { 0x08, 0x08 },
+     { 0x09, 0x08 }, { 0x09, 0x08 }, { 0x09, 0x08 }, { 0x09, 0x08 },
+     { 0x09, 0x08 }, { 0x09, 0x08 }, { 0x04, 0x03 }, { 0x06, 0x05 },
+@@ -1221,6 +1233,12 @@ TextGlyphMetrics HSD_SisLib_8040CB00[288] = {
+     { 0x00, 0x00 }, { 0x00, 0x00 }, { 0x00, 0x00 }, { 0x00, 0x00 },
+     { 0x00, 0x00 }, { 0x00, 0x00 }, { 0x00, 0x00 }, { 0x01, 0x01 },
+     { 0x01, 0x01 }, { 0x00, 0x00 }, { 0x00, 0x00 }, { 0x00, 0x00 },
+-    { 0x01, 0x02 }, { 0x00, 0x00 }, { 0x01, 0x01 }, { 0x00, 0x00 },
++    { 0x01, 0x02 }, { 0x00, 0x00 }, { 0x01, 0x01 },
++#ifndef MUST_MATCH /* trailer lab: heart and note glyphs: row 287 held no glyph */
++    { 0x01, 0x01 }, { 0x06, 0x05 },
++#endif
++    { 0x00, 0x00 },
+ };
++#ifdef MUST_MATCH
+ STATIC_ASSERT(sizeof(HSD_SisLib_8040CB00) == 0x240);
++#endif
+diff --git a/src/sysdolphin/baselib/sislib_font.c b/src/sysdolphin/baselib/sislib_font.c
+index 60f0b17..ae2e307 100644
+--- a/src/sysdolphin/baselib/sislib_font.c
++++ b/src/sysdolphin/baselib/sislib_font.c
+@@ -2,4 +2,7 @@
+ 
+ TextGlyphTexture HSD_SisLib_FontAtlas[] ATTRIBUTE_ALIGN(32) = {
+ #include <sysdolphin/baselib/sislib_font.inc>
++#ifndef MUST_MATCH /* trailer lab: heart and note glyphs: glyphs 287 and 288 */
++#include <sysdolphin/baselib/sislib_font_geno.inc>
++#endif
+ };
+diff --git a/src/sysdolphin/baselib/sislib_font.h b/src/sysdolphin/baselib/sislib_font.h
+index 88e6903..bcf5324 100644
+--- a/src/sysdolphin/baselib/sislib_font.h
++++ b/src/sysdolphin/baselib/sislib_font.h
+@@ -25,9 +25,15 @@ typedef struct SjisChar {
+     /*0x01*/ u8 trail;
+ } SjisChar;
+ 
+-/* 40C680 */ extern SisGlyphCode HSD_SisLib_8040C680[288];
+-/* 40C8C0 */ extern SjisChar lbl_8040C8C0[288];
+-/* 40CB00 */ extern TextGlyphMetrics HSD_SisLib_8040CB00[288];
+-/* 40CD40 */ extern TextGlyphTexture HSD_SisLib_FontAtlas[287];
++#ifndef MUST_MATCH /* trailer lab: heart and note glyphs (projects/geno/trailer/lab/font_patch.py): two glyphs appended */
++#define SISLIB_GLYPH_COUNT 289
++#else
++#define SISLIB_GLYPH_COUNT 287
++#endif
++
++/* 40C680 */ extern SisGlyphCode HSD_SisLib_8040C680[SISLIB_GLYPH_COUNT + 1];
++/* 40C8C0 */ extern SjisChar lbl_8040C8C0[SISLIB_GLYPH_COUNT + 1];
++/* 40CB00 */ extern TextGlyphMetrics HSD_SisLib_8040CB00[SISLIB_GLYPH_COUNT + 1];
++/* 40CD40 */ extern TextGlyphTexture HSD_SisLib_FontAtlas[SISLIB_GLYPH_COUNT];
+ 
+ #endif
+diff --git a/src/sysdolphin/baselib/sislib_font_geno.inc b/src/sysdolphin/baselib/sislib_font_geno.inc
+new file mode 100644
+index 0000000..1992529
+--- /dev/null
++++ b/src/sysdolphin/baselib/sislib_font_geno.inc
+@@ -0,0 +1,67 @@
++/* The heart and the note (atlas glyphs 287 and 288): 32x32 I4, drawn by projects/geno/trailer/lab/font_glyphs.py
++ * (the animation-pipeline repo) after SMRPG's name for Geno. Appended to HSD_SisLib_FontAtlas in non-matching
++ * builds only (sislib_font.c). Do not edit by hand. */
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x9C,
++0x00, 0x00, 0x8F, 0xFF, 0x00, 0x08, 0xFF, 0xFF, 0x00, 0x4F, 0xFF, 0xFF, 0x00, 0xCF, 0xFF, 0xB2,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0xEE, 0xC7, 0x10, 0x00,
++0xFF, 0xFF, 0xE5, 0x00, 0xFF, 0xFF, 0xFF, 0x50, 0xCC, 0xFF, 0xFF, 0xE1, 0x00, 0x4D, 0xFF, 0xF7,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x01, 0x7C, 0xEE,
++0x00, 0x4D, 0xFF, 0xFF, 0x04, 0xFF, 0xFF, 0xFF, 0x1E, 0xFF, 0xFF, 0xDC, 0x6F, 0xFF, 0xD4, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC9, 0x30, 0x00, 0x00,
++0xFF, 0xF8, 0x00, 0x00, 0xFF, 0xFF, 0x80, 0x00, 0xFF, 0xFF, 0xF4, 0x00, 0x2B, 0xFF, 0xFC, 0x00,
++0x02, 0xFF, 0xFD, 0x10, 0x04, 0xFF, 0xF8, 0x00, 0x05, 0xFF, 0xF7, 0x00, 0x03, 0xFF, 0xFC, 0x00,
++0x00, 0xDF, 0xFF, 0x70, 0x00, 0x7F, 0xFF, 0xFB, 0x00, 0x0C, 0xFF, 0xFF, 0x00, 0x01, 0xCF, 0xFF,
++0x00, 0x03, 0xFF, 0xFC, 0x00, 0x00, 0xCF, 0xFF, 0x00, 0x00, 0xBF, 0xFF, 0x00, 0x00, 0xCF, 0xFE,
++0x00, 0x00, 0xBF, 0xFF, 0x30, 0x00, 0x4F, 0xFF, 0xE3, 0x00, 0x06, 0xEF, 0xFD, 0x10, 0x00, 0x14,
++0xCF, 0xFF, 0x40, 0x00, 0xFF, 0xFD, 0x00, 0x00, 0xFF, 0xFC, 0x00, 0x00, 0xEF, 0xFD, 0x00, 0x00,
++0xFF, 0xFB, 0x00, 0x00, 0xFF, 0xF5, 0x00, 0x03, 0xFE, 0x70, 0x00, 0x3E, 0x42, 0x00, 0x01, 0xDF,
++0x01, 0xDF, 0xFF, 0x20, 0x00, 0x8F, 0xFF, 0x40, 0x00, 0x7F, 0xFF, 0x50, 0x00, 0xCF, 0xFF, 0x30,
++0x07, 0xFF, 0xFD, 0x00, 0xBF, 0xFF, 0xF7, 0x00, 0xFF, 0xFF, 0xC0, 0x00, 0xFF, 0xFC, 0x10, 0x00,
++0x00, 0x00, 0x07, 0xEF, 0x00, 0x00, 0x00, 0x5F, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0xFF, 0xB0, 0x00, 0x00, 0xFF, 0xF8, 0x00, 0x00, 0xFF, 0xFF, 0x60, 0x00, 0xAF, 0xFF, 0xF3, 0x00,
++0x1C, 0xFF, 0xFD, 0x10, 0x02, 0xEF, 0xFF, 0xB0, 0x00, 0x4F, 0xFF, 0xF8, 0x00, 0x07, 0xFF, 0xFF,
++0x00, 0x00, 0x0B, 0xFF, 0x00, 0x00, 0x8F, 0xFF, 0x00, 0x05, 0xFF, 0xFF, 0x00, 0x3E, 0xFF, 0xFA,
++0x01, 0xDF, 0xFF, 0xD1, 0x0B, 0xFF, 0xFE, 0x30, 0x8F, 0xFF, 0xF5, 0x00, 0xFF, 0xFF, 0x80, 0x00,
++0xFE, 0x70, 0x00, 0x00, 0xF5, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0xAF, 0xFF, 0x00, 0x00, 0x0C, 0xFF, 0x00, 0x00, 0x02, 0xEF, 0x00, 0x00, 0x00, 0x4F,
++0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0xFF, 0xFA, 0x00, 0x00, 0xFF, 0xD1, 0x00, 0x00, 0xFE, 0x20, 0x00, 0x00, 0xF5, 0x00, 0x00, 0x00,
++0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x11, 0x00, 0x00, 0x2E, 0xEE, 0x00, 0x00, 0x2F, 0xFF,
++0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF,
++0x00, 0x00, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0xEF, 0x80, 0x00, 0x00, 0xFF, 0xF8, 0x00, 0x00,
++0xFF, 0xFF, 0xA1, 0x00, 0xFF, 0xFF, 0xFC, 0x10, 0xFF, 0xFF, 0xFF, 0xC1, 0xFF, 0xFF, 0xFF, 0xFC,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF,
++0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x9C, 0xFF, 0xFF, 0xFF, 0x62, 0xEF, 0xFF, 0xFF, 0x70, 0x5F, 0xFF,
++0xFF, 0x70, 0x0C, 0xFF, 0xFF, 0x70, 0x0B, 0xFF, 0xFF, 0x70, 0x1E, 0xFF, 0xFF, 0x70, 0xBF, 0xFF,
++0x90, 0x00, 0x00, 0x00, 0xF3, 0x00, 0x00, 0x00, 0xFA, 0x00, 0x00, 0x00, 0xFE, 0x10, 0x00, 0x00,
++0xFF, 0x30, 0x00, 0x00, 0xFF, 0x40, 0x00, 0x00, 0xFF, 0x20, 0x00, 0x00, 0xFC, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
++0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF, 0x00, 0x00, 0x2F, 0xFF,
++0x00, 0x01, 0x5F, 0xFF, 0x02, 0x9E, 0xFF, 0xFF, 0x6E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++0xFF, 0x60, 0xBF, 0xFF, 0xFF, 0x70, 0x08, 0xFF, 0xFF, 0x70, 0x00, 0x6D, 0xFF, 0x70, 0x00, 0x01,
++0xFF, 0x70, 0x00, 0x00, 0xFF, 0x70, 0x00, 0x00, 0xFF, 0x70, 0x00, 0x00, 0xFF, 0x70, 0x00, 0x00,
++0xF7, 0x00, 0x00, 0x00, 0xD1, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x1D, 0x00, 0x00, 0x00, 0x4F, 0x00, 0x00, 0x00, 0x4F, 0x00, 0x00, 0x00, 0x1D,
++0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
++0xBF, 0xFF, 0xFD, 0x82, 0x02, 0x55, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0xFF, 0x60, 0x00, 0x00, 0xFD, 0x10, 0x00, 0x00, 0xF4, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

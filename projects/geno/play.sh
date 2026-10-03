@@ -19,6 +19,9 @@ cp "$MW"/rig/out/PlGe*.dat "$MW"/rig/out/GmRstMGe.dat "$DISC/files/"
 [ -f "$MW/music/fanfare/ff_geno.hps" ] && cp "$MW/music/fanfare/ff_geno.hps" "$DISC/files/audio/"
 # his effect file (EfGeData.dat, built from projects/geno/fx/efge.py; without it the game plays the borrowed effects)
 MELEE_DISC="$DISC" MELEE_WORK="$MW" "$PY" "$ROOT/projects/geno/fx/efge.py" --install >/dev/null
+# the challenger screen with his silhouette (NtAppro.usd) and his prize screen (SdPrize.usd), built locally into
+# $MW/challenger (datkit approach-geno, prize-geno); the DOL expects them
+for f in NtAppro.usd SdPrize.usd; do if [ -f "$MW/challenger/$f" ]; then cp "$MW/challenger/$f" "$DISC/files/"; fi; done
 # the Forest Maze stage's files (built locally into $MW/stage; the DOL expects them once the stage is merged)
 [ -f "$MW/stage/out/GrFm.dat" ] && MELEE_DISC="$DISC" MELEE_WORK="$MW" sh "$ROOT/projects/geno/stage/install.sh" >/dev/null
 "$PY" "$ROOT/tools/machinima/melee/build.py" "$ROOT/projects/geno" play | tail -1

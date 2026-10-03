@@ -18,7 +18,7 @@ import pyloudnorm as pyln
 import soundfile as sf
 from scipy.signal import butter, sosfiltfilt
 
-ROM = os.path.expanduser('~/games/smrpg/sfx')
+ROM = os.path.expanduser(os.environ.get('SMRPG_SFX', '~/games/smrpg/sfx'))   # capture/'s renders (SMRPG_SFX)
 SR = 32000
 PEAK_DB, LUFS_MAX, LUFS_MIN = -3.0, -8.0, -16.0
 
@@ -90,4 +90,4 @@ def build(out):
 
 
 if __name__ == '__main__':
-    build(sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/games/melee/work/sfxbank/timed'))
+    build(sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank'))), 'timed'))

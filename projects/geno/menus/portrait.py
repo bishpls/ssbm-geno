@@ -165,7 +165,7 @@ def face(p):
 
 def main():
     args = sys.argv[1:]
-    frame_dir = os.path.expanduser('~/games/melee/work/css3')
+    frame_dir = os.path.join(os.path.expanduser(os.environ.get('MELEE_WORK', '~/games/melee/work')), 'css3')   # rig/prepare.py
     if '--glyphs' in args:
         i = args.index('--glyphs'); frame_dir = args[i + 1]; del args[i:i + 2]
     out, runs = args[0], args[1:]

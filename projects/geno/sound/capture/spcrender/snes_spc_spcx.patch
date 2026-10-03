@@ -1,0 +1,48 @@
+--- a/snes_spc/SPC_DSP.cpp
++++ b/snes_spc/SPC_DSP.cpp
+@@ -488,8 +488,9 @@
+ 	int amp = (m.t_output * (int8_t) VREG(v->regs,voll + ch)) >> 7;
+ 	
+ 	// Add to output total
++	extern int spcx_nosat;
+ 	m.t_main_out [ch] += amp;
+-	CLAMP16( m.t_main_out [ch] );
++	if ( !spcx_nosat ) CLAMP16( m.t_main_out [ch] ); // nosat: no saturation at the voice sum (headroom render)
+ 	
+ 	// Optionally add to echo total
+ 	if ( m.t_eon & v->vbit )
+@@ -654,8 +655,10 @@
+ }
+ inline int SPC_DSP::echo_output( int ch )
+ {
+-	int out = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7) +
+-			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(evoll + ch * 0x10)) >> 7);
++	extern int spcx_nosat;
++	int mo = (m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7;
++	if ( !spcx_nosat ) mo = (int16_t) mo;
++	int out = mo + (int16_t) ((m.t_echo_in [ch] * (int8_t) REG(evoll + ch * 0x10)) >> 7);
+ 	CLAMP16( out );
+ 	return out;
+ }
+--- a/snes_spc/SPC_DSP.h
++++ b/snes_spc/SPC_DSP.h
+@@ -247,6 +247,8 @@
+ {
+ 	assert( (unsigned) addr < register_count );
+ 	
++	extern int spcx_dry;
++	if ( spcx_dry && (addr == 0x2C || addr == 0x3C) ) data = 0; // dry render: echo return muted
+ 	m.regs [addr] = (uint8_t) data;
+ 	switch ( addr & 0x0F )
+ 	{
+--- a/snes_spc/SNES_SPC.h
++++ b/snes_spc/SNES_SPC.h
+@@ -129,7 +129,7 @@
+ 	
+ 	enum { signature_size = 35 };
+ 	
+-private:
++public:
+ 	SPC_DSP dsp;
+ 	
+ 	#if SPC_LESS_ACCURATE

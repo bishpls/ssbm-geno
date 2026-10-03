@@ -1,0 +1,836 @@
+[
+ {
+  "sound_id": 550000,
+  "hex": "0x86470",
+  "k": 0,
+  "name": "GENO_PULSE",
+  "sample_id": 1551,
+  "dur_s": 0.069,
+  "adpcm_bytes": 1264,
+  "suggested": "jab 1 f3, jab 2 on its hit frame, each rapid-jab hit; down tilt f6; pummel hit",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 052 (nosat capture: pulse 2 of 6, 0.068-0.137 s)"
+  ],
+  "edits": [
+   "0.5/10 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS, then +2.5 dB to Mario's loudness range"
+  ],
+  "peak_dbfs": -0.5,
+  "max_momentary_lufs": -20.4,
+  "adpcm_snr_db": 37.58,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550001,
+  "hex": "0x86471",
+  "k": 1,
+  "name": "GENO_HANDGUN",
+  "sample_id": 1552,
+  "dur_s": 0.606,
+  "adpcm_bytes": 11096,
+  "suggested": "forward tilt f7; forward air f9",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 148 (nosat capture, cut by 000 at 36 frames as the Hand Gun script does)"
+  ],
+  "edits": [
+   "the game's own 0.6 s cut",
+   "8 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -11.2,
+  "adpcm_snr_db": 24.88,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550002,
+  "hex": "0x86472",
+  "k": 2,
+  "name": "GENO_HANDCANNON",
+  "sample_id": 1553,
+  "dur_s": 0.635,
+  "adpcm_bytes": 11616,
+  "suggested": "down smash f7 (front) and f13 (back, pan opposite); back air f10; down air f8",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 109 (nosat capture: triggered 3x, 6 frames apart, as the Hand Cannon script does)"
+  ],
+  "edits": [
+   "the game's triple trigger baked into one sample (the last rings out)",
+   "40 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -11.5,
+  "adpcm_snr_db": 30.21,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550003,
+  "hex": "0x86473",
+  "k": 3,
+  "name": "GENO_DOUBLEPUNCH",
+  "sample_id": 1554,
+  "dur_s": 0.62,
+  "adpcm_bytes": 11344,
+  "suggested": "forward smash f15 (the crack is at the start of the sound)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 012 (nosat capture: the unarmed/Double Punch hit from the weapon-sound table, 0-0.62 of 1.46 s)"
+  ],
+  "edits": [
+   "ring shortened for Melee pacing (as before)",
+   "220 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -13.5,
+  "adpcm_snr_db": 32.57,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550004,
+  "hex": "0x86474",
+  "k": 4,
+  "name": "GENO_STARGUN",
+  "sample_id": 1555,
+  "dur_s": 0.8,
+  "adpcm_bytes": 14632,
+  "suggested": "up smash f9; up air f5",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 017 (nosat capture: the star cascade, 0-0.80 of 1.10 s)"
+  ],
+  "edits": [
+   "tail repeats dropped (as before)",
+   "140 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -8.6,
+  "adpcm_snr_db": 26.31,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550005,
+  "hex": "0x86475",
+  "k": 5,
+  "name": "GENO_STARGUN_HIT",
+  "sample_id": 1556,
+  "dur_s": 0.5,
+  "adpcm_bytes": 9144,
+  "suggested": "up smash / up air on hit (code, not the script: see note)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 197 (nosat capture: Star Gun hit, 0-0.50 of 0.59 s)"
+  ],
+  "edits": [
+   "150 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -15.9,
+  "adpcm_snr_db": 30.89,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550006,
+  "hex": "0x86476",
+  "k": 6,
+  "name": "GENO_NAIR_SWIRL",
+  "sample_id": 1557,
+  "dur_s": 0.336,
+  "adpcm_bytes": 6152,
+  "suggested": "neutral air f3",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 063 (nosat capture: Geno's swirl, 0.04-0.44 s)"
+  ],
+  "edits": [
+   "+3 semitones (resampled) to set it apart from the Whirl (as before)",
+   "15/80 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -13.6,
+  "adpcm_snr_db": 22.49,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550007,
+  "hex": "0x86477",
+  "k": 7,
+  "name": "GENO_CAPE",
+  "sample_id": 1558,
+  "dur_s": 0.317,
+  "adpcm_bytes": 5800,
+  "suggested": "up tilt f5-6",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 051 (nosat capture: the rocket-fist launch swoosh (a real SNES Geno swish; the SNES has no cape sound))"
+  ],
+  "edits": [
+   "40 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.3,
+  "adpcm_snr_db": 39.46,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550008,
+  "hex": "0x86478",
+  "k": 8,
+  "name": "GENO_PROJ_HIT",
+  "sample_id": 1559,
+  "dur_s": 0.434,
+  "adpcm_bytes": 7936,
+  "suggested": "Finger Shot and Beam items on hit; Star Road launch hitbox on hit",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 113 (nosat capture: the weapon-table hit for Finger Shot / Hand Gun / Hand Cannon)"
+  ],
+  "edits": [
+   "100 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.9,
+  "adpcm_snr_db": 28.03,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550009,
+  "hex": "0x86479",
+  "k": 9,
+  "name": "GENO_FINGERSHOT",
+  "sample_id": 1560,
+  "dur_s": 0.277,
+  "adpcm_bytes": 5072,
+  "suggested": "neutral B tap at the spawn: grounded f10, aerial f7",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 052 (nosat capture: the first 4 of the 6 pulses (0-0.277 s))"
+  ],
+  "edits": [
+   "four bullets, as before",
+   "0.5/8 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS, then +2.5 dB to Mario's loudness range"
+  ],
+  "peak_dbfs": -0.5,
+  "max_momentary_lufs": -16.9,
+  "adpcm_snr_db": 35.6,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550010,
+  "hex": "0x8647a",
+  "k": 10,
+  "name": "GENO_BEAM_CHARGE",
+  "sample_id": 1561,
+  "dur_s": 1.09,
+  "adpcm_bytes": 19936,
+  "suggested": "neutral B hold from the press (frame 1); tracked (behavior 1) and stopped on release/store (behavior 10); climb tops out in its last grain, 0.71-0.77 s (frames 43-46), top grains to frame 65",
+  "script": {
+   "vol": 178,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 069 (nosat capture: the charge, 0-1.63 s)",
+   "ROM 069 (nosat capture: top grains 1.30-1.63 s)"
+  ],
+  "edits": [
+   "grain drop to 0.75 s so the climb peaks at frame 45 (the catalogue method; grain period 55.5 ms, 29 grains, kept 14 -> 0.766 s)",
+   "then the top grains for the 20-frame grace",
+   "6 ms crossfade",
+   "3/40 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS, then -1.1 dB to Mario's loudness range"
+  ],
+  "peak_dbfs": -4.11,
+  "max_momentary_lufs": -8.0,
+  "adpcm_snr_db": 35.74,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550011,
+  "hex": "0x8647b",
+  "k": 11,
+  "name": "GENO_BEAM_STAR1",
+  "sample_id": 1562,
+  "dur_s": 0.37,
+  "adpcm_bytes": 6768,
+  "suggested": "charge frame 15 (from C where the star lights)",
+  "script": {
+   "vol": 178,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 013 (nosat capture: coin, second ding (2.7 kHz), 0-0.37 s)"
+  ],
+  "edits": [
+   "+0 semitones (resampled): a rising triad over the stars (as before)",
+   "1/110 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.5,
+  "adpcm_snr_db": 40.05,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550012,
+  "hex": "0x8647c",
+  "k": 12,
+  "name": "GENO_BEAM_STAR2",
+  "sample_id": 1563,
+  "dur_s": 0.294,
+  "adpcm_bytes": 5376,
+  "suggested": "charge frame 30; Blast second star (+18 frames)",
+  "script": {
+   "vol": 178,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 013 (nosat capture: coin, second ding (2.7 kHz), 0-0.37 s)"
+  ],
+  "edits": [
+   "+4 semitones (resampled): a rising triad over the stars (as before)",
+   "1/110 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.5,
+  "adpcm_snr_db": 48.72,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550013,
+  "hex": "0x8647d",
+  "k": 13,
+  "name": "GENO_BEAM_STAR3",
+  "sample_id": 1564,
+  "dur_s": 0.334,
+  "adpcm_bytes": 6104,
+  "suggested": "charge frame 45; Blast third star (Flash)",
+  "script": {
+   "vol": 178,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 013 (nosat capture: coin, both dings, 0-0.50 s)"
+  ],
+  "edits": [
+   "+7 semitones (resampled): a rising triad over the stars (as before)",
+   "1/110 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -11.4,
+  "adpcm_snr_db": 47.4,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550014,
+  "hex": "0x8647e",
+  "k": 14,
+  "name": "GENO_BEAM_RELEASE",
+  "sample_id": 1565,
+  "dur_s": 0.265,
+  "adpcm_bytes": 4848,
+  "suggested": "shield store (the 8 store frames) or an abandoned charge",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 069 (nosat capture: release glide, first 0.265 s)"
+  ],
+  "edits": [
+   "glide trimmed from 0.62 s (as before)",
+   "3/80 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -8.6,
+  "adpcm_snr_db": 34.32,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550015,
+  "hex": "0x8647f",
+  "k": 15,
+  "name": "GENO_BEAM_FIRE",
+  "sample_id": 1566,
+  "dur_s": 0.37,
+  "adpcm_bytes": 6768,
+  "suggested": "Beam spawn with 1-2 stars or from a store (release + 8 frames)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 070 (nosat capture: the fire, 0-0.37 s (the hum starts at its retrigger at 0.37 s))"
+  ],
+  "edits": [
+   "20 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS, then -0.3 dB to Mario's loudness range"
+  ],
+  "peak_dbfs": -3.28,
+  "max_momentary_lufs": -8.0,
+  "adpcm_snr_db": 33.34,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550016,
+  "hex": "0x86480",
+  "k": 16,
+  "name": "GENO_BEAM_FULL",
+  "sample_id": 1567,
+  "dur_s": 1.0,
+  "adpcm_bytes": 18288,
+  "suggested": "Beam spawn with 3 stars, and the auto-fire at frame 65",
+  "script": {
+   "vol": 229,
+   "prio": 17,
+   "aux": 20
+  },
+  "sources": [
+   "ROM 070 (nosat capture: fire + hum, 0-1.00 of 1.42 s)"
+  ],
+  "edits": [
+   "hum cut at 1.0 s (as before)",
+   "250 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS, then -0.4 dB to Mario's loudness range"
+  ],
+  "peak_dbfs": -3.37,
+  "max_momentary_lufs": -8.0,
+  "adpcm_snr_db": 34.66,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550017,
+  "hex": "0x86481",
+  "k": 17,
+  "name": "GENO_WHIRL_THROW",
+  "sample_id": 1568,
+  "dur_s": 0.5,
+  "adpcm_bytes": 9144,
+  "suggested": "side B f12 (the disc spawns)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 063 (nosat capture: the swirl the Whirl plays with the flying disc, 0-0.50 s)"
+  ],
+  "edits": [
+   "10/120 ms fades (in game it is cut when the disc hits)",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -11.0,
+  "adpcm_snr_db": 22.54,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550018,
+  "hex": "0x86482",
+  "k": 18,
+  "name": "GENO_WHIRL_HIT",
+  "sample_id": 1569,
+  "dur_s": 0.331,
+  "adpcm_bytes": 6064,
+  "suggested": "Whirl item on hit (outbound, the three grind hits, the hover hit)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 042 (nosat capture: the Whirl's untimed hit (channel 4))"
+  ],
+  "edits": [
+   "60 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.3,
+  "adpcm_snr_db": 28.87,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550019,
+  "hex": "0x86483",
+  "k": 19,
+  "name": "GENO_WHIRL_RECALL",
+  "sample_id": 1570,
+  "dur_s": 0.45,
+  "adpcm_bytes": 8232,
+  "suggested": "side B during the hover (recall start)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 063 (nosat capture: the swirl, 0.05-0.50 s)"
+  ],
+  "edits": [
+   "reversed, so it rises toward Geno (as before)",
+   "30/40 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -10.7,
+  "adpcm_snr_db": 22.77,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550020,
+  "hex": "0x86484",
+  "k": 20,
+  "name": "GENO_WHIRL_CRIT",
+  "sample_id": 1571,
+  "dur_s": 0.8,
+  "adpcm_bytes": 14632,
+  "suggested": "the crit contact, instead of WHIRL_HIT",
+  "script": {
+   "vol": 229,
+   "prio": 17,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 078 (nosat capture: the Whirl's timed press, the 9999 moment (channel 4), 0-0.80 of 0.90 s)"
+  ],
+  "edits": [
+   "250 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.5,
+  "adpcm_snr_db": 25.29,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550021,
+  "hex": "0x86485",
+  "k": 21,
+  "name": "GENO_BLAST_MARK",
+  "sample_id": 1572,
+  "dur_s": 0.7,
+  "adpcm_bytes": 12800,
+  "suggested": "down B f10 (mark spawn); 0.70 s = 42 frames, ending on a mark+42 strike",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 063 (nosat capture: the sky beam, 0-0.70 s)"
+  ],
+  "edits": [
+   "cut to 0.70 s = 42 frames (as before)",
+   "20/200 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -10.1,
+  "adpcm_snr_db": 22.7,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550022,
+  "hex": "0x86486",
+  "k": 22,
+  "name": "GENO_BLAST_COLUMNS",
+  "sample_id": 1573,
+  "dur_s": 0.94,
+  "adpcm_bytes": 17192,
+  "suggested": "the column strike (Blast item), mark + 32-42 frames; 6 retriggers 6 frames apart then the ring-out (0.94 s)",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 20
+  },
+  "sources": [
+   "ROM 118 (nosat capture: retriggered every 6 frames (x18 in the capture), the Blast script's own loop)"
+  ],
+  "edits": [
+   "kept the game's 6-frame retriggers, 6 of them (first 5 periods, then the final trigger's ring-out), cut at the retrigger key-ons found by correlation (periods [100.7, 100.8, 100.8, 100.8, 100.7] ms)",
+   "2/40 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -9.5,
+  "adpcm_snr_db": 26.77,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550023,
+  "hex": "0x86487",
+  "k": 23,
+  "name": "GENO_FLASH_TRANSFORM",
+  "sample_id": 1574,
+  "dur_s": 0.742,
+  "adpcm_bytes": 13576,
+  "suggested": "down B third star: the fold begins",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 196 (nosat capture: Geno Flash transformation)"
+  ],
+  "edits": [
+   "60 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -10.4,
+  "adpcm_snr_db": 49.32,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550024,
+  "hex": "0x86488",
+  "k": 24,
+  "name": "GENO_FLASH_FIRE",
+  "sample_id": 1575,
+  "dur_s": 0.75,
+  "adpcm_bytes": 13720,
+  "suggested": "Flash fires, ~frame 90",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 185 (nosat capture: Geno Flash shoot)"
+  ],
+  "edits": [
+   "40 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -9.7,
+  "adpcm_snr_db": 45.21,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550025,
+  "hex": "0x86489",
+  "k": 25,
+  "name": "GENO_FLASH_EXPLOSION",
+  "sample_id": 1576,
+  "dur_s": 1.66,
+  "adpcm_bytes": 30360,
+  "suggested": "the sun spawns (Flash item)",
+  "script": {
+   "vol": 229,
+   "prio": 17,
+   "aux": 20
+  },
+  "sources": [
+   "ROM 186 (nosat capture: Geno Flash explosion, 0-1.66 of 3.44 s)"
+  ],
+  "edits": [
+   "shortened (sun grows ~40 f, lingers ~30 f), as before",
+   "450 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -8.7,
+  "adpcm_snr_db": 26.03,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550026,
+  "hex": "0x8648a",
+  "k": 26,
+  "name": "GENO_STARROAD_FOLD",
+  "sample_id": 1577,
+  "dur_s": 0.267,
+  "adpcm_bytes": 4888,
+  "suggested": "up B f6",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 196 (nosat capture: the morph into the cannon (its rising steps), 0-0.30 s)"
+  ],
+  "edits": [
+   "+2 semitones (resampled): a quicker fold than the Flash",
+   "3/60 ms fades",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -13.2,
+  "adpcm_snr_db": 60.03,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ },
+ {
+  "sound_id": 550027,
+  "hex": "0x8648b",
+  "k": 27,
+  "name": "GENO_STARROAD_LAUNCH",
+  "sample_id": 1578,
+  "dur_s": 0.37,
+  "adpcm_bytes": 6768,
+  "suggested": "up B launch, f18 (6 + the 12-frame aim) or when it fires itself",
+  "script": {
+   "vol": 204,
+   "prio": 15,
+   "aux": 1
+  },
+  "sources": [
+   "ROM 185 (nosat capture: the pulsed shot, 0.45-0.75 s, +2 st)",
+   "ROM 017 (nosat capture: first star tones 0-0.34 s, -6 dB, +30 ms)"
+  ],
+  "edits": [
+   "mixed: the cannon shot with a star trail (as before; no SNES Star Road move exists)",
+   "120 ms fade out",
+   "40 Hz high-pass",
+   "mono (the renders are dual-mono)",
+   "peak -3 dBFS"
+  ],
+  "peak_dbfs": -3.0,
+  "max_momentary_lufs": -12.6,
+  "adpcm_snr_db": 29.31,
+  "clean": true,
+  "source_kind": "ROM capture (nosat)"
+ }
+]

@@ -50,20 +50,304 @@ main disc carries the installed files.
 
 **The music loop** (`music.py build`, from metal draft 2):
 - Intro 0-9.6 s once; the loop from Theme A's downbeat (9.6 s) to the end of the final chorus (91.2 s), 81.6 s (68 bars at
-  200 BPM), leaving out the final hit; the chorus's own 8th-note dropout breathes into the theme.
+  200 BPM), leaving out the final hit.
+- **The loop's last bar is the stage's own** (2026-09-30). M1's stream kept draft 2's 8th-note stop before the hit, so every
+  wrap had a 150 ms hole: 10 ms RMS fell 36 dB below its surroundings at 91.17 s, where the deepest dip anywhere else in
+  FINAL is 4.7 dB (Michael: "a very obvious gap"). `music_loopend.py` re-renders draft 2 without the stop, in two passes of
+  the arrangement's own renderer: pass 1 records every whole-song normaliser (DI peaks into the amps, stem and layer RMS,
+  the master EQ and gain), and pass 2 replays them, since left free the cellos alone would have moved 12 dB. Pass 2 leaves
+  pass 1 at 91.058 s, where the stop began. Two renderers aren't repeatable: Surge XT starts its oscillators at a random
+  phase (the synth sections differ run to run; FINAL has none), and sfizz_render, which streams sample tails on a
+  background thread, renders notes short when the machine is loaded (renders beside other work differed from draft 2's
+  orchestra at -18 dB in FINAL, where clean ones differ at -66 to -76). So each sfizz render repeats until two runs
+  agree sample for sample (6 of 45 parts disagreed on their first two runs under this session's load), and both passes
+  are checked against draft 2. The re-render matches draft 2 in FINAL to -74 dB; the stream takes draft 2 up to
+  90.0 s and the re-render after it. The loop's last 4 ms cross into the 4 ms before the loop start, so the waveform runs
+  on across the jump (without it, a 0.27 full-scale step). Seam: deepest dip -2.7 dB, inside THEME A (the loop's last
+  0.3 s: -1.4); wrap step 1.3x the median (the first pass's intro-to-theme join: 1.1x); HF burst -1.1 dB (a mid-loop
+  downbeat: -1.5). Offline: the stream's in-game seam is not yet re-captured.
 - 32 kHz stereo DSP-ADPCM, 52 blocks. The loop starts exactly on the downbeat: 16 samples of silence lead the stream, so
   the loop start (307216) is a whole number of 56-sample groups, and `hps.py`'s new `exact_loop` cuts the block before it
   short, as HAL's own streams vary their block sizes. ADPCM SNR 33.3 / 33.6 dB (one coefficient set per channel over a
   dense metal mix; a vanilla stream re-encodes at 42.8).
 - Level: the six starters' streams measure -15.3 to -11.0 LUFS (median -12.8), true peaks -4.6 to +0.1 dBTP. The cut
   is gained -2.8 dB to -12.8 LUFS, true peak -3.5 dBTP.
-- **The seam, in game:** a 110 s match's audio dump matches the stream sample for sample (correlation 0.98-0.998 at 30,
-  60 and 85 s; 0 samples offset) and wraps at 110.40 s (91.2 s into it) to the loop start (0 samples, correlation
+- **The seam, in game (M1's stream, with the stop):** a 110 s match's audio dump matches the stream sample for sample
+  (correlation 0.98-0.998 at 30, 60 and 85 s; 0 samples offset) and wraps at 110.40 s (91.2 s into it) to the loop start (0 samples, correlation
   0.998). At the wrap the high-frequency burst is +1.87 dB over its surroundings; 32% of the arrangement's own downbeats
   in the same capture burst more (median +0.69, p90 +3.14), and the sample step is 0.63 of the local 99th percentile:
   a downbeat, not a click. (Dolphin labels its DSP dump 32028 Hz; the stream plays at 32000 samples per second of it.)
 
 **Kept:** the matching build matches (`08e0bf20`); `remeasure.sh` leaves `projects/geno/research` unchanged.
+
+## The sky: a twilight that moves (2026-09-30)
+
+Michael, on art pass 2: "Are we doing anything about the dull static purple skybox?" Then: "Small Star Road nod sounds
+good to me." The shooting star is on by default (`STAR_ROAD=0` turns it off).
+
+**How Melee animates its backgrounds (the census, `stage-dump`'s `anim_census`; `board/sky/census.csv`):**
+- Battlefield's sky scrolls its textures (UV tracks) and moves joints.
+- Final Destination fades materials (alpha tracks) and scrolls textures.
+- Fountain of Dreams' sparkles are 35 joints scaling in and out.
+- Yoshi's Story scales and moves joints, and swaps one texture's image.
+- In every case the motion is the map file's own animation set 0. The ground code attaches it at the gobj's init
+  (`grAnime_801C8138`), the ground's proc advances it every frame, and a per-set flag at +0x28 of the model group loops
+  it. `grforest.c` already made that call, so the decomp is unchanged.
+
+**The sky (`forest_scene.py`'s `sky()`, `forest_tex.py`), behind everything in the unfogged stage group:**
+- **The painted backdrop:** indigo, violet, a rose-gold band, and a dusky glow over the trees. The colours are placed by
+  world height from the logged match cameras. x25's frame top meets the backdrop at y 142, and the fighters' band
+  starts at 78; for x55 those are 195 and 123. So the warm glow sits low and dim, where the fighters are, and the
+  brightest band sits above them.
+- **The treeline:** two canopy layers, blended with soft edges. They make the backdrop read as a sky seen through a
+  forest.
+  - Each crown is a disc, round on the card, with lobes bumping its upper rim, noise on the rim, and a mass below that
+    widens downward; a few crowns are taller, with slightly pointed tops.
+  - The farther ridge is lighter and cooler (atmospheric falloff) and peeks above the nearer one.
+  - The coordinator's catch: an earlier cut of tiny crowns rendered as a city skyline, because at 1-4 texels wide they
+    became columns.
+- **Stars:** four additive star fields in the indigo, fading in above the glow. Each has its own material-alpha twinkle
+  (3.0, 3.9, 4.8 and 5.8 s): staggered, as Final Destination fades.
+- **Clouds:** three cloud banks, warm undersides and cool tops. Each drifts by a texture scroll, seamless, at its own
+  cycle (240, 180 and 150 s), as Battlefield's sky scrolls.
+- **The shooting star:** a joint. Two events in a 62 s loop, at 22 s and 51 s, 0.67 s each. It crosses the open sky
+  between the near trunks.
+- **Fireflies:** six small additive glows low in the forest, each drifting and pulsing on its own 7-13 s loop, as
+  Fountain's sparkles.
+- **`stage-build`** now writes child joints, joint, material and texture animation tracks, per-axis texture wrap and
+  additive cards.
+- **Two sky studies** from the image model, as references only.
+
+**Off the match axis.** The trailer lab found a black gap in its trophy orbit, and the trailer will orbit the stump and
+use a diagonal SMRPG battle camera:
+- **The sky wraps the stage:** every layer (backdrop, stars, clouds, both canopy ridges) is an elliptical wall around the
+  origin. Behind the stage it's as deep as the old flat card (z -700 to -640), so the match framings are unchanged; it
+  reaches 1300 to each side and around the front.
+- **Seamless all round:** textures tile a whole number of times around each wall, so the cloud scrolls stay seamless.
+- **The ground:** the forest floor, cliff and mist widen to the walls, and a fogged ravine floor closes the front below
+  the stage.
+- **Measured** on 26 shots from `director/orbit_lab.py`: yaw -60 to +60 degrees every 10, the camera pitched 20 and 30
+  degrees above the stump top, 160 units out. Void is the share of exactly black pixels, the clear colour where
+  nothing is drawn; near-black ambient occlusion at the bushes' feet is not void. The result is 0 in every shot,
+  against up to 7.8% on art pass 2 at +-60 degrees.
+
+**At t7's angle.** t7's horizon sits ~18% from the top, which means a camera ~10 degrees down. The 23 degrees derived
+earlier came from the stump-top ellipse, which the image model draws too open; at 23 degrees no sky can be in frame. At
+10 degrees the sky fills the gaps above the trees.
+
+**Measured in motion:**
+- **Readability across the whole cycle.** A build with every clock 24x faster makes 631 frames cover the 240 s cloud
+  cycle and the star loop four times. Every frame is measured:
+
+  | Framing | Min | Mean |
+  |---|---|---|
+  | x25 | 0.283 | 0.290 |
+  | x55 | 0.349 | 0.352 |
+
+  Measured the same way, Final Destination's own minimum is 0.2753 (mean 0.296), and art pass 2's static sky gave 0.2726.
+  The fighters' idle poses move all of them. The first cut of the sky dropped x25 to 0.207: its glow sat on the
+  metric's blend band, right behind the fighters. The fixes were to dim the low glow, raise the treeline, move the
+  clouds above the band, soften the treeline's edge, and calm the stump top's rings.
+- **The shooting star at real speed,** still cameras, frames 150-300 around an event: x25 min 0.282, x55 min 0.349.
+- **Flash.** The largest per-frame change of any region's mean luminance, with the camera on the sky and treeline, is
+  0.0017 over 30 s. Battlefield's background gives 0.024 and Final Destination's 0.014.
+- **Busy time:** 7.67 ms a frame (p99 9.70), against Battlefield's 8.26 (p99 10.23) and art pass 2's 7.53. The counter
+  was proven live.
+- **The file:** 868 KB (8,042 triangles, 33 meshes, 721 KB of textures). The canopy's two 512 x 128 layers and the
+  wrap cost ~220 KB and ~830 triangles; bushes, trunks and far mushrooms gave back ~700 triangles.
+
+**Found on the way:**
+- An animation tree one level off: the ground code loads a model group under a wrapper joint. The shooting star's
+  scale-0 track landed on the stage's mesh joint and hid the whole play plane, except for the 0.67 s of each event. That
+  was a 0.25 "flash".
+- A cloud texture's faint alpha floor.
+- Two one-pixel seams: the treeline's top edge filtering in its bottom row (now clamped vertically), and a sliver of
+  sky under the treeline card (now extended). `sky_measure.py lines` finds such seams.
+- A capture run in parallel with another on the same sandbox: one run's build replaced the other's DOL mid-capture (a
+  results screen in place of a match still). The overlapping runs were discarded and rerun alone.
+
+**Short of the brief:**
+- The glow low on the horizon is dimmer and duskier than a sunset. Brighter, it sits on the readability metric's blend
+  luminance right behind the fighters, so the bright warm light is in the band above them and on the cloud undersides.
+- The shooting star is small by design, about 50 px long at 1280 wide.
+
+## Art pass 2: richer, toward t7 (2026-09-30)
+
+Michael: "t7 is the right direction, let's aim for a richer art pass." M3 had t7's palette and layout, but it read as a
+greybox with textures. This pass closes most of the gap. `STAGE_ART=forest2` is the default; `forest` (M3) and
+`greybox` still build.
+
+**How it's made (all in code):**
+- **`blender/forest_scene.py`** (headless Blender, seeded and reproducible) builds every mesh in Melee's units. It bakes
+  the light into vertex colours with Blender's BVH: 24 ambient-occlusion rays, a warm key with shadow rays (the cap
+  casts none), a cool sky fill, and a peach rim from the glow behind.
+- **Why vertex colours:** Melee's own stages are drawn that way. A render-mode census of seven vanilla stages (now in
+  `stage-dump`) finds them overwhelmingly `VERTEX, TEX0`, an unlit vertex colour times a CMPR texture: Green Greens is
+  141 of 196 meshes. They add alpha cards for foliage. M3's lit materials were part of why it read flat.
+- **`forest_tex.py`** paints 17 textures with numpy. They're tileable by construction (FFT-filtered noise), and
+  painterly (value bands, soft noise, hard strokes for grooves, rings and spots). The branch, canopy and mist cards
+  are RGB5A3 with alpha.
+- **`stage-build`** now takes vertex-colour materials and alpha-cut or blended cards. **`menus-stage`** takes a
+  low-poly hologram from the spec (336 triangles of the new shapes).
+- **The references:** 3 image-model detail studies (stump, cap, background layers) in t7's style. They're references
+  only; nothing from the image model is in the game.
+
+**The model:**
+- **The stump.** A rounded, irregular top at y 0, with growth rings concentric with its outline and a small real
+  corner at each ledge; a smooth rounded end would project past the ledge from a near camera. A thick mossy lip rolls
+  over the rim. It overhangs only away from the corners and never rises above the top.
+- **Its body.** In front of the fighters' plane it stays inside the collision's hull: under the lip, the front undercuts
+  back behind the plane by y -18. Behind the plane, a round trunk narrows to a waist near the hull's width, then flares
+  onto the forest floor at y -60 with seven buttress roots.
+- **The cap.** It floats, as t7's does. It's a lens: flat along the fighters' plane at y 28, from x -27 to 27 exactly,
+  and domed only front to back. The rim rolls out only below the top, and there are gills underneath and SMRPG's
+  spots on top.
+- **The background:**
+  - near trunks with root flares, some pale birch-like ones (toned down);
+  - mid-distance trunks in a softer bark, and far trunks fading into purple fog;
+  - the purple path winding back, 20 bush clusters and 8 mushroom clusters;
+  - branch cards framing the top corners;
+  - a twilight backdrop outside the fog.
+- **The floor.** It lies only behind the stage. Its front edge is a mossy cliff lip; below that, a misty ravine.
+- **Why a ravine, not t7's grass in front:** grass in front of or under the stage would read as a floor, and would hide
+  fighters falling past it.
+- **The glow** sits where the match camera shows it: the top of the frame, through the trunk gaps, just above the
+  fighters' band.
+
+**Eight render-and-measure passes** (`director/art_pass.sh` and `art_board.py`, in `board/m4/passes.csv`). Each pass:
+- renders a hero shot at t7's angle (23 degrees down, from t7's stump-top ellipse) beside t7;
+- renders both match framings with fighters, beside M3;
+- measures luminance and hue histograms against t7, readability, and the edge lab with its collision overlay.
+
+| Pass | Triangles | Luminance / hue overlap with t7 | Readability x25 (FD 0.275) / x55 | Edges | What changed |
+|---|---|---|---|---|---|
+| 1 | 8,208 | 0.88 / 0.48 | 0.135 / 0.121 | floor end 1.17 px (fail) | first build |
+| 2 | 8,220 | 0.97 / 0.53 | 0.228 / 0.288 | pass | the glow out of the band; buttress roots; ledge corner; mist |
+| 3 | 8,372 | 0.95 / 0.55 | 0.229 / 0.288 | pass | the stump as a stump: undercut rim, waist, flared base |
+| 5 | 7,868 | 0.93 / 0.54 | 0.267 / 0.332 | pass | calmer platforms, irregular bark, side roots |
+| **8** | **7,868** | **0.93 / 0.54** | **0.280 / 0.336** | **pass** | deeper cap and spots, moss toned (production) |
+
+Readability's losses were in the platforms, not the background: the cap's spots and the stump top's tan sat at the
+metric's blend luminance. Toning them brought x25 from 0.135 to 0.280, at the price of a darker frame than t7's (mean
+luminance 0.040 against 0.052).
+
+**The cap: floating, measured.** A thick tapered stem with a skirt, behind the fighters' plane, costs 0.015 of
+readability at x25, putting it under Final Destination's 0.275 (0.265 against 0.280), and 0.012 at x55. It's also a pale
+column right behind centre stage, where fighters spend the most time.
+
+**Budget and performance:**
+- **The file:** 550 KB, 7,868 triangles, 19 meshes, 19 textures (416 KB). The vanilla stages run 452-1,119 KB and
+  8.3k-13.6k triangles.
+- **CPU:** busy 7.53 ms a frame (p99 9.55, max 12.95), against Battlefield's 8.26 (p99 10.23) and M3's 7.54. The
+  counter was proven live every run. The GPU isn't timed.
+
+**Checks:**
+- `starter_lab` 5/5.
+- Edges: the rows 0 px; the floor ends ±0.17 px; the cap ends ±0.41 px.
+- Stage select: the new icon, the regenerated hologram, the name unchanged; A loads the stage, and Random still works.
+- Music: the reel's audio matches the stage track (waveform correlation 0.54, against 0.12 for the reversed track).
+- The matching build gives `08e0bf20134d`; the remeasure diff is empty; the play build is on the sandbox.
+
+**Found on the way:**
+- The review reels had been muxed with the audio aligned at the start. Dolphin's audio dump begins at boot, about
+  12.6 s before the first frame, so the reels' first 12 s were silent and the music late; M3's reel was affected too.
+  `director/mux_reel.sh` now aligns the ends, and both reels are re-muxed.
+- An onset-envelope music check can't tell the track from its reverse when fighters' sound effects dominate, so the
+  check is a waveform correlation with a reversed-track control.
+
+**What still falls short of t7, and why:**
+- **The foreground.** t7's stump sits in grass, bushes and big mushrooms. Ours has a misty ravine in front, because
+  nothing may read as a floor near the fighters' plane or hide a falling fighter. The base's flare below the collision's
+  bottom (y -40) is visual only, behind the fighters.
+- **The hero's top third is darker than t7's.** At t7's angle the camera looks down onto the floor; the glow is placed
+  for the match camera.
+- **The cap is a lens, not a round dome.** Its top is the collision's flat 54-unit line; a dome along it would float
+  above or sink below fighters' feet.
+- **Darker and less saturated overall** (hue overlap 0.54), the price of readability.
+- **The bark is procedural:** less painterly depth than t7's, and soft in close-ups.
+- **The hologram reads faint,** as M3's did.
+- **The branches** show only when the camera zooms out.
+- **The GPU cost isn't measured.**
+
+## M3: production art (2026-09-30)
+
+Built from style target t7 (DESIGN.md "M2") by code: `forest_art.py` writes the textures (procedural, numpy) and the
+geometry; no image-model output is in the stage. `STAGE_ART=greybox` still builds the greybox for A/B
+(`stage_spec.py`).
+
+**The model:**
+- **The play plane:** the stump is the unchanged collision outline extruded: a cut-wood top with a mossy rim at y = 0,
+  a moss lip under the front edge, and bark sides that follow the collision under the ledges. The mushroom cap's top is
+  flat at y = 28 and widest at x = ±27 on the fighters' plane; its rim curls in and down, with cream gills and a pale
+  stem set back (z = −9).
+- **The background (fogged):** umber and pale-barked trunks with root flares, a forest floor far below the stage
+  (y = −100, behind z = −80) with the purple path winding back, bushes, orange-red mushroom clusters, three canopy
+  cards and a twilight haze card. Fog runs from 110 to 520 in dusky purple.
+- **`stage-build`** now takes textured materials (raw BGRA, encoded CMPR) with per-vertex UVs and smooth normals.
+
+**Budget:**
+- Measured first: the starters and forest stages run 452-1,119 KB, 61-213 meshes and 8,285-13,597 triangles.
+- The Forest Maze is **127 KB, 15 meshes, 1,392 triangles and 12 textures** (`board/m3/budgets.csv`).
+
+**Performance** (`board/m3/perf.csv`; `director/perf_lab.py` with `run_perf.sh`):
+- **The test:** four level-9 CPUs (Geno, Fox, Pikachu, Ness) for 60 s at the console's CPU clock. It logs the engine's own
+  timing of every frame (`HSD_PerfLastStat`, via the director's PERF cue): the logic, the draw submission, and "busy",
+  their sum, out of a 16.7 ms frame. It also logs lag frames.
+- **The result.** The Forest Maze keeps the CPU busy **7.54 ms a frame** (p99 9.57, max 13.08), against Battlefield's
+  8.26 and Fountain of Dreams' 12.29. Its art costs 0.09 ms over the greybox (7.45), and the decoration 0.04 ms (7.50
+  without it).
+- **Lag frames:** 4 a minute on every stage, the greybox included, spaced exactly 1000 frames apart. That's Melee's
+  controller polling drifting against the frame (an extra pad sample), not slowdown.
+- **The lag counter is proven live in every run.** A deliberate 40 ms stall at frame 60 must log a lag frame, or
+  `run_perf.sh` aborts. Battlefield with the emulated CPU at 0.4× drops 965 frames: the positive control. It's clean at
+  0.5×, which matches its 8.3 ms busy time.
+- **Not measured:** Dolphin doesn't time the GPU, so the triangle and texture budgets above stand in for it.
+
+**The 07:49 incident (the first performance numbers were void):**
+- **The cause.** `build.py`'s lag hook was a second HOOKS entry that edited the first hook's flush block in place. The
+  first hook's text then no longer matched, so the next build inserted the plain block again, ahead of the lag block.
+  The plain block resets the queue count to 1, so the lag call never fired. It happened at 07:22 and again at 07:49.
+- **What was void:** every lag number before this section was written. That covers:
+  - M3's first "0 lag frames" table: production, greybox, no decoration, Battlefield, Fountain, and the reel, which ran
+    at the labs' 2× clock anyway;
+  - the whole 1.0-0.45× clock sweep.
+
+  The first art pass's "3 lag frames", with the decoration halved in response, was the polling drift: every stage shows
+  it. The halving wasn't needed; the decoration costs 0.04 ms.
+- **The fix:**
+  - The lag call lives inside the one flush hook.
+  - `hook()` upgrades a lone plain block, and collapses a doubled pair, before hooking, then exits unless `gmscene.c`
+    has exactly one flush block with the call. It's tested from the decomp's HEAD and from the doubled state.
+  - `run_perf.sh` checks the source after each build and the stall probe after each run.
+
+**Checks, in game:**
+
+| Check | Result |
+|---|---|
+| `starter_lab` against the spec | **5/5**: cap 28.0, floor 0, ledges (±70, 0) held, blast zones and camera range exact |
+| Edge lab (the play plane built without its background, so the silhouette is clean) | both top surfaces 0 px off; stump ends within 0.06 px, cap ends within 0.59 px |
+| Readability at the reference framing | 0.274 (Final Destination 0.275, Battlefield 0.40, the forest counterpicks 0.04-0.09) |
+| Readability at the wide framing | 0.339 |
+| Stage select | the icon is now a render of the finished stage; the hologram comes from the production play plane; the name and the 0.84 plate are unchanged; hover and select load the stage |
+| Music | the reel's audio carries the stream (the loop itself is unchanged since M1's seam check) |
+| Matching build | still matches (`08e0bf20`) |
+| `remeasure.sh` | research unchanged |
+
+**Compromises, plainly:**
+- **The SMRPG references are demo screens, not the battle backdrop.** The Forest Maze battle backdrop is
+  LC_LZ3-compressed, and the tooling's codec covers only 4 of its ~15 commands. The attract demo's two Forest Maze
+  scenes, VRAM and palettes are the references instead. Without the tilemaps, the tile sheets show each tile in one
+  palette.
+- **The first five targets came out as 2D paintings.** Only three are real GameCube-style renders; t7 is one of them.
+- **Procedural textures and simple geometry.** The stump is a clean extrusion of the collision: its roots are in the
+  texture and in the underside's shape, and none reach past the collision, where they would mislead recoveries. The
+  look is GameCube-plausible but plainer than Nintendo's hand-painted stages.
+- **The pale-bark motif is subdued.** A bright pale trunk behind the cap competed with fighters, so it was darkened and
+  moved off-centre.
+- **The decoration is thinner than the first pass.** It was halved against a "lag" that turned out to be polling drift
+  (the 07:49 incident above). The fuller set measured nothing on the CPU and is still far inside the triangle budget, so
+  it can come back (`forest_art.py`'s bush and cluster counts) if Michael wants the denser floor.
+- **Performance is measured on the CPU side only** (above).
 
 ## 0. Summary
 

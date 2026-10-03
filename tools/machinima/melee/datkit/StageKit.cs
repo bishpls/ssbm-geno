@@ -18,6 +18,7 @@ using System.Numerics;
 using System.Text.Json;
 using HSDRaw;
 using HSDRaw.Common;
+using HSDRaw.GX;
 using HSDRaw.Common.Animation;
 using HSDRaw.Melee.Gr;
 using HSDRaw.Tools;
@@ -149,6 +150,63 @@ static class StageKit
         return 0;
     }
 
+    // how a model group animates (its animation set 0, which the ground code's grAnime_801C8138 attaches): joint tracks,
+    // material colour and alpha tracks, texture tracks (UV scroll, image swaps) with their image counts, end frames and
+    // loop flags, and the per-set loop flag the ground code reads at +0x28
+    static object AnimCensus(SBM_Map_GOBJ mg)
+    {
+        var jt = new Dictionary<string, int>(); var mt = new Dictionary<string, int>(); var tt = new Dictionary<string, int>();
+        var ends = new SortedSet<float>(); int loops = 0, aobjs = 0, animJoints = 0, matAnims = 0, texAnims = 0, images = 0;
+        void Aobj(HSD_AOBJ a, Func<byte, string> name, Dictionary<string, int> hist)
+        {
+            if (a == null) return;
+            aobjs++; ends.Add((float)Math.Round(a.EndFrame, 1)); if (a.Flags.HasFlag(AOBJ_Flags.ANIM_LOOP)) loops++;
+            for (var f = a.FObjDesc; f != null; f = f.Next) { var k = name(f.TrackType); hist[k] = hist.GetValueOrDefault(k) + 1; }
+        }
+        var aj = mg.JointAnimations?.Array; var ma = mg.MaterialAnimations?.Array;
+        void J(HSD_AnimJoint j) { for (; j != null; j = j.Next) { if (j.AOBJ != null) { animJoints++; Aobj(j.AOBJ, t => ((JointTrackType)t).ToString().Replace("HSD_A_J_", ""), jt); } J(j.Child); } }
+        void M(HSD_MatAnimJoint j)
+        {
+            for (; j != null; j = j.Next)
+            {
+                for (var m = j.MaterialAnimation; m != null; m = m.Next)
+                {
+                    matAnims++; Aobj(m.AnimationObject, t => ((MatTrackType)t).ToString().Replace("HSD_A_M_", ""), mt);
+                    for (var x = m.TextureAnimation; x != null; x = x.Next)
+                    { texAnims++; images += x.ImageBuffers?.Length ?? 0; Aobj(x.AnimationObject, t => ((TexTrackType)t).ToString().Replace("HSD_A_T_", ""), tt); }
+                }
+                M(j.Child);
+            }
+        }
+        if (aj != null && aj.Length > 0) J(aj[0]);
+        if (ma != null && ma.Length > 0) M(ma[0]);
+        var setFlags = mg._s.GetReference<HSDAccessor>(0x28);
+        return new { anim_sets = Math.Max(aj?.Length ?? 0, ma?.Length ?? 0), animated_joints = animJoints, joint_tracks = jt, mat_anims = matAnims,
+                     material_tracks = mt, tex_anims = texAnims, texture_tracks = tt, swap_images = images, aobjs, looping_aobjs = loops,
+                     end_frames = ends.ToArray(), set0_loop_flag = setFlags == null ? (int?)null : setFlags._s.GetByte(0) };
+    }
+
+    // triangles drawn by a PObj: lists, strips and fans (and quads) from its display list
+    static int Tris(HSD_POBJ po)
+    {
+        int n = 0;
+        try
+        {
+            foreach (var pr in po.ToDisplayList().Primitives)
+            {
+                int c = pr.Count;
+                switch (pr.PrimitiveType)
+                {
+                    case GXPrimitiveType.Triangles: n += c / 3; break;
+                    case GXPrimitiveType.TriangleStrip: case GXPrimitiveType.TriangleFan: n += Math.Max(0, c - 2); break;
+                    case GXPrimitiveType.Quads: n += c / 2; break;
+                }
+            }
+        }
+        catch { }
+        return n;
+    }
+
     static int Count<T>(T first, Func<T, T> next) where T : class { int n = 0; for (var x = first; x != null; x = next(x)) n++; return n; }
 
     public static int Dump(string[] a)
@@ -179,12 +237,28 @@ static class StageKit
             var anims = mg.JointAnimations?.Array ?? Array.Empty<HSD_AnimJoint>();
             var js = Joints(mg.RootNode, anims.Length > 0 ? anims[0] : null, scale, frames);
             gj.Add(js);
-            int dobjs = 0, tex = 0;
-            foreach (var j in js) for (var d = j.Jo.Dobj; d != null; d = d.Next) { dobjs++; if (d.Mobj?.Textures != null) tex += Count(d.Mobj.Textures, t => t.Next); }
+            int dobjs = 0, tex = 0, tris = 0; long texBytes = 0;
+            var seenImg = new HashSet<HSDStruct>();
+            var modes = new Dictionary<string, int>();     // render mode + vertex attributes + texture formats -> DObjs
+            foreach (var j in js) for (var d = j.Jo.Dobj; d != null; d = d.Next)
+            {
+                dobjs++;
+                var at = d.Pobj == null ? "" : string.Join("+", d.Pobj.ToGXAttributes().Where(x => x.AttributeName != GXAttribName.GX_VA_NULL && x.AttributeName != GXAttribName.GX_VA_PNMTXIDX).Select(x => x.AttributeName.ToString().Replace("GX_VA_", "")));
+                var tf = new List<string>(); for (var t = d.Mobj?.Textures; t != null; t = t.Next) tf.Add($"{t.ImageData?.Format}:{t.Flags}");
+                var mk = $"{d.Mobj?.RenderFlags} | {at} | {string.Join(",", tf)}";
+                modes[mk] = modes.GetValueOrDefault(mk) + 1;
+                for (var t = d.Mobj?.Textures; t != null; t = t.Next)
+                {
+                    tex++;
+                    if (t.ImageData != null && seenImg.Add(t.ImageData._s)) texBytes += t.ImageData.ImageData?.Length ?? 0;
+                }
+                for (var po = d.Pobj; po != null; po = po.Next) tris += Tris(po);
+            }
             var links = mg.CollisionLinks?.Array ?? Array.Empty<SBM_Map_GOBJ_CollisionLink>();
             gout.Add(new
             {
-                index = g, joints = js.Count, dobjs, textures = tex,
+                index = g, joints = js.Count, dobjs, textures = tex, triangles = tris, texture_bytes = texBytes, render_modes = modes,
+                anim_census = AnimCensus(mg),
                 joint_anims = anims.Length, mat_anims = mg.MaterialAnimations?.Array?.Length ?? 0,
                 shape_anims = mg.ShapeAnimations?.Array?.Length ?? 0, anim_end = anims.Length > 0 ? R(anims[0].AOBJ?.EndFrame ?? 0) : 0,
                 animated_joints = js.Count(j => j.Animated),

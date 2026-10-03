@@ -1,0 +1,13 @@
+# Python packages for building Geno from source (HOW-TO-PLAY.md). Versions are the ones the 2026-10-02 verification
+# used, on Python 3.14.8; nearby versions should work.
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+numpy==2.5.3
+scipy==1.18.1
+Pillow==12.3.0
+soundfile==0.14.0
+matplotlib==3.11.2
+pyloudnorm==0.2.0
+librosa==1.0.0
+praat-parselmouth==0.4.7
+# Only to re-render the music (projects/geno/music/README.md), not to build the game from audio/:
+#   pretty_midi==0.2.11 mido pedalboard==0.9.25 torch==2.11.0

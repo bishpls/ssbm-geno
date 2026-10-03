@@ -1,12 +1,12 @@
 """Build bank 55: out/geno.ssm (same file for audio/ and audio/us/) and patched smash2.sem copies (US and JP).
 Reads the disc files, never writes them. Verifies everything and writes out/bank_report.json."""
 import os, sys, json, struct, hashlib, glob, subprocess, tempfile
-sys.path.insert(0, os.path.expanduser('~/games/melee/work/announcer/tools'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'announcer', 'tools'))   # dspenc, ssm
 import numpy as np, soundfile as sf
 import dspenc, ssm
 
-HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-DISC = os.path.expanduser('~/games/melee/disc/files/audio')
+HERE = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))   # the bank's work folder (game audio: outside the repo)
+DISC = os.path.join(os.path.expanduser(os.environ.get('MELEE_DISC', '~/games/melee/disc')), 'files', 'audio')
 OUT = os.path.join(HERE, 'out')
 BANK = 55
 SFX_BASE = BANK * 10000                  # sound IDs 550000 + k
@@ -14,7 +14,7 @@ BASE_SAMPLE = 1551                       # first free global sample ID in BOTH l
 RATE = 32000
 BUDGET = 586208                          # data_len cap: the current 4th-largest fighter bank (Kirby), see NOTES
 BOOKED = 327680                          # LBAX_GENO_BYTES in the decomp (lbaudio_ax_geno_bytes.patch): must be >= data_len
-VGM = '/opt/homebrew/bin/vgmstream-cli'
+VGM = os.environ.get('VGMSTREAM', 'vgmstream-cli')   # vgmstream's CLI, the independent decoder the checks use
 
 def sha1(b): return hashlib.sha1(b).hexdigest()
 def align(n, a): return -(-n // a) * a
@@ -92,7 +92,7 @@ def main():
     rep = dict(geno_ssm=dict(size=len(geno), sha1=sha1(geno)))
     sems = {}
     RETAIL = {'us': '169b94078cba0f1da66c6a3947a080b971085ceb', 'jp': '12e17f7c54ee0ff005aeed8b7993663c6bdc27bd'}
-    BACKUP = os.path.expanduser('~/games/melee/work/orig/audio')
+    BACKUP = os.path.join(os.path.expanduser(os.environ.get('MELEE_WORK', '~/games/melee/work')), 'orig', 'audio')
     for tag, rel in (('us', 'us/smash2.sem'), ('jp', 'smash2.sem')):
         # the retail sem: the disc copy if it is still retail, else install.sh's backup (the bank may be installed)
         src = next(p for p in (os.path.join(DISC, rel), os.path.join(BACKUP, rel))

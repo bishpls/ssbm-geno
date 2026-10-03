@@ -3,8 +3,13 @@ __pycache__/
 .venv/
 .env
 .env.local
+.DS_Store
+# HSDLib, cloned by the builder (HOW-TO-PLAY.md)
+vendor/
+# generated: review boards, renders, the director's compiled scripts, datkit's build
 projects/geno/board/
 projects/geno/out/
+projects/*/director/build/
+projects/*/*/director/build/
 tools/machinima/melee/datkit/bin/
 tools/machinima/melee/datkit/obj/
-.DS_Store

@@ -7,16 +7,16 @@ Melee's own footsteps are 16 kHz); the round-3 entries stay 32 kHz.
 """
 import os, sys, json, struct, hashlib, subprocess, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
-sys.path.insert(0, os.path.expanduser('~/games/melee/work/announcer/tools'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'announcer', 'tools'))   # dspenc, ssm
 import numpy as np, soundfile as sf
 import dspenc, ssm
 from build_bank import parse_sem, patch_sem, script, sha1, align, BASE_SAMPLE, SFX_BASE, VGM
 
-HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+HERE = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))   # the bank's work folder (game audio: outside the repo)
 OUT3, OUT4 = os.path.join(HERE, 'out'), os.path.join(HERE, 'out4')
 SYNTH = os.path.join(HERE, 'synth')
-DISC = os.path.expanduser('~/games/melee/disc/files/audio')
-BACKUP = os.path.expanduser('~/games/melee/work/orig/audio')
+DISC = os.path.join(os.path.expanduser(os.environ.get('MELEE_DISC', '~/games/melee/disc')), 'files', 'audio')
+BACKUP = os.path.join(os.path.expanduser(os.environ.get('MELEE_WORK', '~/games/melee/work')), 'orig', 'audio')
 BOOKED = 327680                           # LBAX_GENO_BYTES: the ARAM the DOL books for geno.ssm (data_len must fit)
 BUDGET = 586208
 R3_SHA1 = '3018694538b51f3da8f359a93a4b17eec8de0883'
@@ -69,7 +69,10 @@ def main():
     rep = dict(geno_ssm=dict(size=len(geno), sha1=sha1(geno)))
 
     # ---- round 3 kept exactly: the 28 table records and their ADPCM bytes are identical to the installed round-3 file
-    g3 = open(os.path.join(OUT3, 'geno.ssm'), 'rb').read(); assert sha1(g3) == R3_SHA1
+    g3 = open(os.path.join(OUT3, 'geno.ssm'), 'rb').read()
+    if sha1(g3) != R3_SHA1:   # a fresh SNES capture renders a hair differently (README): checked only with BANK_STRICT=1
+        assert not os.environ.get('BANK_STRICT'), 'round 3 differs from the reference build'
+        print(f'note: round 3 geno.ssm {sha1(g3)[:12]} is not the reference build ({R3_SHA1[:12]}): a fresh capture')
     b3, b4 = ssm.parse(os.path.join(OUT3, 'geno.ssm')), ssm.parse(os.path.join(OUT4, 'geno.ssm'))
     rec3 = g3[0x10:0x10 + 28 * 0x48]; rec4 = geno[0x10:0x10 + 28 * 0x48]
     used3 = spans[27][0] + spans[27][1]
@@ -125,7 +128,8 @@ def main():
     json.dump(rep, open(os.path.join(OUT4, 'bank_report.json'), 'w'), indent=1)
 
     # ---- the id table (round 3's entries carried over, the new ones with their use and script)
-    ids3 = json.load(open(os.path.join(OUT3, 'geno_sfx_ids.json')))
+    ids3_p = os.path.join(OUT3, 'geno_sfx_ids.json')     # round 3's id table (names, uses, scripts), kept in the repo too
+    ids3 = json.load(open(ids3_p if os.path.exists(ids3_p) else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'geno_sfx_ids_r3.json')))
     ids = ids3 + [dict(sound_id=SFX_BASE + m['k'], hex=hex(SFX_BASE + m['k']), k=m['k'], name=m['name'],
                        sample_id=BASE_SAMPLE + m['k'], rate=m['rate'], dur_s=m['dur'], adpcm_bytes=r['adpcm_bytes'],
                        use=m['use'], script=dict(vol=m['vol'], prio=m['prio'], aux=m['aux']), seed=m['seed'],
@@ -182,8 +186,8 @@ set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 R3="$HERE/../out"
-AUD="$HOME/games/melee/disc/files/audio"
-BAK="$HOME/games/melee/work/orig/audio"
+AUD="${MELEE_DISC:-$HOME/games/melee/disc}/files/audio"
+BAK="${MELEE_WORK:-$HOME/games/melee/work}/orig/audio"
 US_SEM_ORIG=169b94078cba0f1da66c6a3947a080b971085ceb      # retail audio/us/smash2.sem (132,184 B)
 JP_SEM_ORIG=12e17f7c54ee0ff005aeed8b7993663c6bdc27bd      # retail audio/smash2.sem (132,364 B)
 GENO4=@GENO4@

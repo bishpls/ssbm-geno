@@ -99,12 +99,13 @@ aerial('uair', 'Up air', -11, 1, -10, [S(0, 2, btn='X'), S(8, 2, c=(0, 80))], fo
 seg('dair', 120, [('Down air · rocket fist', 26, None)], gx=-11, fx=-10, g=[S(0, 6, btn='X'), S(33, 2, c=(0, -80))],
     cam=(-10.5, 20, 116, None))
 
-# ---- specials
+# ---- specials (v1.5's timings, as specials_v15_lab holds them: the Beam's stars at 40, 60, 80, the timed release on the third;
+# the Flash at the third star, frame 61)
 seg('finger', 80, [('Neutral B · Finger Shot', -2, None)], gx=-40, fx=20, g=[S(0, 2, btn='B')], cam=(-10, 12, 120, None))
-seg('beam1', 90, [('Neutral B · Geno Beam, 1 star', -2, None)], gx=-40, fx=20, g=[S(0, 25, btn='B')], cam=(-10, 12, 120, None))
-seg('beam2', 110, [('Geno Beam · 2 stars', -2, None)], gx=-40, fx=20, g=[S(0, 45, btn='B')], cam=(-10, 12, 120, None))
+seg('beam1', 110, [('Neutral B · Geno Beam, 1 star', -2, None)], gx=-40, fx=20, g=[S(0, 45, btn='B')], cam=(-10, 12, 120, None))
+seg('beam2', 130, [('Geno Beam · 2 stars', -2, None)], gx=-40, fx=20, g=[S(0, 65, btn='B')], cam=(-10, 12, 120, None))
 seg('beam3', 140, [('Geno Beam · 3 stars', -2, None)], gx=-40, fx=20, g=[S(0, 110, btn='B')], cam=(-10, 12, 120, None))
-seg('beam_timed', 130, [('Geno Beam · timed release', -2, None)], gx=-40, fx=20, fox_pct=60, g=[S(0, 60, btn='B')],
+seg('beam_timed', 150, [('Geno Beam · timed release', -2, None)], gx=-40, fx=20, fox_pct=60, g=[S(0, 79, btn='B')],
     cam=(-10, 12, 120, None))
 seg('whirl', 150, [('Side B · Geno Whirl', -2, 80)], gx=-40, fx=5, g=[S(0, 3, (60, 0), btn='B')], cam=(-15, 12, 110, None))
 seg('whirl_shield', 175, [('Geno Whirl · on a shield', -2, 132)], gx=-40, fx=-5, g=[S(0, 3, (60, 0), btn='B')],
@@ -117,7 +118,7 @@ seg('blast', 110, [('Down B · Geno Blast', -2, 70)], gx=-35, fx=15, fox_pct=30,
     cam=(-10, 22, 150, None))
 seg('blast_wide', 140, [('Geno Blast · widened', -2, 98)], gx=-35, fx=15, fox_pct=30, g=[S(0, 30, (0, -80), btn='B')],
     cam=(-10, 22, 150, None))
-seg('flash', 210, [('Down B, held · Geno Flash', -2, 186)], gx=-30, fx=0, fox_pct=30, g=[S(0, 55, (0, -80), btn='B')],
+seg('flash', 230, [('Down B, held · Geno Flash', -2, 206)], gx=-30, fx=0, fox_pct=30, g=[S(0, 75, (0, -80), btn='B')],
     cam=(-8, 22, 150, None))
 
 # ---- grab, pummel, throws (every grab ends in a throw: a reset mid-grab leaves the engine's grab link stale)

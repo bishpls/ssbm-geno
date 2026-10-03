@@ -55,6 +55,16 @@ fanfare. The crowd cheer isn't in it. (Its CPU soak was reported as passing but 
   identity. Keys live in `.env` / `.env.local`; never print or commit them. Log paid API calls in `tools/ledger.jsonl`,
   and don't make one without asking.
 - **Never extract from the 2023 remake.** Its art is a design reference only.
+- **Public release policy (Michael, 2026-10-02):** ssbm-geno ships source (no game data in git, ever) **and** an xdelta
+  patch for players applied to their own NTSC 1.02 ISO, as a GitHub release asset only. That one artifact may carry
+  game-derived data (the compiled DOL, the SMRPG-derived sound bank, the announcer splice). Rendered audio of our own
+  arrangements is included in the repo. Licence: MIT for code, CC BY-NC 4.0 for docs and art. Publishing still waits
+  on Michael's go.
+- **Unlocks (Michael, 2026-10-02):** Geno and the Forest Maze are always available, with no unlock conditions. "Anyway
+  going through the trouble of downloading this will have already long been through the single-player unlock
+  experience." Geno: forced unlocked in VS and Training (`mncharsel.c`), hidden in the 1P modes (no save row for him).
+  The Forest Maze: `gm_80164430` treats stages outside its 11-entry unlock table as unlocked, and kind 0x15 isn't in it.
+  The player build may unlock all of Melee's own content too.
 - **Voices:** no voice cloning, TTS or voice conversion of the announcer or the crowd. The announcer's "Geno!" and the
   crowd cheer are splices of their real recordings (Michael's call, as a fan work).
 - **Music:** our own arrangements only, never rips. References are analysed, not mixed in.
@@ -194,12 +204,57 @@ Crash hunting is his playtests plus the targeted labs. `cpu_soak` stays as a lab
 
 ## 5. Hard-won facts (read before touching the area)
 
+- **The public release (2026-10-02):** `release/slice.sh SLICE_DIR [GENO_REF] [EXT_REF]` rebuilds ssbm-geno (the trailer's
+  production material stays out; `audio/` gets the two rendered arrangements); `release/keyscan.sh DIR` scans a tree
+  and its whole history. The player build never touches a memory card (measured: `director/fresh_save_lab.py`'s card run
+  wrote nothing over a whole session, while its cardboot control, the game's own boot, created the save at once), and
+  it unlocks Melee's characters and stages in memory only (not All-Star mode). On a fresh save (`Menu(unlock=False)`)
+  Geno and the Forest Maze are there and Random can pick the stage (the director's SSSRANDOM line: 19 entries, 29
+  included). The 1P modes can't be booted into directly (Classic asserts in lbarchive.c): go through `boot='menu'`.
+  The SNES capture zeroes Mesen2's power-on RAM; with its random default the dump often wouldn't render. The playtest
+  DOL rebuilds byte for byte from a fresh doldecomp clone, `geno.patch` and the director it was built with.
+
 - **Agent builds go to their sandbox:** `build.py` from an agent worktree (`animation-pipeline-<name>`) now refuses to
   run unless `MELEE_DECOMP` and `MELEE_DISC` are set (eval `sandbox.sh NAME`). On 2026-09-30 an unguarded lab build
   overwrote the shared decomp's director and put a lab DOL on the main disc in place of Michael's playtest build.
 
 - **Never `git stash` in a worktree:** every Geno worktree shares one repository and so one stash list. One agent's
   `stash pop` took another agent's stash (2026-09-29; no damage, the pop conflicted). Commit WIP to your own branch.
+- **`build.py --matching` puts the retail DOL on the disc it builds for.** On the main disc, always follow it with the play
+  build and check that build succeeded (2026-09-30: a merge slip broke the play build after a matching check, and the
+  main disc was left on retail Melee until it was fixed). After resolving conflicts in `director.c`, `director.h` or
+  `dsl.py`, build before committing; the cue table is checked against the enum in a few lines of Python (all names and
+  numbers equal).
+- **Main's film kit is merged into geno (2ef4d85, 2026-09-30):** SO BACK's Melee type, keying, hard-edit grammar,
+  Immediate XFB (no lost frame), `gamecam`/`glass` (cues 40/41) and `menu_hold`. Cue numbers: geno 1–25, main 40–41,
+  the trailer 50 and up. `reset()` keeps geno's default `fresh=True` (stale moves cleared); main's films pass
+  `fresh=False`. POS lines now end `hipx hipy vx vy kbx kby air jumps pct`, so the hip stays at fields 6–7. Builds take
+  a lock and run ninja with 6 jobs (`MELEE_JOBS`). Boards drawn from captures after this merge include a frame the old
+  captures lost (after script frame 7), so they shift by one against older boards. The merge's review:
+  `~/games/melee/sandbox/geno-mainmerge/boards/geno_mainmerge_review.html`.
+- **The trailer's director cues (2026-09-30):** 50–63 (round 1: star KO, slow motion, metal, trophy tools, enemies,
+  costume respawn, HUD modes, item trace, pin and clear) and 64–68 (round 2: floor placement, the star-run contact KO,
+  the Peach's Castle Banzai Bill via `grCastle_DirectorBill`, a bone trace, and a press on the first frame a state
+  allows it). `projects/geno/trailer/lab/FEASIBILITY.md` lists them. **Resets now link the fighter to the floor line
+  within ±10 of y = 0 under the new x** (a reset from the Forest Maze's cap had put him back on the cap; one just off
+  the respawn platform asserted). On flat stages that's the line he was on: `whirl_shield_lab` still gives 15/28/41.
+  A reset where no floor is found logs `RESET NOFLOOR`.
+- **The trailer film crew's cues (Parts One and Three, 2026-10-02; branch geno-film1):** 75 `DIR_KBVEL` (a launch with no
+  hit: knockback velocity, decaying as a hit's does), 76 `DIR_HOLDENTRY` (hold the entry's trophy stand: with
+  `DIR_ANIMRATE` 0, a doll), 77 `DIR_EYES` (the eye texture's frame through `ftAnim_80070458`, so it holds through action
+  changes), 78 `DIR_HOLDDEAD` (a star KO's respawn waits after the twinkle: a clean sky). `DIR_PERCENT` now also sets the
+  HUD's copy (`Player_SetHUDDamage`), and `Menu(music=False)` mutes the menus' music for a scored plate. The montage crew
+  numbers 69-74. HUD-on plates keep Melee's own projection and deliver the bottom 16:9 band (the 16:9 projection stretches
+  the 2D HUD 1.47x): `projects/geno/trailer/film/part1_3/crew.py` (`hudcam`, `crop='hud'`).
+  79 `DIR_RNGLOCK` reseeds the game's RNG at the start of every frame. **The camera is not free of the game state:**
+  what the film camera sees changes the random draws (the stage's effects draw when drawn), so two cameras on one script
+  can play different matches (9.x's take B: Peach's smash picked another item and Bowser lived). Lock it for any
+  multi-camera run with a random outcome; the setup's seed then picks the draws. `DIR_HUD` 3 is the whole HUD without the
+  off-screen magnifier bubbles (a film camera frames tighter than the game's).
+- **The shieldhp cue spawned an item until 98e0485** (2026-09-30). The `DIR_SHIELDHP` case fell through into `DIR_ITEM`,
+  so every shieldhp cue also dropped an item whose kind was the shield value at stage centre. `whirl_shield_lab` was
+  rerun with the fix (Fox, all 8 cases): grind hits at 15, 28 and 41 frames and the 45-frame hover, as DESIGN says, so
+  its numbers stand. `defense_lab` (animation pops) wasn't rerun: the barrel it spawned couldn't change a pop check.
 
 **Rig and animation:**
 - The rig: `projects/geno/rig/rig.py` holds 71 joints, depth-first. The decomp's
@@ -438,7 +493,26 @@ yet. `lb/lbaudio_ax.c`'s `lbl_803BB3C0` is the bank-per-character table, not the
   targets approved, kept to GameCube-era Melee aesthetics; music: Forest Maze metal draft 2 (not the GLADE version),
   cut to a stage loop. Milestones: M1 greybox in its real slot with the loop (done and merged 2026-09-30; Michael kept the
   layout and approved the stage select: the icon at the bottom row's left end, stage names scaled 0.84 to clear it), M2 style
-  targets (waits on Michael's go), M3 production art.
+  targets and M3 production art (done and merged 2026-09-30, overnight on the agent's own pick: t7, twilight umber and
+  purple in 3D; runners-up t3 and t6; `stage/SCOPE.md`, `stage/DESIGN.md`). M3 passes every check (starter_lab 5/5, edges
+  within 0.6 px, busy time under Battlefield's, matching) but the art is far plainer than t7: the stump is an extrusion of
+  the collision, the textures are procedural and the background is flat. It uses 1.4k triangles and 127 KB against the vanilla
+  stages' 8–14k and 0.45–1.5 MB. Michael confirmed t7 and asked for a richer pass: art pass 2 (merged 2026-09-30,
+  `stage/forest_art2.py`: scripted Blender, baked vertex colour like the vanilla stages, a floating cap, layered
+  background; 7.9k triangles, 550 KB, busy time 7.53 ms vs Battlefield's 8.26) is now the production art. Review pages:
+  `~/games/melee/sandbox/geno-stage/board/m3/review_m2_m3.html` (M3), `.../board/m4/review_art2.html` (pass 2).
+  `STAGE_ART` still builds the greybox and M3; `~/games/melee/work/stage/out/GrFm_m3.dat` is M3's file.
+  The sky (merged 2026-09-30, Michael: "dull static purple skybox"): painted twilight, three twinkling star fields,
+  three drifting cloud banks (150/180/240 s loops), two canopy ridges, fireflies and the Star Road shooting star (on by
+  default, `STAR_ROAD=0` off), all from the map file's own animation set as the vanilla stages do it; the sky wraps the
+  stage so orbits of ±60° show no void. 868 KB, 8,042 triangles, 7.67 ms busy (Battlefield 8.26); readability min
+  0.283 at x25 over the whole cycle; flash 0.0017 (Battlefield 0.024). Review: `.../board/sky/review_sky.html`.
+  Art pass 2's file is `GrFm_art2.dat` beside the production one.
+- **Lag measurement:** `stage/director/run_perf.sh` (log-only, `--cpu` clock). At the console's clock every stage shows a
+  LAGFRAME every 1000 frames: the 60 Hz pad clock drifting against NTSC's 59.94, not load. So compare stages by the
+  per-frame busy time (PERF lines), not the lag count. Each run stalls 40 ms at frame 60 and must log a lag there, or the
+  counter is dead (the 07:49 incident: a second hook's edit made build.py re-insert the plain flush block ahead of the lag
+  call; build.py now keeps exactly one block).
 - **KO and star-KO sound:** decided 2026-09-29: silence (Michael). Nothing to build; the shared KO sounds play.
 - **Costumes:** done: six, Michael's set (2026-09-29; DESIGN §12 "Costumes"): Geno, Mario, Bowser, Mallow, Peach and
   Dark. The review page is `~/games/melee/sandbox/geno-menuart/board/review_menuart.html`.

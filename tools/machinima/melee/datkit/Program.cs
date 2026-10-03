@@ -30,7 +30,9 @@ static class Program
         if (a[0] == "stage-build") return StageBuild.Run(a);
         if (a[0] == "sis-dump") return MenusStage.SisDump(a);
         if (a[0] == "menus-stage") return MenusStage.Build(a);   // menus-stage ART SPEC MnSlMap.usd OUT SdMenu.usd OUT : the Forest Maze in the stage select (MenusStage.cs)
-        if (a[0] == "dobj-info") return MenusStage.DobjInfo(a);     // stage-build SPEC.json TEMPLATE_GrXx.dat OUT.dat : a stage file from a spec (StageBuild.cs)     // stage-patch IN OUT [--joint G:J:DX:DY] [--line L:DX:DY] : move a joint and a line (world units)
+        if (a[0] == "dobj-info") return MenusStage.DobjInfo(a);
+        if (a[0] == "prize-geno") return MenusApproach.Prize(a);       // prize-geno SdPrize.usd OUT TEXT1 TEXT2 : Geno's prize messages, entries 0x47-0x48 (MenusApproach.cs)
+        if (a[0] == "approach-geno") return MenusApproach.Build(a); // approach-geno NtAppro.usd SIL.bgra OUT : Geno's NEW CHALLENGER silhouette, frame 12 (MenusApproach.cs)     // stage-build SPEC.json TEMPLATE_GrXx.dat OUT.dat : a stage file from a spec (StageBuild.cs)     // stage-patch IN OUT [--joint G:J:DX:DY] [--line L:DX:DY] : move a joint and a line (world units)
         if (a[0] == "bodydata") return MoveData.Body(a);        // bodydata PL AJ NR CO KIND RIG|- IDX,... : hurtbox extents per frame (MoveData.cs)
         if (a[0] == "fk" || a[0] == "fkdir") return FK.Run(a);      // fk NR ANIM [OUT] / fkdir NR PL AJ OUTDIR [REGEX] : sampled FK per frame (FK.cs)
         if (a[0] == "mscan") return MenusGeno.Scan(a);                 // mscan FILE [FRAMES] : every model's texture animations

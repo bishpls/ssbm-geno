@@ -24,8 +24,78 @@ layout, a playmap, that the existing starters don't have (Michael's brief, 2026-
   aesthetics." Melee's texture density, lighting, palette and the polycount look of its nature stages; targets are
   references only.
 - **Music: Forest Maze metal draft 2** ("forest maze metal draft 2 was better"), cut into a stage loop (§7).
+- **No gap at the loop** (2026-09-30: "is the cut at 1:33? there's a very obvious gap in the music there"): draft 2's
+  8th-note stop before the final hit played as a 150 ms hole on every wrap. The stage loop now has its own last bar of
+  FINAL, re-rendered without the stop (`music_loopend.py`), so the fill runs into THEME A's downbeat; the trailer keeps
+  the stop and the hit. Built for Michael's listen (`review_seam.html` in the stage music folder); SCOPE.md has the
+  numbers.
 - **M1 built (2026-09-30):** the greybox Clearing, selectable from its own stage-select slot (the bottom row's left end, Michael 2026-09-30), with the
   draft 2 loop; SCOPE.md "M1: built" has every measurement.
+
+## M2: style targets (2026-09-30, decided by the stated criteria; Michael reviews in the morning)
+
+**References** (all local, `$MELEE_WORK/stage`):
+- **SMRPG's Forest Maze, from Michael's ROM.** The title screen's attract demo plays two Forest Maze scenes: R257, the
+  fight at Bowyer's pad (~frame 4400-4750), and R260, Mario jumping on Wiggler (~6350-6550). Mesen2's test runner plays
+  it with no input (`smrpg/drive_fm.lua`), screenshots it, and dumps VRAM and CGRAM at frames 4560 and 6450.
+  `smrpg_forest.py` decodes them: the palettes (CGRAM, BGR555), the tiles (4bpp) in each background palette, the
+  screens and motif crops.
+  - A battle backdrop ("BF00 Forest Maze") would be the best side view. It's LC_LZ3-compressed, and the only Python
+    codec in the tooling handles 4 of its ~15 commands, so it wasn't decoded; the demo route has the game decompress
+    for us.
+- **Melee's forest and nature stages from the disc:** Kongo Jungle, Jungle Japes, Great Bay, Yoshi's Island and Green
+  Greens (plus Battlefield and Final Destination), rendered at match distance by `director/ref_lab.py`.
+
+**The motifs that make it Forest Maze** (from the decoded screens):
+- dark umber ground and trunk interiors with pale-edged bark (the posts and trunk edges catch a thin light rim);
+- clusters of glossy round orange-red mushrooms, growing out of deep green bushes;
+- purple paths in shadow;
+- dark spiky trunk stubs;
+- a dim, warm twilight rather than daylight.
+
+The stage carries all of them: the pale-barked trunks, the orange-red cap, the mushroom clusters and bushes on the
+forest floor, the purple path, and the twilight fog.
+
+**Targets:** 8 generations with `~/animation-pipeline/tools/imagegen.py`, each conditioned on the two SMRPG screens and
+one or two Melee renders.
+- The first five came back as 2D paintings.
+- The next three used wording that asks for a real-time GameCube render.
+
+**Criteria, written before scoring:**
+
+| # | Criterion | Weight | How |
+|---|---|---|---|
+| C1 | Fighters stay readable over the background | 30% | measured: `lookmetrics.py` over the play band (the background's distance from fighters' mid luminance, penalised for busy fine detail); 5 = 0.30, Final Destination's level |
+| C2 | Platform edges and the stage outline read at match distance | 20% | judged, 1-5 |
+| C3 | Faithful to the SMRPG motifs above | 20% | judged, 1-5 |
+| C4 | Fits Melee's GameCube look | 20% | judged, 1-5 |
+| C5 | Buildable within budget | 10% | judged, 1-5 |
+
+**Scores** (`board/m3/scores.csv`; the Melee references measured the same way: Battlefield 0.40, Final Destination
+0.27, the forest counterpicks 0.04-0.09):
+
+| Target | Readability | C1 | C2 | C3 | C4 | C5 | Weighted |
+|---|---|---|---|---|---|---|---|
+| **t7 twilight umber and purple (3D)** | 0.283 | 4.7 | 5 | 5 | 4 | 4 | **4.61, the pick** |
+| t3 twilight (painting) | 0.252 | 4.2 | 4 | 5 | 2 | 3 | 3.76, the runner-up by score (t7's direction as a painting) |
+| t6 green-gold light shafts (3D) | 0.213 | 3.5 | 3 | 4 | 4 | 4 | 3.65, the runner-up in a different direction |
+| t8 readable daylight (3D) | 0.135 | 2.2 | 4 | 4 | 4 | 4 | 3.46 |
+| t4 hollow trunk interior | 0.216 | 3.6 | 4 | 4 | 2 | 2 | 3.28 |
+| t1 / t5 / t2 (paintings) | 0.10-0.17 | 1.7-2.8 | 3-4 | 4 | 1-2 | 3 | 2.41-2.94 |
+
+t7 is built in M3 (SCOPE.md "M3": the model, budget, performance, checks and compromises). If Michael prefers light
+shafts, t6 is the fallback: the same geometry, with a green-gold palette and additive shaft cards.
+
+**Michael, 2026-09-30:** "t7 is the right direction, let's aim for a richer art pass. It's a very good first step!"
+Art pass 2 (`forest_art2.py`, Blender-built with baked vertex colour; SCOPE.md) replaced M3 as the production art the same day.
+
+**Michael, 2026-09-30, on pass 2:** "Much better! Are we doing anything about the dull static purple skybox?" The sky
+rework followed: a painted twilight sky with drifting clouds and twinkling stars. **Michael:** "Small Star Road nod
+sounds good to me": a rare, small shooting star high in the sky, on by default (a flag turns it off).
+
+**Michael, 2026-09-30, on the stage music:** "is the cut at 1:33? there's a very obvious gap in the music there." The
+loop had kept draft 2's 8th-note stop before the FINAL HIT; FINAL's last bar was re-rendered for the loop without it
+(`music_loopend.py`). **Michael:** "New loop is excellent."
 
 ## 1. What a starter has to be
 

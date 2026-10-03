@@ -187,7 +187,7 @@ def main():
 INSTALL = r'''#!/bin/sh
 # Install Geno's menu files: the character select screen (MnSlChr.usd), the results screen (GmRst.usd), the VS Records
 # faces (MnMaAll.usd) and the in-match HUD (IfAll.usd). Built by projects/geno/menus/build.py.
-#   sh install.sh            back up the disc's files (once, to ~/games/melee/work/orig/menus/) and install ($MELEE_DISC, default ~/games/melee/disc)
+#   sh install.sh            back up the disc's files (once, to $MELEE_WORK/orig/menus/) and install ($MELEE_DISC, default ~/games/melee/disc)
 #   sh install.sh --restore  put the backed-up files back
 # Every file is checked by SHA-1 before and after copying; a disc file that is neither retail, a known earlier Geno build
 # nor this build is refused, nothing unknown is overwritten.
@@ -195,7 +195,7 @@ set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 FILES="${MELEE_DISC:-$HOME/games/melee/disc}/files"
-BAK="$HOME/games/melee/work/orig/menus"
+BAK="${MELEE_WORK:-$HOME/games/melee/work}/orig/menus"
 
 sha1() { shasum -a 1 "$1" | cut -d' ' -f1; }
 need() { [ -f "$1" ] && [ "$(sha1 "$1")" = "$2" ] || { echo "$1: missing or wrong SHA-1" >&2; exit 1; }; }

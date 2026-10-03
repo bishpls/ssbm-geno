@@ -1,10 +1,14 @@
 #!/bin/bash
 # showcase_capture.sh TAG RES SPEC...: build and capture showcase runs, one after another (each build rewrites main.dol, and the
 # sandbox has one Dolphin user folder, so its captures never overlap). SPEC: part:a|b|c, entry, costumes:0,1,2,3, win:B|Y|X, lose, kirby
+# SHOWCASE_SANDBOX names the sandbox (default geno-atk-air, where the release reel was captured); the repo is this script's own
+# worktree. Runs land in ~/games/melee/sandbox/<sandbox>/runs.
 set -e
 TAG=$1; RES=$2; shift 2
-eval "$(sh ~/animation-pipeline-geno-atk-air/tools/machinima/melee/sandbox.sh geno-atk-air)"
-R=~/animation-pipeline-geno-atk-air; S=~/games/melee/sandbox/geno-atk-air/runs; PY=$R/.venv/bin/python
+R=$(cd "$(dirname "$0")/../../../.." && pwd); SB=${SHOWCASE_SANDBOX:-geno-atk-air}
+eval "$(sh $R/tools/machinima/melee/sandbox.sh $SB)"
+S=~/games/melee/sandbox/$SB/runs; PY=$R/.venv/bin/python
+mkdir -p $S
 cd $R
 for spec in "$@"; do
     kind=${spec%%:*}; arg=${spec#*:}; name=${TAG}_${kind}${arg:+_${arg//,/}}

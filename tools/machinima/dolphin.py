@@ -23,7 +23,7 @@ def ini(sections):
     return ''.join(f'[{s}]\n' + ''.join(f'{k} = {v}\n' for k, v in kv.items()) for s, kv in sections.items())
 
 
-def configure(user, res, widescreen, png_level, logonly=False, audioonly=False):
+def configure(user, res, widescreen, png_level, logonly=False, audioonly=False, cpu=2.0):
     """logonly: no frame or audio dumps, and emulation unthrottled (EmulationSpeed 0): for labs read from the game's
     log alone (a kill sweep), which then run as fast as the machine can, with nothing written but the log."""
     cfg = os.path.join(user, 'Config'); os.makedirs(cfg, exist_ok=True)
@@ -31,12 +31,15 @@ def configure(user, res, widescreen, png_level, logonly=False, audioonly=False):
         'Analytics': {'PermissionAsked': 'True', 'Enabled': 'False'},
         'AutoUpdate': {'UpdateTrack': ''},
         'Interface': {'ConfirmStop': 'False', 'UsePanicHandlers': 'False', 'OnScreenDisplayMessages': 'False'},
-        'Core': {'SkipIPL': 'True', 'CPUThread': 'False', 'DSPHLE': 'True', 'EnableCheats': 'False', 'SlotA': '255', 'SlotB': '255',
+        # slot A: no memory card (255), unless DOLPHIN_SLOTA says otherwise (8: a GCI folder, USER/GC/USA/Card A, for the
+        # labs that check what the game writes to a card)
+        'Core': {'SkipIPL': 'True', 'CPUThread': 'False', 'DSPHLE': 'True', 'EnableCheats': 'False',
+                 'SlotA': os.environ.get('DOLPHIN_SLOTA', '255'), 'SlotB': '255',
                  'SerialPort1': '255', 'EnableCustomRTC': 'True', 'CustomRTCValue': '0x386d4380', 'SIDevice0': '6',
                  'SIDevice1': '6', 'SIDevice2': '0', 'SIDevice3': '0',
                  # the emulated CPU at 2x: a heavy frame that would lag (two logic frames, one image) renders every frame, so
                  # the dump stays one image per game frame; game logic is unchanged either way
-                 'OverclockEnable': 'True', 'Overclock': '2.0', **({'EmulationSpeed': '0.0'} if logonly else {})},
+                 'OverclockEnable': str(cpu != 1.0), 'Overclock': str(cpu), **({'EmulationSpeed': '0.0'} if logonly else {})},
         'DSP': {'Backend': 'No Audio Output', 'DumpAudio': str(not logonly), 'DumpAudioSilent': 'True', 'Volume': '0'},
         # audioonly: the game's audio dump without frames (long captures: a stage's music loop), at normal speed
         'Movie': {'DumpFrames': str(not logonly and not audioonly), 'DumpFramesSilent': 'True'},
@@ -45,6 +48,9 @@ def configure(user, res, widescreen, png_level, logonly=False, audioonly=False):
         'Settings': {'InternalResolution': str(res), 'DumpFramesAsImages': 'True', 'PNGCompressionLevel': str(png_level),
                      'ShowFPS': 'False', 'wideScreenHack': str(bool(widescreen)), 'AspectRatio': '1' if widescreen else '0'},
         'Enhancements': {'MaxAnisotropy': '4'},
+        # present each XFB copy as it is made (SO BACK). On VI timing, two copies could land inside one VI, the first was never
+        # shown, and duplicate-present skipping hid the repeat: a deterministic lost image (script frame 7 after the slate)
+        'Hacks': {'ImmediateXFBEnable': 'True'},
     }))
     open(os.path.join(cfg, 'Logger.ini'), 'w').write(ini({
         'Options': {'WriteToFile': 'True', 'WriteToConsole': 'False', 'Verbosity': '3'},
@@ -93,7 +99,7 @@ def run(a):
     slot = take_slot()
     for sub in ('Dump/Frames', 'Dump/Audio', 'Logs'):
         shutil.rmtree(os.path.join(user, sub), ignore_errors=True)
-    configure(user, a.res, a.widescreen, a.png, a.logonly, a.audioonly)
+    configure(user, a.res, a.widescreen, a.png, a.logonly, a.audioonly, 1.0 if a.nooverclock else a.cpu)
     dump, logf = os.path.join(user, 'Dump', 'Frames'), os.path.join(user, 'Logs', 'dolphin.log')
     t0 = time.time()
     p = subprocess.Popen([DOLPHIN, '-u', user, '-b', '-e', game], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -146,6 +152,9 @@ if __name__ == '__main__':
     r.add_argument('--png', type=int, default=1, help='PNG zlib level for dumps (1 is fast; plates are re-encoded later)')
     r.add_argument('--timeout', type=float, default=900); r.add_argument('--user', default=USER); r.add_argument('--quiet', action='store_true')
     r.add_argument('--logonly', action='store_true', help='no frame or audio dumps, emulation unthrottled: stop with --until')
+    r.add_argument('--nooverclock', action='store_true', help="the console's CPU speed (the labs run it at 2x so dumps never lag): for lag measurement")
+    r.add_argument('--cpu', type=float, default=2.0, help='the emulated CPU clock as a multiple of the console\'s (below 1: a slower console, for '
+                   'a lag measure\'s positive control and for headroom: the slowest clock a scene still runs without lag)')
     r.add_argument('--audioonly', action='store_true', help='the audio dump without frames, normal speed: stop with --until')
     lg = sp.add_parser('log'); lg.add_argument('out')
     a = ap.parse_args()

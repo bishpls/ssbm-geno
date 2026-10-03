@@ -11,7 +11,7 @@ Reads the disc, never writes it. Everything it writes is game-derived and goes t
 """
 import argparse, glob, json, os, struct, sys
 
-ANN_TOOLS = os.path.expanduser(os.environ.get('ANN_TOOLS', '~/games/melee/work/announcer/tools'))
+ANN_TOOLS = os.path.expanduser(os.environ.get('ANN_TOOLS', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'announcer', 'tools')))
 sys.path.insert(0, ANN_TOOLS)
 import numpy as np
 import ssm  # noqa: E402  (the announcer's .ssm parser and DSP-ADPCM decoder)

@@ -137,7 +137,33 @@ def spec(name='clearing'):
     items = [(0, cap['y'] + 10), (-45, 10), (45, 10), (0, 70), (-55, 30), (55, 30), (-25, 60), (25, 60)]
     for i, (x, y) in enumerate(items):
         pts.append(dict(type=127 + i, name=f'ItemSpawn{i + 1}', x=x, y=y))
-    # the greybox model
+    art = os.environ.get('STAGE_ART', 'forest2')
+    work = os.path.expanduser(os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'stage'))
+    if art == 'forest2':                                       # the production art, pass 2 (forest_art2.py: Blender + baked light)
+        import forest_art2
+        stage, back, mats, holo, joints, anims = forest_art2.build(work)
+        return dict(
+            name='Forest Maze', file='GrFm.dat', layout=name, art=art, st_kind=ST_KIND, scale=1.0,
+            hologram=holo,                                     # the stage select's hologram (menus-stage), low poly
+            collision=dict(vertices=V, lines=lines, group=group), points=pts, materials=mats,
+            stage_param=dict(st_kind=ST_KIND, bgm=BGM, bgm_alt=-1, bgm_sd=BGM, bgm_sd_alt=-1, behaviour=0, alt_chance=0),
+            gobjs=[dict(kind='points'), dict(kind='stage', faces=stage, lit=False, joints=joints.get('stage', []),
+                        anims=anims.get('stage', {})),
+                   dict(kind='back', faces=back, lit=False, fog=forest_art2.FOG, joints=joints.get('back', []),
+                        anims=anims.get('back', {}))],
+        )
+    if art == 'forest':                                        # M3's art (forest_art.py), kept for A/B
+        import forest_art
+        mats = forest_art.write_textures(os.path.join(work, 'art'))
+        stage, back = forest_art.build(c, layouts.BODY, FRONT, BACK, CAP_T, ring)
+        return dict(
+            name='Forest Maze', file='GrFm.dat', layout=name, art=art, st_kind=ST_KIND, scale=1.0,
+            collision=dict(vertices=V, lines=lines, group=group), points=pts, materials=mats,
+            stage_param=dict(st_kind=ST_KIND, bgm=BGM, bgm_alt=-1, bgm_sd=BGM, bgm_sd_alt=-1, behaviour=0, alt_chance=0),
+            gobjs=[dict(kind='points'), dict(kind='stage', faces=stage, lit=True), dict(kind='back', faces=back, lit=True,
+                   fog=dict(start=110.0, end=520.0, color=[40, 30, 48]))],
+        )
+    # the greybox model (STAGE_ART=greybox)
     stage = prism(ring, BACK, FRONT, COL)
     for p in c['platforms']:
         stage += box(p['x0'], p['x1'], p['y'] - CAP_T, p['y'], -14.0, 14.0,

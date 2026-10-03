@@ -13,10 +13,15 @@ sys.path.insert(0, os.path.dirname(HERE))
 import layouts, stage_spec  # noqa: E402
 
 DIST, FOV, ASPECT = 300.0, 30.0, 1.2173        # Melee projects at 1.2173 (HANDOFF §5)
+# the cap's ends: the greybox box's front face (z 14); the production cap is an ellipse widest on the fighters' plane
+CAP_Z = 14.0 if os.environ.get('STAGE_ART') == 'greybox' else 0.0
 CAP = layouts.CANDIDATES['clearing']['platforms'][0]
 L = layouts.BODY['ledge_x']
-SHOTS = [dict(name='floor', y=0.0, frame=50, ends=[(-L, stage_spec.FRONT), (L, stage_spec.FRONT)], span=(-60, 60)),
-         dict(name='cap', y=CAP['y'], frame=110, ends=[(CAP['x0'], 14.0), (CAP['x1'], 14.0)], span=(-20, 20))]
+# the stump's ledge corners: the extruded front face's (z = FRONT) for the greybox and M3's art; pass 2's rounded top is
+# widest on the fighters' plane (z = 0)
+FLOOR_Z = stage_spec.FRONT if os.environ.get('STAGE_ART') in ('greybox', 'forest') else 0.0
+SHOTS = [dict(name='floor', y=0.0, frame=50, ends=[(-L, FLOOR_Z), (L, FLOOR_Z)], span=(-60, 60)),
+         dict(name='cap', y=CAP['y'], frame=110, ends=[(CAP['x0'], CAP_Z), (CAP['x1'], CAP_Z)], span=(-20, 20))]
 
 
 def build(out_c):
@@ -36,6 +41,16 @@ def project(x, y, z, cy, W, H):
     return W / 2 + x / (d * t * ASPECT) * W / 2, H / 2 - (y - cy) / (d * t) * H / 2
 
 
+def nearest_step(profile, expect, frac=0.35):
+    """The step (between samples i and i+1) nearest the expected index among those at least frac of the strongest: a
+    textured surface has steps of its own (the moss lip over the bark, a trunk behind), and the edge is the one where
+    the projection says it is."""
+    import numpy as np
+    g = np.abs(np.diff(np.asarray(profile, float)))
+    cand = np.nonzero(g >= frac * g.max())[0]
+    return int(cand[np.argmin(np.abs(cand - expect))])
+
+
 def report(run, out=None):
     import numpy as np
     from PIL import Image
@@ -50,15 +65,16 @@ def report(run, out=None):
             if abs(abs(x) - 45) < 10: continue                      # the fighters stand at +-45
             px = int(round(project(x, s['y'], 0, s['y'], W, H)[0]))
             col = lum[H // 2 - 20:H // 2 + 20, px - 1:px + 2].mean(1)
-            g = np.abs(np.diff(col))
-            rows.append(H // 2 - 20 + int(np.argmax(g)) + 1)          # the step between rows i and i+1 is the edge i+1
+            rows.append(H // 2 - 20 + nearest_step(col, 20) + 1)      # the step between rows i and i+1 is the edge i+1
         # the ends: the strongest horizontal step 3-6 rows under the edge, near each projected end
         ends = []
         for x, z in s['ends']:
             ex, _ = project(x, s['y'], z, s['y'], W, H)
-            band = lum[H // 2 + 3:H // 2 + 7, int(ex) - 25:int(ex) + 26].mean(0)
-            g = np.abs(np.diff(band))
-            found = int(ex) - 25 + int(np.argmax(g)) + 1
+            # the stump's front face is a wall under its edge (measured 3-6 rows down); the cap's rim curls in right under
+            # its top, so its end is measured on the first two rows (0-0.3 units below the top)
+            r0, r1 = (H // 2, H // 2 + 2) if s['name'] == 'cap' else (H // 2 + 3, H // 2 + 7)
+            band = lum[r0:r1, int(ex) - 25:int(ex) + 26].mean(0)
+            found = int(ex) - 25 + nearest_step(band, ex - (int(ex) - 25) - 1) + 1
             ends.append(dict(x=x, z=z, expected_px=round(ex, 2), found_px=found, err_px=round(found - ex, 2)))
         expected_row = H / 2
         res.append(dict(shot=s['name'], surface_y=s['y'], expected_row=expected_row, rows=rows,

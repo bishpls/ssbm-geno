@@ -37,8 +37,9 @@ CHANT_SCRIPT = [(0x01, None), (0xFD, None), (0x10, 0x0A), (0xFD, 0x0A), (0x06, 0
                 (0xFD, 0x0E), (0x0E, 0)]  # Kirby's (and 21 other chants'); None = the sample id
 WORK = os.path.expanduser(os.environ.get('CROWD_WORK', '~/games/melee/work/crowd'))
 DISC = os.path.expanduser(os.environ.get('MELEE_DISC', '~/games/melee/disc'))
-TIMED = os.path.expanduser('~/games/melee/work/sfxbank/timed/timed.json')
-GUNFIT = os.path.expanduser('~/games/melee/work/sfxbank/gunfit/gunfit.json')     # timed.json's entries, then 550056-58
+SFXBANK = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))
+TIMED = os.path.join(SFXBANK, 'timed', 'timed.json')
+GUNFIT = os.path.join(SFXBANK, 'gunfit', 'gunfit.json')     # timed.json's entries, then 550056-58
 if os.path.exists(GUNFIT):
     TIMED = GUNFIT
 FILES = {'geno.ssm': ['files/audio/us/geno.ssm', 'files/audio/geno.ssm'],

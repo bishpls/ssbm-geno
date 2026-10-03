@@ -4,9 +4,9 @@ bank 55 (geno.ssm). Edits a scratch copy only; the decomp is never written. Ever
 unchanged."""
 import os, sys, json, subprocess, tempfile, shutil, re
 
-DECOMP = os.path.expanduser('~/games/melee/decomp')
+DECOMP = os.path.expanduser(os.environ.get('MELEE_DECOMP', '~/games/melee/decomp'))
 REL = 'src/melee/lb/lbaudio_ax.c'
-HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+HERE = os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank')))   # the bank's work folder (game audio: outside the repo)
 
 def sub(s, old, new, count=1):
     n = s.count(old)

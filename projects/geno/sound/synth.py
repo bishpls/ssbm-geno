@@ -17,7 +17,7 @@ from dsp import *                      # noqa: F401,F403  (FS, modal, rattle, st
 from loud import measure, to32k
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-WORK = os.path.expanduser('~/games/melee/work/sfxbank/synth')
+WORK = os.path.join(os.path.expanduser(os.environ.get('SFXBANK', os.path.join(os.environ.get('MELEE_WORK', '~/games/melee/work'), 'sfxbank'))), 'synth')
 K0 = 28                                  # first new bank index: sound 550028
 
 # ------------------------------------------------------------------------------------------------ the doll's materials
