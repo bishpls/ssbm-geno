@@ -48,7 +48,7 @@ of the source, so a wrong disc fails with an error rather than giving you a brok
 Patching takes a few seconds. The patch is uncompressed VCDIFF, so the older xdelta 3.0 that Windows tools bundle reads
 it: we checked it with xdelta3 3.0.11 and 3.2.1. We haven't run the Windows programs themselves.
 
-Check the result: `Geno.iso` should be 1,459,978,240 bytes with MD5 `873b34a86cd838a507792513d1f43aae`.
+Check the result: `Geno.iso` should be 1,459,978,240 bytes with MD5 `12f3cd0f66dee1fa93b2932289694f80`.
 
 ### 3. Play in Dolphin
 
